@@ -22,7 +22,7 @@ from rospygradientpolytope.polytope_functions import get_polytope_hyperplane,get
 # A,B Matrix
 
 
-
+## Plot KUKA - Velocity polytope here
 
 def pycapacity_polytope(JE,qdot_max,qdot_min):
 
