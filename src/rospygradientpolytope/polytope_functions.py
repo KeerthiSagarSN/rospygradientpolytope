@@ -9,7 +9,7 @@ import polytope as pc
 
 from numpy import shape,arange,array,zeros,cross,count_nonzero,transpose,matmul,dot
 import polytope
-import rospygradientpolytope.robot_functions
+import rospygradientpolytope.robot_functions as robot_functions
 import matplotlib.pyplot as plt
 from scipy.spatial import Delaunay, ConvexHull
 import itertools
@@ -48,8 +48,12 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
     ### Declarations here
 
     ## Import robot
+    print('qdot_max',qdot_max)
 
+    print('qdot_min',qdot_min)
     deltaqq = qdot_max - qdot_min
+
+    deltaqq = deltaqq
 
     ### Cartesian degrees of freedom - Mostly 3 - Velocity
     ## Input a 6x1^T vector - [vx=True,vy=True,vz=True,wx=False,wy=False,wz = False]
@@ -67,7 +71,7 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
     Nmatrix, Nnot = robot_functions.getDofCombinations(arange(active_joints), cartesian_dof)
 
 
-    #print('Nmatrix,,Nnot')
+    print('Nmatrix,Nnot',Nmatrix,Nnot)
 
     #print('Nmatrix is',self.Nmatrix)
 
@@ -83,7 +87,7 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
     v_k = zeros(shape = (cartesian_dof,active_joints))
 
 
-    v_k = JE[cartesian_dof_mask,:]
+    v_k = JE[0:3,:]
     #print('v_k',self.v_k)
 
     # Eq,14
@@ -93,19 +97,23 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
 
     n_k = zeros(shape = (shape(Nmatrix)[0],3))
 
-
+    
     # n- (m-1) twists ; n- no.of dof, m = 2 (1 - (2-1)) - 1
     # Compute all the normals n_k - Eq 15
     ## Compute all normals here
     for i in range(len(n_k)):
 
-        n_k[i] = (V_unit(cross(v_k[:,Nmatrix[i,0]], v_k[:,Nmatrix[i,1]])))
+        print('v_k[:,Nmatrix[i,0]',v_k[:,Nmatrix[i,0]])
+        print('v_k[:,Nmatrix[i,1]',v_k[:,Nmatrix[i,1]])
+        n_k[i] = (V_unit(cross(check_ndarray(v_k[:,Nmatrix[i,0]]), check_ndarray(v_k[:,Nmatrix[i,1]]))))
         #print('n_k is',self.n_k)
         ## Compute all projection vertices here
         ## Equation 16 in paper is here
         ## Instantiate all projection vertices here
         ## l_k = n_k x  v_k x 3
 
+    print('n_k',n_k)
+    print('deltaqq',deltaqq)
     l_k = zeros(shape = (len(n_k),shape(Nnot)[1]))
 
 
@@ -195,10 +203,11 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
     ##### Actual parameters are here
 
     for i in range(len(l_k)):
+        print('JE[0:3,:]',JE[0:3,:])
+        print('array([qdot_min])',array([qdot_min]))
+        p_plus[i,:] = h_plus[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],transpose(array([qdot_min]))))
 
-        p_plus[i,:] = h_plus[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],qdot_min))
-
-        p_minus[i,:] = h_minus[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],qdot_min))
+        p_minus[i,:] = h_minus[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],transpose(array([qdot_min]))))
 
 
     ##### Estimated parameters are here
@@ -206,9 +215,11 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
     for i in range(len(l_k)):
         #p_plus = h_plus[i]*n[i,:] + matmul(JE,qmin)
         #p_plus = np.vstack((p_plus,h_plus[i]*n[i,:]))
-        p_plus_hat[i,:] = h_plus_hat[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],qdot_min))
+
+
+        p_plus_hat[i,:] = h_plus_hat[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],transpose(array([qdot_min]))))
         #p_minus = h_minus[i]*n[i,:] + matmul(JE,qmin)
-        p_minus_hat[i,:] = h_minus_hat[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],qdot_min))
+        p_minus_hat[i,:] = h_minus_hat[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],transpose(array([qdot_min]))))
 
 
         '''
