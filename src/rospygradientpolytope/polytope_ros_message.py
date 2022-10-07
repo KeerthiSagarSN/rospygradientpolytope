@@ -29,20 +29,24 @@ def create_vertex_msg(force_vertex, pose, frame, scaling_factor = 500):
     return pointcloud_message
 
 
-def create_polytopes_msg(force_polytopes, pose, frame, scaling_factor = 500):
+def create_polytopes_msg(polytope_verts,polytope_faces, pose, frame, scaling_factor):
     polygonarray_message = PolygonArray()
     polygonarray_message.header = Header()
     polygonarray_message.header.frame_id = frame
     polygonarray_message.header.stamp = rospy.Time.now()
-    for face_polygon in force_polytopes:
+    for face_polygon in polytope_faces:
         polygon_message = Polygon()
-        for i in range(face_polygon.shape[1]):
-            point = Point32()
-            point.x = face_polygon[0,i]/scaling_factor + pose[0]
-            point.y = face_polygon[1,i]/scaling_factor + pose[1]
-            point.z = face_polygon[2,i]/scaling_factor + pose[2]
-            polygon_message.points.append(point)
 
+        for i in range(len(face_polygon)):
+            point = Point32()
+            
+
+            point.x = (polytope_verts[face_polygon[i],0]/(scaling_factor*1.0)) + pose[0]            
+            point.y = (polytope_verts[face_polygon[i],1]/(scaling_factor*1.0)) + pose[1]
+            point.z = (polytope_verts[face_polygon[i],2]/(scaling_factor*1.0)) + pose[2]
+            
+            polygon_message.points.append(point)
+        
         # polytope stamped message
         polygon_stamped = PolygonStamped()
         polygon_stamped.polygon = polygon_message

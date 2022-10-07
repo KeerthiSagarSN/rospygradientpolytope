@@ -48,9 +48,7 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
     ### Declarations here
 
     ## Import robot
-    print('qdot_max',qdot_max)
 
-    print('qdot_min',qdot_min)
     deltaqq = qdot_max - qdot_min
 
     deltaqq = deltaqq
@@ -71,7 +69,7 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
     Nmatrix, Nnot = robot_functions.getDofCombinations(arange(active_joints), cartesian_dof)
 
 
-    print('Nmatrix,Nnot',Nmatrix,Nnot)
+
 
     #print('Nmatrix is',self.Nmatrix)
 
@@ -103,8 +101,7 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
     ## Compute all normals here
     for i in range(len(n_k)):
 
-        print('v_k[:,Nmatrix[i,0]',v_k[:,Nmatrix[i,0]])
-        print('v_k[:,Nmatrix[i,1]',v_k[:,Nmatrix[i,1]])
+
         n_k[i] = (V_unit(cross(check_ndarray(v_k[:,Nmatrix[i,0]]), check_ndarray(v_k[:,Nmatrix[i,1]]))))
         #print('n_k is',self.n_k)
         ## Compute all projection vertices here
@@ -112,8 +109,7 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
         ## Instantiate all projection vertices here
         ## l_k = n_k x  v_k x 3
 
-    print('n_k',n_k)
-    print('deltaqq',deltaqq)
+
     l_k = zeros(shape = (len(n_k),shape(Nnot)[1]))
 
 
@@ -203,8 +199,8 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
     ##### Actual parameters are here
 
     for i in range(len(l_k)):
-        print('JE[0:3,:]',JE[0:3,:])
-        print('array([qdot_min])',array([qdot_min]))
+
+        ## I have transposed here for qdot_min which s only becos of the input format- need to generalize it
         p_plus[i,:] = h_plus[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],transpose(array([qdot_min]))))
 
         p_minus[i,:] = h_minus[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],transpose(array([qdot_min]))))
@@ -216,7 +212,7 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
         #p_plus = h_plus[i]*n[i,:] + matmul(JE,qmin)
         #p_plus = np.vstack((p_plus,h_plus[i]*n[i,:]))
 
-
+        ## I have transposed here for qdot_min which s only becos of the input format- need to generalize it
         p_plus_hat[i,:] = h_plus_hat[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],transpose(array([qdot_min]))))
         #p_minus = h_minus[i]*n[i,:] + matmul(JE,qmin)
         p_minus_hat[i,:] = h_minus_hat[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],transpose(array([qdot_min]))))

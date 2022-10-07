@@ -167,8 +167,7 @@ def plot_polytope_actual(ax, JE, active_joints, cartesian_dof_input, qdot_min, q
     # Available cartesian wrench/velocity polytope
 
     hull2 = ConvexHull(polytope_vertices, qhull_options='Qs QJ')
-    print('hull2.simplices', hull2.simplices)
-    print('len(hull2.simplices)', len(hull2.simplices))
+    
     #input('wait here')
     # if plot_polytope_on == True:
 
