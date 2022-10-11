@@ -34,12 +34,14 @@ def create_polytopes_msg(polytope_verts,polytope_faces, pose, frame, scaling_fac
     polygonarray_message.header = Header()
     polygonarray_message.header.frame_id = frame
     polygonarray_message.header.stamp = rospy.Time.now()
+    ## Need to initialize all points at once instead of append
+    ## Append may be causing latency - TODO
     for face_polygon in polytope_faces:
         polygon_message = Polygon()
 
+        print('face_polygon',face_polygon)
         for i in range(len(face_polygon)):
-            point = Point32()
-            
+            point = Point32()            
 
             point.x = (polytope_verts[face_polygon[i],0]/(scaling_factor*1.0)) + pose[0]            
             point.y = (polytope_verts[face_polygon[i],1]/(scaling_factor*1.0)) + pose[1]
@@ -56,7 +58,36 @@ def create_polytopes_msg(polytope_verts,polytope_faces, pose, frame, scaling_fac
         polygonarray_message.polygons.append(polygon_stamped)
         polygonarray_message.likelihood.append(1.0)
     return polygonarray_message
+## Only one face of the polygon is here
+def create_polygon_msg(polytope_verts,polytope_faces, pose, frame, scaling_factor):
+    polygonarray_message = PolygonArray()
+    polygonarray_message.header = Header()
+    polygonarray_message.header.frame_id = frame
+    polygonarray_message.header.stamp = rospy.Time.now()
+    ## Need to initialize all points at once instead of append
+    ## Append may be causing latency - TODO
+    polygon_message = Polygon()
+    for face_polygon in polytope_faces:
+        
 
+
+        point = Point32()            
+
+        point.x = (polytope_verts[face_polygon,0]/(scaling_factor*1.0)) + pose[0]            
+        point.y = (polytope_verts[face_polygon,1]/(scaling_factor*1.0)) + pose[1]
+        point.z = (polytope_verts[face_polygon,2]/(scaling_factor*1.0)) + pose[2]
+        
+        polygon_message.points.append(point)
+        
+        # polytope stamped message
+        polygon_stamped = PolygonStamped()
+        polygon_stamped.polygon = polygon_message
+        polygon_stamped.header = Header()
+        polygon_stamped.header.frame_id = frame
+        polygon_stamped.header.stamp = rospy.Time.now()
+        polygonarray_message.polygons.append(polygon_stamped)
+        polygonarray_message.likelihood.append(1.0)
+    return polygonarray_message
 
 def create_ellipsoid_msg(S, U, pose, frame, scaling_factor = 500):
     # calculate rotation matrix
