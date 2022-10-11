@@ -278,6 +278,9 @@ def get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
     Gamma_minus_LHS = transpose(array([h_minus])) + matmul(matmul(n_k,JE),transpose(array([qdot_min])))
 
     Gamma_minus_hat_LHS = transpose(array([h_minus_hat])) + matmul(matmul(n_k,JE),transpose(array([qdot_min])))
+
+    ## Only for testing finding the minimum in the loop
+
     for vertex in range(len(v_k_d)):
         #print 'vertex'
         #print vertex
@@ -340,7 +343,11 @@ def get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
 
     #print('self.Gamma_min',self.Gamma_min)
 
-
+    ### Very bad implementation - Need to optimize - TODO
+    if min(Gamma_plus_hat) < -1*min(Gamma_minus_hat):
+        facet_pair_idx = divmod(Gamma_plus_hat.argmin(),Gamma_plus_hat.shape[1])
+    else:
+        facet_pair_idx = divmod(Gamma_minus_hat.argmin(),Gamma_minus_hat.shape[1])
 
 
 
@@ -380,4 +387,4 @@ def get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
 
 
 
-    return Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat
+    return Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx

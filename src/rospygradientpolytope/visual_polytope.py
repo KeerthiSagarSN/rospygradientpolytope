@@ -42,6 +42,16 @@ def velocity_polytope(JE, qdot_max, qdot_min):
     sigmoid_slope = 500
     h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(
         JE, active_joints, cartesian_dof_input, qdot_min, qdot_max, cartesian_desired_vertices, sigmoid_slope)
+
+
+    Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx = \
+        get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                        active_joints,cartesian_dof_input,qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope)
+    
+    
+    
+    print('Gamma_min_index_hat',Gamma_min_index_hat)
+
     A = vstack((n_k, -n_k))
 
     B_matrix = array([[-10000]])
@@ -71,7 +81,9 @@ def velocity_polytope(JE, qdot_max, qdot_min):
     hull2 = ConvexHull(polytope_vertices, qhull_options='Qs QJ')
 
     polytope_faces = hull2.simplices
-    return polytope_vertices, polytope_faces
+
+
+    return polytope_vertices, polytope_faces, facet_pair_idx[0]
 
 
 def pycapacity_polytope(JE, qdot_max, qdot_min):
