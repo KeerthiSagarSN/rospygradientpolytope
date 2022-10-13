@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial import Delaunay, ConvexHull
 import itertools
 from rospygradientpolytope.linearalgebra import V_unit,check_ndarray
-from numpy import unravel_index,argmax,min,hstack,vstack
+from numpy import unravel_index,argmax,min,hstack,vstack,argwhere
 
 
 def get_Cartesian_polytope(jacobian, joint_space_vrep):
@@ -344,11 +344,17 @@ def get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
     #print('self.Gamma_min',self.Gamma_min)
 
     ### Very bad implementation - Need to optimize - TODO
+    ## Row of facet_pair_idx refers to Normal of the capacity margin plane
+    ## Coluimn of facet_pair_idx refers to Point on the desired polytope closest to the capacity margin plane
     if min(Gamma_plus_hat) < -1*min(Gamma_minus_hat):
-        facet_pair_idx = divmod(Gamma_plus_hat.argmin(),Gamma_plus_hat.shape[1])
+        facet_pair_idx = argwhere(1.0*Gamma_plus_hat == min(1.0*Gamma_plus_hat))
+        hyper_plane_sign = 1.0
+        #print('gamma_plus is the minimum')
     else:
-        facet_pair_idx = divmod(Gamma_minus_hat.argmin(),Gamma_minus_hat.shape[1])
-
+        
+        facet_pair_idx = argwhere(-1.0*Gamma_minus_hat == min(-1.0*Gamma_minus_hat))
+        hyper_plane_sign = -1.0
+        #print('gamma_minus is the minimum')
 
 
 
@@ -359,20 +365,7 @@ def get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
      ##### There are all estimated parameters
     Gamma_min_index_hat = unravel_index(argmax(-1*Gamma_total_hat,axis=None),Gamma_total.shape)
 
-    # print('self.Gamma_min_index_hat',self.Gamma_min_index_hat)
 
-    ## Find the vertex and facet pair here
-    Gamma_plus_min = min(Gamma_plus_hat)
-    Gamma_plus_min_index = unravel_index(argmax(-1*Gamma_plus_hat),Gamma_total.shape)
-    Gamma_minus_min = min(Gamma_minus_hat)
-
-    if Gamma_plus_min < Gamma_minus_min:
-
-        Gamma_min_index = unravel_index(argmax(-1*Gamma_plus_hat),Gamma_plus_hat.shape)
-        Gamma_min_plus = True
-    else:
-        Gamma_min_index = unravel_index(argmax(-1*Gamma_minus_hat),Gamma_minus_hat.shape)
-        Gamma_min_plus = False
 
 
     #input('wait here')
@@ -380,11 +373,13 @@ def get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
     # eq.33 is here - Continuous analytical gamma_minimum
     Gamma_min_softmax = -1*robot_functions.smooth_max(-1*Gamma_total_hat*1000)/1000.0  # Previsois value was 10000
 
+    #print('Gamma_min',Gamma_min)
+    #print('Gamma_min_index_hat',Gamma_min_index_hat)
+    print('facet_pair_idx',facet_pair_idx)
 
 
 
 
 
 
-
-    return Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx
+    return Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign
