@@ -1,13 +1,18 @@
 ### Polytope ROS message generation made easy with Antun Skuric's library for Polytope
 '''
 https://github.com/askuric/polytope_vertex_search/blob/master/ROS_nodes/panda_capacity/scripts/capacity/capacity_visual_utils.py
+
+Revision made to the original file 
+
+@author: keerthi
+keerthi.sagar@imr.ie
 '''
 import rospy
 # time evaluation
 import time
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import Polygon, Point32, PolygonStamped, PointStamped
-from jsk_recognition_msgs.msg import PolygonArray
+from jsk_recognition_msgs.msg import PolygonArray,SegmentArray,Segment
 from std_msgs.msg import Header,Float64
 from visualization_msgs.msg import Marker
 import tf
@@ -73,6 +78,7 @@ def create_polytopes_msg(polytope_verts,polytope_faces, pose, frame, scaling_fac
         polygonarray_message.polygons.append(polygon_stamped)
         polygonarray_message.likelihood.append(1.0)
     return polygonarray_message
+
 ## Only one face of the polygon is here
 def create_polygon_msg(polytope_verts,polytope_faces, pose, frame, scaling_factor):
     polygonarray_message = PolygonArray()
@@ -84,8 +90,6 @@ def create_polygon_msg(polytope_verts,polytope_faces, pose, frame, scaling_facto
     polygon_message = Polygon()
 
     for face_polygon in polytope_faces:
-        
-
 
         point = Point32()            
 
@@ -104,6 +108,38 @@ def create_polygon_msg(polytope_verts,polytope_faces, pose, frame, scaling_facto
         polygonarray_message.polygons.append(polygon_stamped)
         polygonarray_message.likelihood.append(1.0)
     return polygonarray_message
+
+## Draw line segment between two point stamped ROS - message
+def create_segment_msg(point_1, point_2,pose, frame, scaling_factor):
+
+    ## Initialize Line segment message
+    linestampedarray_message = SegmentArray()
+    
+
+
+    start_pt = Point32()
+    start_pt.x = point_1[0]/scaling_factor + pose[0]       
+    start_pt.y = point_1[1]/scaling_factor + pose[1]
+    start_pt.z = point_1[2]/scaling_factor + pose[2]
+
+
+    end_pt = Point32()
+    end_pt.x = point_2[0]/scaling_factor + pose[0]       
+    end_pt.y = point_2[1]/scaling_factor + pose[1]
+    end_pt.z = point_2[2]/scaling_factor + pose[2]
+
+    line_segment = Segment()
+    line_segment.start_point = start_pt
+    line_segment.end_point = end_pt
+    linestampedarray_message.segments = [line_segment]
+
+
+
+    linestampedarray_message.header = Header()
+    linestampedarray_message.header.frame_id = frame
+    linestampedarray_message.header.stamp = rospy.Time.now()
+
+    return linestampedarray_message
 
 def create_ellipsoid_msg(S, U, pose, frame, scaling_factor = 500):
     # calculate rotation matrix
