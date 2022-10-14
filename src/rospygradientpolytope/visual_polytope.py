@@ -126,8 +126,8 @@ def velocity_polytope(JE, qdot_max, qdot_min):
     
     ## Assumption that traingulated faces
     capacity_margin_faces = zeros([1,3])
-    minimum_dist = 1e5
     
+    capacity_proj_vertex = closest_vertex
     for i in range(len(polytope_faces)):
 
         normal_plane = cross((polytope_vertices[polytope_faces[i,0]] - polytope_vertices[polytope_faces[i,1]])\
@@ -143,9 +143,9 @@ def velocity_polytope(JE, qdot_max, qdot_min):
             point_plane_dist = (dot((polytope_vertices[polytope_faces[i,0]]  - closest_vertex),normal_plane)) 
             if point_plane_dist > 0:
                 #minimum_dist = point_plane_dist
-            
+                
                 capacity_margin_faces = vstack((capacity_margin_faces,polytope_faces[i,:]))
-            
+                capacity_proj_vertex = closest_vertex + normal_plane*point_plane_dist
 
     capacity_margin_faces = capacity_margin_faces[1:,:]
 
@@ -154,7 +154,7 @@ def velocity_polytope(JE, qdot_max, qdot_min):
     #capacity_margin_faces = None
     
     hull.close()
-    return polytope_vertices, polytope_faces, facet_pair_idx, capacity_margin_faces
+    return polytope_vertices, polytope_faces, facet_pair_idx, capacity_margin_faces, capacity_proj_vertex
 
 
 def pycapacity_polytope(JE, qdot_max, qdot_min):
