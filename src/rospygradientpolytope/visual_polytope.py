@@ -83,7 +83,7 @@ def velocity_polytope(JE, qdot_max, qdot_min):
                         active_joints,cartesian_dof_input,qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope)
     
     
-    
+    ################## Actual - Polytope #########################################################################
     
     A = None
 
@@ -154,9 +154,188 @@ def velocity_polytope(JE, qdot_max, qdot_min):
     #capacity_margin_faces = None
     
     hull.close()
+
+
+    
+
+    
     return polytope_vertices, polytope_faces, facet_pair_idx, capacity_margin_faces, capacity_proj_vertex
 
+def velocity_polytope_with_estimation(JE, qdot_max, qdot_min):
 
+    qdot_max = array(qdot_max)
+    qdot_min = -1*array(qdot_max)
+    active_joints = shape(JE)[1]
+    cartesian_dof_input = array([True, True, True, False, False, False])
+
+    cartesian_desired_vertices = 3*array([[0.20000, 0.50000, 0.50000],
+                                        [0.50000, -0.10000, 0.50000],
+                                        [0.50000, 0.50000, -0.60000],
+                                        [0.50000, -0.10000, -0.60000],
+                                        [-0.30000, 0.50000, 0.50000],
+                                        [-0.30000, -0.10000, 0.50000],
+                                        [-0.30000, 0.50000, -0.60000],
+                                        [-0.30000, -0.10000, -0.60000]])
+    sigmoid_slope = 500
+    h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(
+        JE, active_joints, cartesian_dof_input, qdot_min, qdot_max, cartesian_desired_vertices, sigmoid_slope)
+
+
+    Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx,hyper_plane_sign = \
+        get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                        active_joints,cartesian_dof_input,qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope)
+    
+    
+    ################## Actual - Polytope #########################################################################
+    
+    A = None
+
+    B_matrix = None
+    A = vstack((n_k, -n_k))
+
+    B_matrix = array([[-10000]])
+
+    
+    for i in range(len(n_k)):
+        B = dot(transpose(A[i, :]), p_plus[i, :])
+        B_matrix = vstack((B_matrix, B))
+
+    for i in range(len(n_k)):
+        B = dot(-transpose(A[i, :]), p_minus[i, :])
+        B_matrix = vstack((B_matrix, B))
+    B_matrix = B_matrix[1:, :]
+
+    # Getting all polytope vertices here with
+    # Polytope library from pypi
+    # https://pypi.org/project/polytope/
+
+    # Plot using polytope function polytope from pypi
+
+    p = pc.Polytope(A, B_matrix)
+
+    polytope_vertices = pc.extreme(p)
+
+    # Available cartesian wrench/velocity polytope
+
+    hull = ConvexHull(polytope_vertices)
+
+    polytope_faces = hull.simplices
+
+    
+    closest_vertex = cartesian_desired_vertices[facet_pair_idx[0,1]]
+    ### Very bad implementation with numpy need to find a mathematical way to plot TODO
+
+    normal_capacity = hyper_plane_sign*n_k[facet_pair_idx[0,0]]
+    
+    ## Assumption that traingulated faces
+    capacity_margin_faces = zeros([1,3])
+    
+    capacity_proj_vertex = closest_vertex
+    for i in range(len(polytope_faces)):
+
+        normal_plane = cross((polytope_vertices[polytope_faces[i,0]] - polytope_vertices[polytope_faces[i,1]])\
+            , (polytope_vertices[polytope_faces[i,0]] - polytope_vertices[polytope_faces[i,2]]))
+        norm_normal_plane = norm(normal_plane)
+
+        if norm_normal_plane != 0:
+            normal_plane = normal_plane/norm_normal_plane
+        else:
+            raiseExceptions('Division by zero not possible')
+            normal_plane = normal_plane
+        if allclose(normal_capacity,normal_plane):
+            point_plane_dist = (dot((polytope_vertices[polytope_faces[i,0]]  - closest_vertex),normal_plane)) 
+            if point_plane_dist > 0:
+                #minimum_dist = point_plane_dist
+                
+                capacity_margin_faces = vstack((capacity_margin_faces,polytope_faces[i,:]))
+                capacity_proj_vertex = closest_vertex + normal_plane*point_plane_dist
+
+    capacity_margin_faces = capacity_margin_faces[1:,:]
+
+    #print('capacity_margin_faces',capacity_margin_faces)
+    #capacity_margin_vertices = None
+    #capacity_margin_faces = None
+    
+    hull.close()
+
+    ################## Estimated - Polytope #########################################################################
+
+    A = None
+
+    B_matrix = None
+    A = vstack((n_k, -n_k))
+
+    B_matrix = array([[-10000]])
+
+    
+    for i in range(len(n_k)):
+        B = dot(transpose(A[i, :]), p_plus_hat[i, :])
+        B_matrix = vstack((B_matrix, B))
+
+    for i in range(len(n_k)):
+        B = dot(-transpose(A[i, :]), p_minus_hat[i, :])
+        B_matrix = vstack((B_matrix, B))
+    B_matrix = B_matrix[1:, :]
+
+    # Getting all polytope vertices here with
+    # Polytope library from pypi
+    # https://pypi.org/project/polytope/
+
+    # Plot using polytope function polytope from pypi
+
+    p_est = pc.Polytope(A, B_matrix)
+
+    polytope_vertices_est = pc.extreme(p_est)
+
+    # Available cartesian wrench/velocity polytope
+
+    hull2 = ConvexHull(polytope_vertices_est)
+
+    polytope_faces_est = hull2.simplices
+
+    
+    closest_vertex = cartesian_desired_vertices[facet_pair_idx[0,1]]
+    ### Very bad implementation with numpy need to find a mathematical way to plot TODO
+
+    normal_capacity = hyper_plane_sign*n_k[facet_pair_idx[0,0]]
+    
+    ## Assumption that traingulated faces
+    capacity_margin_faces_est = zeros([1,3])
+    
+    capacity_proj_vertex_est = closest_vertex
+    for i in range(len(polytope_faces_est)):
+
+        normal_plane_est = cross((polytope_vertices_est[polytope_faces_est[i,0]] - polytope_vertices_est[polytope_faces_est[i,1]])\
+            , (polytope_vertices_est[polytope_faces_est[i,0]] - polytope_vertices_est[polytope_faces_est[i,2]]))
+        norm_normal_plane_est = norm(normal_plane_est)
+
+        if norm_normal_plane != 0:
+            normal_plane_est = normal_plane_est/norm_normal_plane_est
+        else:
+            raiseExceptions('Division by zero not possible')
+            normal_plane_est = normal_plane_est
+        if allclose(normal_capacity,normal_plane_est):
+            point_plane_dist = (dot((polytope_vertices_est[polytope_faces_est[i,0]]  - closest_vertex),normal_plane_est)) 
+            if point_plane_dist > 0:
+                #minimum_dist = point_plane_dist
+                
+                capacity_margin_faces_est = vstack((capacity_margin_faces_est,polytope_faces_est[i,:]))
+                capacity_proj_vertex_est = closest_vertex + normal_plane_est*point_plane_dist
+
+    capacity_margin_faces_est = capacity_margin_faces_est[1:,:]
+
+    #print('capacity_margin_faces',capacity_margin_faces)
+    #capacity_margin_vertices = None
+    #capacity_margin_faces = None
+    
+    hull2.close()
+
+    
+
+    
+    return polytope_vertices, polytope_faces, facet_pair_idx, capacity_margin_faces, \
+            capacity_proj_vertex, polytope_vertices_est, polytope_faces_est, capacity_margin_faces_est, capacity_proj_vertex_est
+            
 def pycapacity_polytope(JE, qdot_max, qdot_min):
     '''
     ### Get pycapacity polytope
