@@ -248,7 +248,7 @@ def velocity_polytope_with_estimation(JE, qdot_max, qdot_min):
             
             
 
-            if abs(point_plane_dist) > 0:
+            if point_plane_dist > 0:
                 #minimum_dist = point_plane_dist
                 #input('stp here')
                 minimum_dist = point_plane_dist
