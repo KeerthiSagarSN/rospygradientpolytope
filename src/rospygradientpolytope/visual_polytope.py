@@ -73,7 +73,7 @@ def velocity_polytope(JE, qdot_max, qdot_min):
                                         [-0.30000, -0.10000, 0.50000],
                                         [-0.30000, 0.50000, -0.60000],
                                         [-0.30000, -0.10000, -0.60000]])
-    sigmoid_slope = 500
+    sigmoid_slope = 100
     h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(
         JE, active_joints, cartesian_dof_input, qdot_min, qdot_max, cartesian_desired_vertices, sigmoid_slope)
 
@@ -176,7 +176,7 @@ def velocity_polytope_with_estimation(JE, qdot_max, qdot_min):
                                         [-0.30000, -0.10000, 0.50000],
                                         [-0.30000, 0.50000, -0.60000],
                                         [-0.30000, -0.10000, -0.60000]])
-    sigmoid_slope = 500
+    sigmoid_slope = 100
     h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(
         JE, active_joints, cartesian_dof_input, qdot_min, qdot_max, cartesian_desired_vertices, sigmoid_slope)
 
@@ -231,6 +231,7 @@ def velocity_polytope_with_estimation(JE, qdot_max, qdot_min):
     capacity_margin_faces = zeros([1,3])
     
     capacity_proj_vertex = closest_vertex
+    minimum_dist = 1e8
     for i in range(len(polytope_faces)):
 
         normal_plane = cross((polytope_vertices[polytope_faces[i,0]] - polytope_vertices[polytope_faces[i,1]])\
@@ -243,10 +244,14 @@ def velocity_polytope_with_estimation(JE, qdot_max, qdot_min):
             raiseExceptions('Division by zero not possible')
             normal_plane = normal_plane
         if allclose(normal_capacity,normal_plane):
-            point_plane_dist = (dot((polytope_vertices[polytope_faces[i,0]]  - closest_vertex),normal_plane)) 
-            if point_plane_dist > 0:
+            point_plane_dist = (dot((polytope_vertices[polytope_faces[i,0]] - closest_vertex),normal_plane))
+            
+            
+
+            if abs(point_plane_dist) > 0:
                 #minimum_dist = point_plane_dist
-                
+                #input('stp here')
+                minimum_dist = point_plane_dist
                 capacity_margin_faces = vstack((capacity_margin_faces,polytope_faces[i,:]))
                 capacity_proj_vertex = closest_vertex + normal_plane*point_plane_dist
 
@@ -262,9 +267,9 @@ def velocity_polytope_with_estimation(JE, qdot_max, qdot_min):
 
     A = None
 
-    B_matrix = None
     A = vstack((n_k, -n_k))
 
+    B_matrx = None
     B_matrix = array([[-10000]])
 
     
@@ -302,6 +307,8 @@ def velocity_polytope_with_estimation(JE, qdot_max, qdot_min):
     ## Assumption that traingulated faces
     capacity_margin_faces_est = zeros([1,3])
     
+
+    minimum_dist_est = 1e8
     capacity_proj_vertex_est = closest_vertex
     for i in range(len(polytope_faces_est)):
 
@@ -313,14 +320,20 @@ def velocity_polytope_with_estimation(JE, qdot_max, qdot_min):
             normal_plane_est = normal_plane_est/norm_normal_plane_est
         else:
             raiseExceptions('Division by zero not possible')
+            
             normal_plane_est = normal_plane_est
         if allclose(normal_capacity,normal_plane_est):
-            point_plane_dist = (dot((polytope_vertices_est[polytope_faces_est[i,0]]  - closest_vertex),normal_plane_est)) 
+            point_plane_dist = (dot((polytope_vertices_est[polytope_faces_est[i,0]] - closest_vertex),normal_plane_est))
+            #
+
             if point_plane_dist > 0:
                 #minimum_dist = point_plane_dist
-                
+                minimum_dist_est = point_plane_dist
+                #print('point_plane_dist',point_plane_dist)
+                #input('stop here') 
                 capacity_margin_faces_est = vstack((capacity_margin_faces_est,polytope_faces_est[i,:]))
                 capacity_proj_vertex_est = closest_vertex + normal_plane_est*point_plane_dist
+                
 
     capacity_margin_faces_est = capacity_margin_faces_est[1:,:]
 
