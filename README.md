@@ -28,8 +28,30 @@ If you are new to ROS, go [here](http://wiki.ros.org/catkin/Tutorials/create_a_w
 * Polygon ROS geometry messages for plotting in Rviz [jsk-ros-pkg](https://github.com/jsk-ros-pkg/jsk_recognition)
 * [KUKA experimental](https://gitlab.com/imr-robotics/kuka_experimental) Digital output interface is included in this repository. Official repository [here](https://github.com/ros-industrial/kuka_experimental). Instructions for KR C4 robot controller [here](https://github.com/ros-industrial/kuka_experimental/tree/indigo-devel/kuka_rsi_hw_interface/krl/KR_C4). 
 * Polytope ros message publisher forked and modified from Pycapacity Library [capacity_visual_utils](https://github.com/askuric/polytope_vertex_search/blob/master/ROS_nodes/panda_capacity/scripts/capacity/capacity_visual_utils.py)
+
+## Toolbox in the Catkin workspace - ROS1
 In a Terminal
 ```
 $ cd ~/catkin_ws/src/
 $ git clone https://gitlab.com/KeerthiSagarSN/rospygradientpolytope
+```
+## Clone Sawyer Robot
+```
+$ git clone https://github.com/RethinkRobotics/sawyer_robot
+```
+## Clone UR5 Robot Repository
+
+```
+$ git clone 
+```
+
+## Clone Pykdl - Kinematics Wrapper Repository
+```
+$ git clone https://github.com/gt-ros-pkg/hrl-kdl
+```
+## Clone Visualization Package Library - Rviz
+```
+$ git clone https://github.com/jsk-ros-pkg/jsk_recognition
+```
+
 
