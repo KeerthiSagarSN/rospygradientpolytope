@@ -54,4 +54,19 @@ $ git clone https://github.com/gt-ros-pkg/hrl-kdl
 $ git clone https://github.com/jsk-ros-pkg/jsk_recognition
 ```
 
+## Catkin Build/ Catkin Make - Build & Source all repositories in Catkin Workspace
+```
+$ cd ..
+$ catkin build
+$ source devel/setup.bash
+```
+
+## To Visualize UR5 robot in Rviz
+```
+$ roslaunch ur_description view_ur5.launch 
+```
+## To Visualize Sawyer Robot in Rviz
+```
+$ roslaunch sawyer_description test_sawyer_description.launch
+```
 
