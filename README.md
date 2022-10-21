@@ -45,9 +45,13 @@ $ git clone https://github.com/RethinkRobotics/sawyer_robot
 $ git clone https://github.com/ros-industrial/universal_robot.git
 ```
 
-## Clone Pykdl - Kinematics Wrapper Repository
+## Clone Pykdl - Kinematics Wrapper Repository - (Python 3 Incompatible  !!)
 ```
 $ git clone https://github.com/gt-ros-pkg/hrl-kdl
+```
+## Clone Pykdl - Kinematics Wrapper Repository - Edited for Python 3 and ROS Noetic Compatible
+```
+git clone https://github.com/amir-yazdani/hrl-kdl.git
 ```
 ## Clone Visualization Package Library - Rviz
 ```
