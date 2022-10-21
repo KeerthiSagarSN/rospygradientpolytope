@@ -27,7 +27,8 @@ from rospygradientpolytope.polytope_functions import get_polytope_hyperplane, ge
 
 
 # Plot KUKA - Velocity polytope here
-
+def __init__():
+    print('Start Visual library')
 
 def desired_polytope(scaling_factor):
 
