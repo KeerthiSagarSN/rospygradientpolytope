@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+<node name="launchSawyerrobot" pkg="rospygradientpolytope" type="launch_robot_sawyer.py" output="screen">
+</node>
+</launch>
