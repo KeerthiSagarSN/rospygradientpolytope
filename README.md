@@ -39,10 +39,10 @@ $ git clone https://gitlab.com/KeerthiSagarSN/rospygradientpolytope
 ```
 $ git clone https://github.com/RethinkRobotics/sawyer_robot
 ```
-## Clone UR5 Robot Repository
+## Clone UR5 Robot Repository - For ROS Noetic - /tree/melodic-devel-staging/ 
 
 ```
-$ git clone 
+$ git clone https://github.com/ros-industrial/universal_robot.git
 ```
 
 ## Clone Pykdl - Kinematics Wrapper Repository
