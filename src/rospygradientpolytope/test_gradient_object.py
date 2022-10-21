@@ -197,6 +197,7 @@ class TestGradient:
                
         from numpy.random import randn
         from gradient_functions import twist_gradient
+        from numpy.linalg import norm
         #from gradient_functions import twist_gradient
 
         test_domain = arange(limits[0], limits[1], step)
@@ -240,7 +241,7 @@ class TestGradient:
             print('analytical_gradient is')
             print(analytical_gradient)
             
-            error.append( np.linalg.norm(numerical_gradient-analytical_gradient))
+            error.append(norm(numerical_gradient-analytical_gradient))
             print('error is')
             print(np.linalg.norm(numerical_gradient-analytical_gradient))          
                    

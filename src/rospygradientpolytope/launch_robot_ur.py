@@ -84,8 +84,15 @@ mutex = Lock()
 # loading the root urdf from robot_description parameter
 # Get the URDF from the parameter server
 # Launch the robot 
-robot_urdf = URDF.from_parameter_server() 
-kdl_kin = KDLKinematics(robot_urdf , self.base_link, self.tip_link)
+robot_description = URDF.from_parameter_server() 
+
+### For Universal Robot - UR5
+base_link = "base_link"
+
+tip_link = "wrist_3_link"
+
+
+kdl_kin = KDLKinematics(robot_description , base_link, tip_link)
 
 # Build the tree here from the URDF parser file from the file location
 '''
@@ -99,14 +106,10 @@ else:
 '''
 
 
-# Build the kdl_chain here
-kdl_chain = kdl_tree.getChain("base","right_l6")
-
-
 ##############################
 
 ## PyKDL_Util here
-pykdl_util_kin = KDLKinematics(robot_description , "base_link", "tool0")
+pykdl_util_kin = KDLKinematics(robot_urdf , "base_link", "tool0")
 
 # URDF parsing an kinematics - Using pykdl_utils : For faster version maybe use PyKDL directly without wrapper
 from urdf_parser_py.urdf import URDF
@@ -116,7 +119,41 @@ from pykdl_utils.kdl_kinematics import KDLKinematics
 
 class LaunchRobot():
 
-    def __init__():
+    def __init__(self):
+		# publish plytope --- Actual Polytope - Publisher
+        self.publish_velocity_polytope = rospy.Publisher("/available_velocity_polytope", PolygonArray, queue_size=100)
+        self.publish_desired_polytope = rospy.Publisher("/desired_velocity_polytope", PolygonArray, queue_size=100)
+        self.publish_capacity_margin_polytope = rospy.Publisher("/capacity_margin_polytope", PolygonArray, queue_size=100)		
+        self.publish_vertex_capacity = rospy.Publisher("/capacity_margin_vertex", PointStamped, queue_size=1)
+        self.publish_vertex_proj_capacity = rospy.Publisher("/capacity_margin_proj_vertex", PointStamped, queue_size=1)
+        self.publish_capacity_margin_actual = rospy.Publisher("/capacity_margin_actual", SegmentArray, queue_size=1)
+		
+
+		# publish plytope --- Estimated Polytope - Publisher
+		
+        self.publish_velocity_polytope_est = rospy.Publisher("/available_velocity_polytope_est", PolygonArray, queue_size=100)		
+        self.publish_capacity_margin_polytope_est = rospy.Publisher("/capacity_margin_polytope_est", PolygonArray, queue_size=100)		
+        self.publish_vertex_proj_capacity_est = rospy.Publisher("/capacity_margin_proj_vertex_est", PointStamped, queue_size=1)
+        self.publish_capacity_margin_actual_est = rospy.Publisher("/capacity_margin_actual_est", SegmentArray, queue_size=1)
+
+        self.cartesian_desired_vertices = 3*array([[0.20000, 0.50000, 0.50000],
+								[0.50000, -0.10000, 0.50000],
+								[0.50000, 0.50000, -0.60000],
+								[0.50000, -0.10000, -0.60000],
+								[-0.30000, 0.50000, 0.50000],
+								[-0.30000, -0.10000, 0.50000],
+								[-0.30000, 0.50000, -0.60000],
+								[-0.30000, -0.10000, -0.60000]])
+        
+        self.pub_rate = 250 #Hz
+
+        self.q_upper_limit = [robot_description.joint_map[i].limit.upper - 0.07 for i in self.robot_joint_names]
+        self.q_lower_limit = [robot_description.joint_map[i].limit.lower + 0.07 for i in self.robot_joint_names]
+
+        self.qdot_limit = [robot_description.joint_map[i].limit.velocity for i in self.robot_joint_names]
+
+		
+
 
 
 
@@ -126,6 +163,6 @@ class LaunchRobot():
 
 if __name__ == '__main__':
 	print("geomagic to KUKA controller start up v2 File\n")
-	controller = Geomagic2KUKA()
+	controller = LaunchRobot()
 	#controller.start()
 	rospy.spin()
