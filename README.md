@@ -74,3 +74,4 @@ $ roslaunch ur_description view_ur5.launch
 $ roslaunch sawyer_description test_sawyer_description.launch
 ```
 
+![Sawyer Robot - 7 DOF](./home/imr/Pictures/sawyer_robot_rviz.png)
