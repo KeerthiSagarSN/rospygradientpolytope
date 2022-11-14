@@ -51,7 +51,7 @@ $ git clone https://github.com/gt-ros-pkg/hrl-kdl
 ```
 ## Clone Pykdl - Kinematics Wrapper Repository - Edited for Python 3 and ROS Noetic Compatible
 ```
-git clone https://github.com/amir-yazdani/hrl-kdl.git
+$ git clone https://github.com/amir-yazdani/hrl-kdl.git
 ```
 ## Clone Visualization Package Library - Rviz
 ```
@@ -65,6 +65,10 @@ $ catkin build
 $ source devel/setup.bash
 ```
 
+## IF you encounter CMAKE Error : Install all ROS- Dependencies - May take some time to install !! (Only when CMAKE Error !!)
+```
+$ rosdep install --from-paths src --ignore-src -r -y
+```
 ## To Visualize UR5 robot in Rviz
 ```
 $ roslaunch ur_description view_ur5.launch 
