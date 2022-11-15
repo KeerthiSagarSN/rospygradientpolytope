@@ -76,9 +76,11 @@ $ git clone https://github.com/gt-ros-pkg/hrl-kdl
 ```
 ## Clone Pykdl - Kinematics Wrapper Repository - Edited for Python 3 and ROS Noetic Compatible
 ```
-$ git clone https://github.com/amir-yazdani/hrl-kdl.git
+$ git clone https://github.com/KeerthiSagarSN/hrl-kdl.git
+$ git checkout Noetic-devel
+$ sudo apt-get install ros-noetic-urdf-parser-plugin
+$ sudo apt-get install ros-noetic-urdfdom-py
 
-Follow installation instructions from the repository Readme --> https://amir-yazdani.github.io/post/pykdl/
 ```
 ## Clone Visualization Package Library - Rviz
 ```
