@@ -29,11 +29,21 @@ If you are new to ROS, go [here](http://wiki.ros.org/catkin/Tutorials/create_a_w
 * [KUKA experimental](https://gitlab.com/imr-robotics/kuka_experimental) Digital output interface is included in this repository. Official repository [here](https://github.com/ros-industrial/kuka_experimental). Instructions for KR C4 robot controller [here](https://github.com/ros-industrial/kuka_experimental/tree/indigo-devel/kuka_rsi_hw_interface/krl/KR_C4). 
 * Polytope ros message publisher forked and modified from Pycapacity Library [capacity_visual_utils](https://github.com/askuric/polytope_vertex_search/blob/master/ROS_nodes/panda_capacity/scripts/capacity/capacity_visual_utils.py)
 
+
+
 ## Toolbox in the Catkin workspace - ROS1
 In a Terminal
 ```
 $ cd ~/catkin_ws/src/
 $ git clone https://gitlab.com/KeerthiSagarSN/rospygradientpolytope
+```
+
+## Library Installation - Only if not preinstalled
+
+In a terminal
+```
+$ pip install sympy
+$ pip install polytope
 ```
 ## Clone Sawyer Robot
 ```
