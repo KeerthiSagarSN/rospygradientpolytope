@@ -63,6 +63,13 @@ Set electric_gripper:=true --> electric_gripper:=false
 $ git clone https://github.com/ros-industrial/universal_robot.git
 ```
 
+
+## Clone PyKDL - From OROCOS-KDL Repository - Latest Branch
+
+```
+$ git clone https://github.com/orocos/orocos_kinematics_dynamics.git
+```
+
 ## Clone Pykdl - Kinematics Wrapper Repository - (Python 3 Incompatible  !!)
 ```
 $ git clone https://github.com/gt-ros-pkg/hrl-kdl
