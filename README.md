@@ -39,6 +39,14 @@ $ git clone https://gitlab.com/KeerthiSagarSN/rospygradientpolytope
 ```
 $ git clone https://github.com/RethinkRobotics/sawyer_robot
 ```
+## Edit Sawyer Robot Launch File
+```
+Go to Folder: ~/catkin_ws/src/sawyer_robot/sawyer_description/launch/
+Rename test_sawyer_description.launch.test ---> test_sawyer_description.launch
+Open File: test_sawyer_description.launch
+Set electric_gripper:=true --> electric_gripper:=false
+```
+
 ## Clone UR5 Robot Repository - For ROS Noetic - /tree/melodic-devel-staging/ 
 
 ```
