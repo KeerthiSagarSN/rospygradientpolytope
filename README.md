@@ -97,7 +97,15 @@ $ source devel/setup.bash
 ## IF you encounter CMAKE Error : Install all ROS- Dependencies - May take some time to install !! (Only when CMAKE Error !!)
 ```
 $ rosdep install --from-paths src --ignore-src -r -y
+
 ```
+
+## ROS - Preliminary Dependencies - Install Only if required
+
+```
+$ sudo apt-get install ros-$ROS_DISTRO-robot-state-publisher ros-$ROS_DISTRO-joint-state-publisher
+```
+
 ## To Visualize UR5 robot in Rviz
 ```
 $ roslaunch ur_description view_ur5.launch 
