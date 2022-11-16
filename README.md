@@ -104,6 +104,7 @@ $ rosdep install --from-paths src --ignore-src -r -y
 
 ```
 $ sudo apt-get install ros-$ROS_DISTRO-robot-state-publisher ros-$ROS_DISTRO-joint-state-publisher
+$ sudo apt-get install ros-$ROS_DISTRO-joint-state-publisher-gui
 ```
 
 ## To Visualize UR5 robot in Rviz
