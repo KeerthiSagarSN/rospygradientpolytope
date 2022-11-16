@@ -121,7 +121,7 @@ pykdl_util_kin = KDLKinematics(robot_urdf , base_link, tip_link,None)
 
 # Build kinematic chain here
 
-class LaunchRobot():
+class LaunchRobot_Sawyer():
 
     def __init__(self):
         rospy.init_node('LaunchSawyerrobot', anonymous=True)
@@ -178,6 +178,6 @@ class LaunchRobot():
 
 if __name__ == '__main__':
 	print("Started and Launched File \n")
-	controller = LaunchRobot()
+	controller = LaunchRobot_Sawyer()
 	#controller.start()
 	rospy.spin()

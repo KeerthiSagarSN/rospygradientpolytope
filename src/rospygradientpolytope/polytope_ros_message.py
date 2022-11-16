@@ -10,7 +10,7 @@ keerthi.sagar@imr.ie
 import rospy
 # time evaluation
 import time
-from sensor_msgs.msg import JointState
+from sensor_msgs.msg import JointState,PointCloud
 from geometry_msgs.msg import Polygon, Point32, PolygonStamped, PointStamped
 from jsk_recognition_msgs.msg import PolygonArray,SegmentArray,Segment
 from std_msgs.msg import Header,Float64

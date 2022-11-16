@@ -22,13 +22,13 @@ https://github.com/askuric/polytope_vertex_search/blob/master/ROS_nodes/panda_ca
 
 """
 
-
+#!/usr/bin/env python3
 ## Library import
 ############# ROS Dependencies #####################################
 import rospy
 from geometry_msgs import msg
 from geometry_msgs.msg import Pose, Twist, PoseStamped, TwistStamped,WrenchStamped, PointStamped
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float32
 from sensor_msgs.msg import Joy, JointState, PointCloud 
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
@@ -39,7 +39,7 @@ from tf2_ros import TransformBroadcaster
 
 ## Polygon plot for ROS - Geometry message
 from jsk_recognition_msgs.msg import PolygonArray, SegmentArray
-from geometry_msgs.msg import Polygon, PolygonStamped, Point32
+from geometry_msgs.msg import Polygon, PolygonStamped, Point32, Pose
 
 
 from rospygradientpolytope.visual_polytope import velocity_polytope,desired_polytope,velocity_polytope_with_estimation
@@ -65,12 +65,15 @@ from pykdl_utils.kdl_kinematics import KDLKinematics
 from pykdl_utils.joint_kinematics import JointKinematics
 
 
-
+import scipy.optimize as sco
 ## Mutex operator
 from threading import Lock
 
 # getting the node namespace
 #namespace = rospy.get_namespace()
+# Import services here
+
+from rospygradientpolytope.srv import IKopt, IKoptResponse
 
 
 from tf.transformations import quaternion_matrix
@@ -88,7 +91,7 @@ mutex = Lock()
 robot_urdf = URDF.from_parameter_server() 
 
 ### For Universal Robot - UR5
-base_link = "right_l0"
+base_link = "right_arm_base_link"
 
 tip_link = "right_l6"
 
@@ -109,10 +112,8 @@ else:
 
 ##############################
 
-## PyKDL_Util here
+
 pykdl_util_kin = KDLKinematics(robot_urdf , base_link, tip_link,None)
-
-
 
 
 
@@ -125,9 +126,11 @@ class LaunchRobot():
 
     def __init__(self):
 
-        rospy.init_node('launchURrobot', anonymous=True)
+        
 
 		# publish plytope --- Actual Polytope - Publisher
+        
+        ## PyKDL_Util here
         
         
         self.publish_velocity_polytope = rospy.Publisher("/available_velocity_polytope", PolygonArray, queue_size=100)
@@ -145,6 +148,11 @@ class LaunchRobot():
         self.publish_vertex_proj_capacity_est = rospy.Publisher("/capacity_margin_proj_vertex_est", PointStamped, queue_size=1)
         self.publish_capacity_margin_actual_est = rospy.Publisher("/capacity_margin_actual_est", SegmentArray, queue_size=1)
 
+
+        # Subscribe joints of Robot --- Joint State subscriber
+
+        self.sawyer_joint_state_publisher = rospy.Publisher("/joint_states",JointState, queue_size = 1)
+
         self.cartesian_desired_vertices = 3*array([[0.20000, 0.50000, 0.50000],
 								[0.50000, -0.10000, 0.50000],
 								[0.50000, 0.50000, -0.60000],
@@ -154,8 +162,10 @@ class LaunchRobot():
 								[-0.30000, 0.50000, -0.60000],
 								[-0.30000, -0.10000, -0.60000]])
         
-        self.pub_rate = 250 #Hz
-        self.robot_joint_names = ['right_j0','right_j1','right_j2','right_j3','right_j4','right_j5','right_j6']
+        self.pub_rate = 500 #Hz
+
+        self.sigmoid_slope = 150
+        self.robot_joint_names = ['right_j0','head_pan','right_j1','right_j2','right_j3','right_j4','right_j5','right_j6']
         
 
         # maximal joint velocities
@@ -168,9 +178,238 @@ class LaunchRobot():
         self.q_upper_limit = [robot_urdf.joint_map[i].limit.upper - 0.07 for i in self.robot_joint_names]
         self.q_lower_limit = [robot_urdf.joint_map[i].limit.lower + 0.07 for i in self.robot_joint_names]
         self.qdot_limit = [robot_urdf.joint_map[i].limit.velocity for i in self.robot_joint_names]
-        
 
+
+        self.qdot_min = self.qdot_limit
+        self.qdot_max = self.qdot_limit 
+        
+        #self.q_in = zeros(8)
 		
+        print('self.q_upper_limit',self.q_upper_limit)
+        print('self.q_lower_limit',self.q_lower_limit)
+        print('Velocity limits are', self.qdot_limit)
+
+        while not rospy.is_shutdown():
+            mutex.acquire()
+            msg = JointState()
+
+            msg.name = [self.robot_joint_names[0], self.robot_joint_names[1],self.robot_joint_names[2],self.robot_joint_names[3],
+                        self.robot_joint_names[4], self.robot_joint_names[5], self.robot_joint_names[6], self.robot_joint_names[7]]
+            msg.header.stamp = rospy.Time.now()
+            msg.header.frame_id = 'sawyer_base'
+            msg.position = [1.95,0.0,0.95,1.05,0.0,0.98,0.8,0.5]
+            msg.velocity = []
+            msg.effort = []
+            self.sawyer_joint_state_publisher.publish(msg)
+            print('msg is',msg)
+
+            ## Creating ROS Service for Inverse kinematics Optimization based on Capacity Margin Constraint
+
+            #self.ik_opt_serv = rospy.Service('ik_optimization',pos_des,self.fmin_opt)
+            rate = rospy.Rate(self.pub_rate) # Hz
+            rate.sleep()
+            mutex.release()
+    '''
+    def joint_state_callback(self,sawyer_joints):
+
+        ## Get Joint angles of the Sawyer Robot
+        self.q_in[0] = sawyer_joints.position[0]
+        self.q_in[1] = sawyer_joints.position[1]
+        self.q_in[2] = sawyer_joints.position[2]
+        self.q_in[3] = sawyer_joints.position[3]
+        self.q_in[4] = sawyer_joints.position[4]
+        self.q_in[5] = sawyer_joints.position[5]
+        self.q_in[6] = sawyer_joints.position[6]
+
+
+        print('self.q_in',self.q_in)
+        ef = pykdl_util_kin.forward(self.q_in,tip_link,base_link)
+        print('ef',ef)
+    '''
+    
+
+    def fmin_opt(self,pos_des):
+        ### Function - func
+        ## Initial point - x0
+        ## args -
+        ## method - SLQSQ
+        ## jac = Jacobian - gradient of the
+
+
+        self.opt_polytope_model = polytope_model
+        self.opt_polytope_gradient_model = polytope_gradient_model
+
+        self.q_joints_input = robot_model.q_joints
+
+
+
+
+        #self.obj_function = polytope_model.Gamma_total
+        #print('self.obj_function',self.obj_function)
+
+        self.initial_x0 = self.q_in
+
+
+        #self.initial_x0 = randn(6)
+        #print('self.initial_x0 ',self.initial_x0 )
+        #print('self.obj_function(robot_model.q_joints)',self.obj_function(robot_model.q_joints))
+        #self.func_deriv = polytope_gradient_model.d_gamma_hat
+
+
+        self.opt_polytope_gradient_model.compute_polytope_gradient_parameters(self.opt_robot_model,self.opt_polytope_model)
+        self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=self.sigmoid_slope)
+        #methods = trust-constr
+
+        #x0 = self.initial_x0
+        #x0_d = self.initial_x0 + 1e-5
+        #numerical_err = (self.obj_function(x0_d) - self.obj_function(x0))
+        #grad_err = (self.jac_func(x0_d) - self.jac_func(x0))
+
+
+        #print('numerical is:',numerical_err)
+        #print('analytical error is',grad_err)
+        #assert sco.check_grad(func = self.obj_function, grad = self.jac_func, x0 = self.initial_x0,espilon = 1e-5, direction = 'all',seed = None)
+        ### Get the end-effector posision
+        #self.pos_reference = self.opt_robot_model.end_effector_position
+
+        self.pos_reference = reference_pos
+        #print('Reference position is',self.pos_reference)
+
+
+        ### Desired vertex set
+
+        self.desired_vertices[:,0] = self.desired_vertices[:,0] + self.pos_reference[0]
+        self.desired_vertices[:,1] = self.desired_vertices[:,1] + self.pos_reference[1]
+        self.desired_vertices[:,2] = self.desired_vertices[:,2] + self.pos_reference[2]
+        #print('self.opt_polytope_gradient_model.d_gamma_hat',self.opt_polytope_gradient_model.d_gamma_hat)
+
+        # Bounds created from the robot angles
+
+        self.opt_bounds = self.opt_robot_model.q_joints_bounds
+
+        #print('self.opt_bounds is',self.opt_bounds)
+
+        ### Constraints
+        cons = ({'type': 'ineq', 'fun': self.constraint_func},\
+                {'type': 'ineq', 'fun': self.constraint_func_Gamma})
+
+        '''
+        cons = ({'type': 'ineq', 'fun': lambda x:  self.q_joints_input[0] - 2 * x[1] + 2},
+        {'type': 'ineq', 'fun': lambda x: -x[0] - 2 * x[1] + 6},
+        {'type': 'ineq', 'fun': lambda x: -x[0] + 2 * x[1] + 2})
+        '''
+        ## jACOBIAN MATRIX OF THE OBJECTIVE FUNCTION
+
+        # jac = self.opt_polytope_gradient_model.d_gamma_hat,
+
+        ### WIth analyitacl gradient
+
+        if analytical_solver:
+
+            self.q_joints_opt = sco.minimize(fun = self.obj_function,  x0 = self.initial_x0,bounds = self.opt_bounds,\
+                                         jac =self.jac_func, constraints = cons,method='SLSQP', \
+                                             options={'disp': True,'maxiter':500})
+        else:
+
+            self.q_joints_opt = sco.minimize(fun = self.obj_function,  x0 = self.initial_x0,bounds = self.opt_bounds,\
+                                             jac = None, constraints = cons,method='COBYLA', \
+                                                 options={'disp': True,'maxiter':250})
+
+
+
+
+
+
+
+        #hess = self.hess_func,
+        #sco.check_grad(func = self.obj_function, grad =self.opt_polytope_gradient_model.d_gamma_hat \                                  , x0 = self.initial_x0, epsilon=1.4901161193847656e-08, direction='all', seed=None)
+        #def constraint2(self):
+    ## Obj
+    def obj_function(self,q_des):
+
+
+
+        from numpy.linalg import det
+        from numpy import sum
+
+        #input('inside obj func')
+        #self.canvas_input_opt.generate_axis()
+        #self.opt_robot_model.urdf_transform(q_joints=q_des)
+        #canvas_input.generate_axis()
+
+
+
+        self.opt_polytope_model.generate_polytope_hyperplane(self.opt_robot_model,cartesian_dof_input = array([True,True,True,False,False,False]),
+                                            qdot_min=self.qdot_min, qdot_max=self.qdot_max, \
+                                            cartesian_desired_vertices = self.desired_vertices,sigmoid_slope = self.sigmoid_slope)
+        #self.opt_polytope_model.plot_polytope(self.canvas_input_opt,True,False)
+        '''
+        if self.opt_polytope_model.Gamma_min_softmax < 0:
+            print('self.opt_polytope_model.Gamma_min_softmax',self.opt_polytope_model.Gamma_min_softmax )
+            print('infeasible joint angles are:',q_des)
+            print('jacobian feasilbilty',det(self.opt_robot_model.jacobian_hessian))
+            print('jacobian is',self.opt_robot_model.jacobian_hessian)
+            #print('joint angle bounds are',self.opt_bounds)
+            #input('Infeasible')
+        '''
+
+
+        print('Current objective function in optimization is',-self.opt_polytope_model.Gamma_min_softmax)
+
+        return -self.opt_polytope_model.Gamma_min_softmax
+
+
+
+
+
+
+    def constraint_func(self,q_des):
+
+        pos_act = pykdl_util_kin.forward(self.q_in,tip_link,base_link)
+        #print('Current position in optimization is',self.pos_act)
+        #input('Wait here ')
+        return -(norm(pos_act-self.pos_reference) - 1e-3)
+
+
+
+    ### Constraints should be actual IK - Actual vs desrired - Cartesian pos
+
+    ## NOrm -- || || < 1eps-
+    def constraint_func_Gamma(self,q_des):
+
+        self.opt_robot_model.urdf_transform(q_joints=q_des)
+        #canvas_input.generate_axis()
+
+        self.opt_polytope_model.generate_polytope_hyperplane(self.opt_robot_model,cartesian_dof_input = array([True,True,True,False,False,False]),
+                                            qdot_min=self.qdot_min, qdot_max=self.qdot_max,
+                                            cartesian_desired_vertices = self.desired_vertices,sigmoid_slope = self.sigmoid_slope)
+
+        #print('Current objective in optimization Gamma is',self.opt_polytope_model.Gamma_min_softmax)
+        return self.opt_polytope_model.Gamma_min_softmax
+
+    def jac_func(self,q_des):
+        from numpy import sum
+
+        self.opt_robot_model.urdf_transform(q_joints=q_des)
+
+        #self.opt_polytope_gradient_model.compute_polytope_gradient_parameters(self.opt_robot_model,self.opt_polytope_model)
+        #self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=1000)
+        jac_output = self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=self.sigmoid_slope)
+        #print('jac_output',jac_output)
+
+        #jac_output = sum(jac_output)
+        return jac_output
+
+    def hess_func(self,q_des):
+
+        self.opt_robot_model.urdf_transform(q_joints=q_des)
+
+        #self.opt_polytope_gradient_model.compute_polytope_gradient_parameters(self.opt_robot_model,self.opt_polytope_model)
+        #self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=1000)
+        hess_output = self.opt_polytope_gradient_model.d_softmax_dq
+
+        return hess_output
+
 
 
 
@@ -180,7 +419,8 @@ class LaunchRobot():
 
 
 if __name__ == '__main__':
-	print("Started and Launched File \n")
-	controller = LaunchRobot()
-	#controller.start()
-	rospy.spin()
+    	
+    rospy.init_node('launchURrobot', anonymous=True)
+    print("Started and Launched File \n")
+    controller = LaunchRobot()
+    rospy.spin()
