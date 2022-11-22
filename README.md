@@ -117,3 +117,10 @@ $ roslaunch sawyer_description test_sawyer_description.launch
 ```
 
 ![Sawyer Robot - 7 DOF](./Images_Readme/sawyer_robot_rviz.png)
+
+
+
+## Optimization with Capacity Margin - Sawyer Robot
+```
+$ roslaunch rospygradientpolytope launch_robot_sawyer.launch
+```
