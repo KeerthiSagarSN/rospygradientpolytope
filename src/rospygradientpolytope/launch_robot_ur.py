@@ -22,7 +22,7 @@ https://github.com/askuric/polytope_vertex_search/blob/master/ROS_nodes/panda_ca
 
 """
 
-#!/usr/bin/env python3
+#!/usr/bin/env python
 ## Library import
 ############# ROS Dependencies #####################################
 import rospy
@@ -44,7 +44,10 @@ from geometry_msgs.msg import Polygon, PolygonStamped, Point32, Pose
 
 from rospygradientpolytope.visual_polytope import velocity_polytope,desired_polytope,velocity_polytope_with_estimation
 from rospygradientpolytope.polytope_ros_message import create_polytopes_msg, create_polygon_msg,create_capacity_vertex_msg, create_segment_msg
-
+from rospygradientpolytope.polytope_functions import get_polytope_hyperplane, get_capacity_margin
+from rospygradientpolytope.polytope_gradient_functions import Gamma_hat_gradient
+from rospygradientpolytope.sawyer_functions import jacobianE0, position_70
+from rospygradientpolytope.robot_functions import getHessian
 
 #################### Linear Algebra ####################################################
 
@@ -113,7 +116,7 @@ else:
 ##############################
 
 
-pykdl_util_kin = KDLKinematics(robot_urdf , base_link, tip_link,None)
+
 
 
 
@@ -151,9 +154,11 @@ class LaunchRobot():
 
         # Subscribe joints of Robot --- Joint State subscriber
 
-        self.sawyer_joint_state_publisher = rospy.Publisher("/joint_states",JointState, queue_size = 1)
+        self.robot_joint_state_publisher = rospy.Publisher("/joint_states",JointState, queue_size = 1)
 
-        self.cartesian_desired_vertices = 3*array([[0.20000, 0.50000, 0.50000],
+        #self.robot_joint_state_subscriber = rospy.Subscriber("/joint_states",JointState,self.joint_state_callback,queue_size=1)
+
+        self.cartesian_desired_vertices = 0.003*array([[0.20000, 0.50000, 0.50000],
 								[0.50000, -0.10000, 0.50000],
 								[0.50000, 0.50000, -0.60000],
 								[0.50000, -0.10000, -0.60000],
@@ -162,10 +167,15 @@ class LaunchRobot():
 								[-0.30000, 0.50000, -0.60000],
 								[-0.30000, -0.10000, -0.60000]])
         
+        
+        self.desired_vertices = zeros(shape = (len(self.cartesian_desired_vertices),3))
+        
         self.pub_rate = 500 #Hz
 
         self.sigmoid_slope = 150
-        self.robot_joint_names = ['right_j0','head_pan','right_j1','right_j2','right_j3','right_j4','right_j5','right_j6']
+        self.robot_joint_names = ['right_j0','right_j1','right_j2','right_j3','right_j4','right_j5','right_j6']
+
+        self.robot_joint_names_pub = ['right_j0','head_pan','right_j1','right_j2','right_j3','right_j4','right_j5','right_j6']
         
 
         # maximal joint velocities
@@ -175,20 +185,51 @@ class LaunchRobot():
         #self.q_upper_limit = array([pykdl_util_kin.joint_limits_upper]).T
         #self.q_lower_limit = array([pykdl_util_kin.joint_limits_lower]).T
         
-        self.q_upper_limit = [robot_urdf.joint_map[i].limit.upper - 0.07 for i in self.robot_joint_names]
-        self.q_lower_limit = [robot_urdf.joint_map[i].limit.lower + 0.07 for i in self.robot_joint_names]
+        #self.q_upper_limit = [robot_urdf.joint_map[i].limit.upper - 0.07 for i in self.robot_joint_names]
+        #self.q_lower_limit = [robot_urdf.joint_map[i].limit.lower + 0.07 for i in self.robot_joint_names]
         self.qdot_limit = [robot_urdf.joint_map[i].limit.velocity for i in self.robot_joint_names]
 
 
-        self.qdot_min = self.qdot_limit
-        self.qdot_max = self.qdot_limit 
         
-        #self.q_in = zeros(8)
-		
-        print('self.q_upper_limit',self.q_upper_limit)
-        print('self.q_lower_limit',self.q_lower_limit)
-        print('Velocity limits are', self.qdot_limit)
+        self.qdot_max = array(self.qdot_limit)
+        self.qdot_min = -1*self.qdot_max
 
+        print('self.qdot_max',self.qdot_max)
+        print('self.qdot_min',self.qdot_min)
+        self.q_in = zeros(7)
+        #self.q_test = zeros(7)
+
+        self.pykdl_util_kin = KDLKinematics(robot_urdf , base_link, tip_link,None)
+        #self.q_bounds = zeros(len(self.q_upper_limit),2)
+
+        self.q_upper_limit = array([self.pykdl_util_kin.joint_limits_upper]).T
+        #self.q_upper_limit = self.pykdl_util_kin.joint_limits_upper
+        self.q_lower_limit = array([self.pykdl_util_kin.joint_limits_lower]).T
+        #self.q_lower_limit = self.pykdl_util_kin.joint_limits_lower
+
+
+        self.q_bounds = hstack((self.q_lower_limit,self.q_upper_limit))
+
+        print('self.q_lower_limit',self.q_lower_limit)
+        print('self.q_upper_limit',self.q_upper_limit)
+        print('self.q_bounds',self.q_bounds)
+        #print('self.q_upper_limit',self.q_upper_limit)
+        #print('self.q_lower_limit',self.q_lower_limit)
+        print('Velocity limits are', self.qdot_limit)
+        input('stop here')
+        self.Gamma_min_softmax = None
+        self.pos_desired = array([[0.51, 0.41, 0.55]])
+
+        #self.q_joints_opt = None
+
+        opt_solution = self.fmin_opt(self.pos_desired,analytical_solver = True)
+        #print('self.pos_desired',self.pos_desired)
+        print('opt_solution.x',opt_solution.x)
+        self.pos_actual_mat = self.pykdl_util_kin.forward(opt_solution.x,tip_link,base_link)
+        self.pos_actual = self.pos_actual_mat[0:3,3]
+
+        print('self.pos_actual',self.pos_actual)
+        '''
         while not rospy.is_shutdown():
             mutex.acquire()
             msg = JointState()
@@ -197,11 +238,11 @@ class LaunchRobot():
                         self.robot_joint_names[4], self.robot_joint_names[5], self.robot_joint_names[6], self.robot_joint_names[7]]
             msg.header.stamp = rospy.Time.now()
             msg.header.frame_id = 'sawyer_base'
-            msg.position = [1.95,0.0,0.95,1.05,0.0,0.98,0.8,0.5]
+            msg.position = [0,0.0,0.0,0.05,0.0,0.05,0.0,0.05]
             msg.velocity = []
             msg.effort = []
-            self.sawyer_joint_state_publisher.publish(msg)
-            print('msg is',msg)
+            self.robot_joint_state_publisher.publish(msg)
+            #print('msg is',msg)
 
             ## Creating ROS Service for Inverse kinematics Optimization based on Capacity Margin Constraint
 
@@ -209,26 +250,33 @@ class LaunchRobot():
             rate = rospy.Rate(self.pub_rate) # Hz
             rate.sleep()
             mutex.release()
-    '''
+        '''
     def joint_state_callback(self,sawyer_joints):
 
         ## Get Joint angles of the Sawyer Robot
         self.q_in[0] = sawyer_joints.position[0]
-        self.q_in[1] = sawyer_joints.position[1]
-        self.q_in[2] = sawyer_joints.position[2]
-        self.q_in[3] = sawyer_joints.position[3]
-        self.q_in[4] = sawyer_joints.position[4]
-        self.q_in[5] = sawyer_joints.position[5]
-        self.q_in[6] = sawyer_joints.position[6]
+        self.q_in[1] = sawyer_joints.position[2]
+        self.q_in[2] = sawyer_joints.position[3]
+        self.q_in[3] = sawyer_joints.position[4]
+        self.q_in[4] = sawyer_joints.position[5]
+        self.q_in[5] = sawyer_joints.position[6]
+        self.q_in[6] = sawyer_joints.position[7]
+        
 
+        #self.q_in[3] = 0.5
+        #self.q_in[4] = 0.89
 
-        print('self.q_in',self.q_in)
-        ef = pykdl_util_kin.forward(self.q_in,tip_link,base_link)
-        print('ef',ef)
-    '''
+        #print('self.q_in',self.q_in)
+        #print('tip_link',tip_link)
+        #print('base_link',base_link)
+        ef = self.pykdl_util_kin.forward(self.q_in,tip_link,base_link)
+
+        
+        
+    
     
 
-    def fmin_opt(self,pos_des):
+    def fmin_opt(self,pose_desired,analytical_solver:bool):
         ### Function - func
         ## Initial point - x0
         ## args -
@@ -236,10 +284,10 @@ class LaunchRobot():
         ## jac = Jacobian - gradient of the
 
 
-        self.opt_polytope_model = polytope_model
-        self.opt_polytope_gradient_model = polytope_gradient_model
+        #self.opt_polytope_model = polytope_model
+        #self.opt_polytope_gradient_model = polytope_gradient_model
 
-        self.q_joints_input = robot_model.q_joints
+        #self.q_joints_input = robot_model.q_joints
 
 
 
@@ -256,8 +304,8 @@ class LaunchRobot():
         #self.func_deriv = polytope_gradient_model.d_gamma_hat
 
 
-        self.opt_polytope_gradient_model.compute_polytope_gradient_parameters(self.opt_robot_model,self.opt_polytope_model)
-        self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=self.sigmoid_slope)
+        #self.opt_polytope_gradient_model.compute_polytope_gradient_parameters(self.opt_robot_model,self.opt_polytope_model)
+        #self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=self.sigmoid_slope)
         #methods = trust-constr
 
         #x0 = self.initial_x0
@@ -272,26 +320,35 @@ class LaunchRobot():
         ### Get the end-effector posision
         #self.pos_reference = self.opt_robot_model.end_effector_position
 
-        self.pos_reference = reference_pos
+        self.pos_reference = pose_desired
         #print('Reference position is',self.pos_reference)
 
 
         ### Desired vertex set
 
-        self.desired_vertices[:,0] = self.desired_vertices[:,0] + self.pos_reference[0]
-        self.desired_vertices[:,1] = self.desired_vertices[:,1] + self.pos_reference[1]
-        self.desired_vertices[:,2] = self.desired_vertices[:,2] + self.pos_reference[2]
+        self.desired_vertices[:,0] = self.cartesian_desired_vertices[:,0] # + self.pos_reference[0,0]
+        self.desired_vertices[:,1] = self.cartesian_desired_vertices[:,1] #+ self.pos_reference[0,1]
+        self.desired_vertices[:,2] = self.cartesian_desired_vertices[:,2] #+ self.pos_reference[0,2]
         #print('self.opt_polytope_gradient_model.d_gamma_hat',self.opt_polytope_gradient_model.d_gamma_hat)
 
         # Bounds created from the robot angles
 
-        self.opt_bounds = self.opt_robot_model.q_joints_bounds
+        self.opt_bounds = self.q_bounds
 
-        #print('self.opt_bounds is',self.opt_bounds)
+        print('self.opt_bounds is',self.opt_bounds)
 
         ### Constraints
+
+        
         cons = ({'type': 'ineq', 'fun': self.constraint_func},\
                 {'type': 'ineq', 'fun': self.constraint_func_Gamma})
+        '''
+        cons = ({'type': 'ineq', 'fun': self.constraint_func})
+        '''
+
+
+
+
 
         '''
         cons = ({'type': 'ineq', 'fun': lambda x:  self.q_joints_input[0] - 2 * x[1] + 2},
@@ -302,99 +359,157 @@ class LaunchRobot():
 
         # jac = self.opt_polytope_gradient_model.d_gamma_hat,
 
-        ### WIth analyitacl gradient
+        ### WIth analytical gradient
+
+        '''
+        
+                    self.q_joints_opt = sco.minimize(fun = self.obj_function,  x0 = self.initial_x0,bounds = self.opt_bounds,\
+                                         jac =self.jac_func,method='SLSQP', \
+                                             options={'disp': True,'maxiter':500})
+        
+        '''
 
         if analytical_solver:
-
-            self.q_joints_opt = sco.minimize(fun = self.obj_function,  x0 = self.initial_x0,bounds = self.opt_bounds,\
-                                         jac =self.jac_func, constraints = cons,method='SLSQP', \
+            q_joints_opt = sco.minimize(fun = self.obj_function,  x0 = self.initial_x0,bounds = self.opt_bounds,\
+                                         jac = self.jac_func, constraints=cons,method='SLSQP',\
                                              options={'disp': True,'maxiter':500})
         else:
 
-            self.q_joints_opt = sco.minimize(fun = self.obj_function,  x0 = self.initial_x0,bounds = self.opt_bounds,\
-                                             jac = None, constraints = cons,method='COBYLA', \
-                                                 options={'disp': True,'maxiter':250})
+            q_joints_opt = sco.minimize(fun = self.obj_function,  x0 = self.initial_x0,bounds = self.opt_bounds,\
+                                             constraints = cons,tol=1e-6,method='COBYLA', \
+                                                 options={'disp': True})
 
 
 
 
+        
 
 
-
+        return q_joints_opt
         #hess = self.hess_func,
         #sco.check_grad(func = self.obj_function, grad =self.opt_polytope_gradient_model.d_gamma_hat \                                  , x0 = self.initial_x0, epsilon=1.4901161193847656e-08, direction='all', seed=None)
         #def constraint2(self):
     ## Obj
-    def obj_function(self,q_des):
+    def obj_function(self,q_in):
 
 
 
         from numpy.linalg import det
         from numpy import sum
 
+
+        print('q_in is',q_in)
+        #input('wait here in the objective function')
+        #pos_act_mat = self.pykdl_util_kin.forward(q0,tip_link,base_link)
+        #pos_act = pos_act_mat[0:3,3]
+        #print('self.pos_reference',self.pos_reference)
+        #print('Current position in optimization is',pos_act)
+        #print('pos_act is this in the objective function',pos_act)
         #input('inside obj func')
         #self.canvas_input_opt.generate_axis()
         #self.opt_robot_model.urdf_transform(q_joints=q_des)
         #canvas_input.generate_axis()
+        J_Hess = jacobianE0(q_in)
+        #J_Hess_pykdl = array(self.pykdl_util_kin.jacobian(q_in))
+        #J_Hess = J_Hess[0:3,:]
+        ##print('J_Hess',J_Hess)
+        #print('J_Hess_pykdl',J_Hess_pykdl)
+        #input('wait here')
+        h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(
+            J_Hess,active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+            qdot_max=self.qdot_max,cartesian_desired_vertices= self.desired_vertices,sigmoid_slope=150)
 
 
+        Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = get_capacity_margin(\
+            J_Hess, n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                        active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+            qdot_max=self.qdot_max,cartesian_desired_vertices= self.desired_vertices,sigmoid_slope=150)
+        
+        self.Gamma_min_softmax = Gamma_min_softmax
+        #print('Current objective function in optimization is',-self.opt_polytope_model.Gamma_min_softmax)
+        print('Current objective function in optimization is',-1.0*Gamma_min_softmax)
+        
 
-        self.opt_polytope_model.generate_polytope_hyperplane(self.opt_robot_model,cartesian_dof_input = array([True,True,True,False,False,False]),
-                                            qdot_min=self.qdot_min, qdot_max=self.qdot_max, \
-                                            cartesian_desired_vertices = self.desired_vertices,sigmoid_slope = self.sigmoid_slope)
-        #self.opt_polytope_model.plot_polytope(self.canvas_input_opt,True,False)
-        '''
-        if self.opt_polytope_model.Gamma_min_softmax < 0:
-            print('self.opt_polytope_model.Gamma_min_softmax',self.opt_polytope_model.Gamma_min_softmax )
-            print('infeasible joint angles are:',q_des)
-            print('jacobian feasilbilty',det(self.opt_robot_model.jacobian_hessian))
-            print('jacobian is',self.opt_robot_model.jacobian_hessian)
-            #print('joint angle bounds are',self.opt_bounds)
-            #input('Infeasible')
-        '''
-
-
-        print('Current objective function in optimization is',-self.opt_polytope_model.Gamma_min_softmax)
-
-        return -self.opt_polytope_model.Gamma_min_softmax
+        #err_pos = abs((norm(pos_act-self.pos_reference) - 1e-6))
+        #print('error',err_pos)
+        #return err_pos
+        return -1.0*self.Gamma_min_softmax
 
 
+    def constraint_func(self,q_in):
 
+        #pos_act_mat = self.pykdl_util_kin.forward(q_in,tip_link,base_link)
+        
+        #pos_act = pos_act_mat[0:3,3]
 
-
-
-    def constraint_func(self,q_des):
-
-        pos_act = pykdl_util_kin.forward(self.q_in,tip_link,base_link)
-        #print('Current position in optimization is',self.pos_act)
+        pos_act = position_70(q_in)
+        print('self.pos_reference',self.pos_reference)
+        print('Current position in optimization is',pos_act)
         #input('Wait here ')
-        return -(norm(pos_act-self.pos_reference) - 1e-3)
+        return ( 1e-3 - norm(pos_act-self.pos_reference))
 
 
 
     ### Constraints should be actual IK - Actual vs desrired - Cartesian pos
 
     ## NOrm -- || || < 1eps-
-    def constraint_func_Gamma(self,q_des):
+    def constraint_func_Gamma(self,q_in):
 
-        self.opt_robot_model.urdf_transform(q_joints=q_des)
+        #self.opt_robot_model.urdf_transform(q_joints=q_des)
         #canvas_input.generate_axis()
+        
+        #J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
 
-        self.opt_polytope_model.generate_polytope_hyperplane(self.opt_robot_model,cartesian_dof_input = array([True,True,True,False,False,False]),
-                                            qdot_min=self.qdot_min, qdot_max=self.qdot_max,
-                                            cartesian_desired_vertices = self.desired_vertices,sigmoid_slope = self.sigmoid_slope)
+        J_Hess = jacobianE0(q_in)
+        #J_Hess = J_Hess[0:3,:]
 
+        #print('self.qdot_min',-1*self.qdot_max)
+        #print('self.qdot_max',self.qdot_max)
+        h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(
+            J_Hess,active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+            qdot_max=self.qdot_max,cartesian_desired_vertices= self.desired_vertices,sigmoid_slope=150)
+
+
+        Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = get_capacity_margin(\
+            J_Hess, n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                        active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+            qdot_max=self.qdot_max,cartesian_desired_vertices= self.desired_vertices,sigmoid_slope=150)
+        
         #print('Current objective in optimization Gamma is',self.opt_polytope_model.Gamma_min_softmax)
-        return self.opt_polytope_model.Gamma_min_softmax
+        return Gamma_min_softmax
 
-    def jac_func(self,q_des):
+    def jac_func(self,q_in):
         from numpy import sum
 
-        self.opt_robot_model.urdf_transform(q_joints=q_des)
+        #J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
+        J_Hess = jacobianE0(q_in)
+        #J_Hess = J_Hess[0:3,:]
+        #print('J_Hess',J_Hess)
+        Hess = getHessian(J_Hess)
+
+        #print('Hessian',Hess)
+
+        #input('wait here for hessian')
+        #J_Hess = J_Hess[0:3,:]
+
+        #print('self.qdot_min',-1*self.qdot_max)
+        #print('self.qdot_max',self.qdot_max)
+        h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(\
+            J_Hess,active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+            qdot_max=self.qdot_max,cartesian_desired_vertices= self.desired_vertices,sigmoid_slope=150)
+
+
+        Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = get_capacity_margin(\
+            J_Hess, n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                        active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+            qdot_max=self.qdot_max,cartesian_desired_vertices= self.desired_vertices,sigmoid_slope=150)
+
 
         #self.opt_polytope_gradient_model.compute_polytope_gradient_parameters(self.opt_robot_model,self.opt_polytope_model)
         #self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=1000)
-        jac_output = self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=self.sigmoid_slope)
+        jac_output = Gamma_hat_gradient(J_Hess,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+                        p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
+                        self.qdot_min,self.qdot_max,self.desired_vertices,sigmoid_slope=150)
         #print('jac_output',jac_output)
 
         #jac_output = sum(jac_output)

@@ -45,9 +45,10 @@ def plot_polytope_3d(poly):
 def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope):
 
     from numpy import unravel_index,argmax,min,zeros,count_nonzero
-    ### Declarations here
+    ### Declarations here 
 
     ## Import robot
+    
 
     deltaqq = qdot_max - qdot_min
 
@@ -71,9 +72,9 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
 
 
 
-    #print('Nmatrix is',self.Nmatrix)
+    #print('Nmatrix is',Nmatrix)
 
-    #print('self.Nnot is',self.Nnot)
+    #print('self.Nnot is',Nnot)
     number_of_combinations = shape(Nmatrix)[0]
 
     # Generalized cross-product need to be implemented in the future
@@ -265,7 +266,8 @@ def get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
     cartesian_dof = count_nonzero(cartesian_dof_mask)
     v_k = zeros(shape = (cartesian_dof,active_joints))
 
-
+    #print('cartesian_dof_mask',cartesian_dof_mask)
+    #print('JE',JE)
     v_k = JE[cartesian_dof_mask,:]
     JE = v_k
 
@@ -375,7 +377,7 @@ def get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
 
     #print('Gamma_min',Gamma_min)
     #print('Gamma_min_index_hat',Gamma_min_index_hat)
-    print('facet_pair_idx',facet_pair_idx)
+    #print('facet_pair_idx',facet_pair_idx)
 
 
 

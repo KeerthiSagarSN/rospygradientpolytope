@@ -129,6 +129,7 @@ def getHessian(J):
                 a_rows36 = np.hstack((np.zeros([3, 3]), omega_j_hat))
                 a = np.vstack([a_rows13, a_rows36])
                 H[:, i, j] = np.matmul(a, twist_i)
+    
     return H
 
 def getHessian_2(J):

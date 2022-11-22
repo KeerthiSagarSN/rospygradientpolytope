@@ -5,14 +5,12 @@ Created on Thu Sep 15 16:56:56 2022
 @author: keerthi.sagar
 """
 
-from numpy import cross,matmul
-from linearalgebra import skew
-from numpy import cross,transpose,matmul,sqrt
 
-from numpy import matmul,transpose,cross,dot
-from linearalgebra import V_unit
+
+from numpy import matmul,transpose,cross,dot,sqrt
+from rospygradientpolytope.linearalgebra import V_unit,skew
 from numpy.linalg import norm
-from numpy import cross,matmul
+
     
 # Eq.45 is here
 # Input Hessian , dq
@@ -73,6 +71,7 @@ def cross_product_gradient(twist_index_1,twist_index_2,JE,H,test_joint): # Input
     v1 = JE[0:3,twist_index_1]
     v2 = JE[0:3,twist_index_2]
     
+    #print('dv1_dq',dv1_dq)
     #return matmul(-skew(v2), dv1_dq) + matmul(skew(v1), dv2_dq)
     
     
@@ -208,14 +207,20 @@ def normal_gradient(twist_index_1,twist_index_2,JE,H,test_joint):
         
     #  (d(v1xv2)/dq)( ||v1 x v2||)  -  (v1 x v2)(d(|| v1 x v2 ||)/dq)/(|| v1 x v2 ||^2)
     
-
+    #print('JE 1',twist_index_1)
+   
+    
     
     v1_x_v2 = cross(JE[0:3,twist_index_1],JE[0:3,twist_index_2])
     
     #print('v1_x_v2',v1_x_v2)
     v1_x_v2_norm = norm(v1_x_v2)
+
+    #print('v1_x_v2_norm',v1_x_v2_norm)
     
     d_v1_x_v2_dq = cross_product_gradient(twist_index_1, twist_index_2, JE,H,test_joint)
+
+    #print('d_v1_x_v2_dq',d_v1_x_v2_dq)
     
     d_v1_x_v2_norm_dq = cross_product_norm_gradient(twist_index_1,twist_index_2,JE,H,test_joint)
     
@@ -223,7 +228,7 @@ def normal_gradient(twist_index_1,twist_index_2,JE,H,test_joint):
     numerator = d_v1_x_v2_dq*v1_x_v2_norm - (v1_x_v2*d_v1_x_v2_norm_dq)
     
     denom = v1_x_v2_norm**2
-    #print('denom',denom)
+    #print('numerator',numerator)
     
     return numerator*(denom**(-1))
  
@@ -235,7 +240,7 @@ def sigmoid_gradient(twist_index_1,twist_index_2,twist_index_projected,JE,H,test
     
     ### dsig(x)/dq = sig(x)(1-sig(x))dx/dq
     from numpy import cross,matmul,transpose
-    from robot_functions import sigmoid
+    from rospygradientpolytope.robot_functions import sigmoid
     
     v1 = JE[0:3,twist_index_1]
     v2 = JE[0:3,twist_index_2]
