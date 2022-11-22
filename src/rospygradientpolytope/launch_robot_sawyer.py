@@ -218,7 +218,7 @@ class LaunchRobot():
         print('Velocity limits are', self.qdot_limit)
         input('stop here')
         self.Gamma_min_softmax = None
-        self.pos_desired = array([[0.51, 0.41, 0.55]])
+        self.pos_desired = array([[0.45, 0.32, 0.525]])
 
         #self.q_joints_opt = None
 
@@ -446,20 +446,20 @@ class LaunchRobot():
         print('self.pos_reference',self.pos_reference)
         print('Current position in optimization is',pos_act)
         #input('Wait here ')
-        return ( 1e-3 - norm(pos_act-self.pos_reference))
+        return ( 1e-2 - norm(pos_act-self.pos_reference))
 
 
 
     ### Constraints should be actual IK - Actual vs desrired - Cartesian pos
 
     ## NOrm -- || || < 1eps-
-    def constraint_func_Gamma(self,q_in):
+    def constraint_func_Gamma(self):
 
         #self.opt_robot_model.urdf_transform(q_joints=q_des)
         #canvas_input.generate_axis()
         
         #J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
-
+        '''
         J_Hess = jacobianE0(q_in)
         #J_Hess = J_Hess[0:3,:]
 
@@ -474,9 +474,9 @@ class LaunchRobot():
             J_Hess, n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
                         active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
             qdot_max=self.qdot_max,cartesian_desired_vertices= self.desired_vertices,sigmoid_slope=150)
-        
+        '''
         #print('Current objective in optimization Gamma is',self.opt_polytope_model.Gamma_min_softmax)
-        return Gamma_min_softmax
+        return self.Gamma_min_softmax
 
     def jac_func(self,q_in):
         from numpy import sum
