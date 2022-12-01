@@ -382,11 +382,24 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
         #input('wait here 1')
         Gamma_all_array = -1*Gamma_total_hat
         
-        d_LSE_dq = exp_normalize(Gamma_all_array[Gamma_min_index_hat])
+        d_LSE_dq_arr = exp_normalize(10000*Gamma_all_array)
+
+        d_LSE_dq = max(d_LSE_dq_arr)
         
+        d_LSE_dq_min = d_LSE_dq_arr[Gamma_min_index_hat]
+
+        #print('d_LSE_dq',d_LSE_dq)
+        #print('d_LSE_dq_min',d_LSE_dq_min)
+        #input('stop here to do the checking')
         
 
         d_gamma_hat[test_joint] = 1.0*d_LSE_dq*d_gamma_max_dq
+
+        #print('d_gamma_hat[test_joint]',d_gamma_hat[test_joint] )
+        #print('d_LSE_dq',d_LSE_dq)
+
+        #print('d_gamma_max_dq',d_gamma_max_dq)
+        #input('stop here')
         
         #d_softmax_dq[test_joint] = d_gamma_hat[test_joint]*(1-d_gamma_hat[test_joint])
         
@@ -410,7 +423,7 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
             #input('stpo')
             self.d_gamma_hat[test_joint] = 1.0*self.d_gamma_hat[test_joint]
         '''
-    print('d_gamma_hat',d_gamma_hat)
+    #print('d_gamma_hat',d_gamma_hat)
     return d_gamma_hat
             
     
