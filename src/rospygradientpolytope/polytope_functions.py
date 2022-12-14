@@ -52,7 +52,7 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
 
     deltaqq = qdot_max - qdot_min
 
-    deltaqq = deltaqq
+    
 
     ### Cartesian degrees of freedom - Mostly 3 - Velocity
     ## Input a 6x1^T vector - [vx=True,vy=True,vz=True,wx=False,wy=False,wz = False]

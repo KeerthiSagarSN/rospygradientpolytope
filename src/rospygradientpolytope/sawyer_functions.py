@@ -7417,6 +7417,7 @@ def jacobian70(q):
     return jacobian_sawyer
 
 def jacobianE0(q):
+    #end_effector_offset=np.array([0.55,0.0,0.0])
     end_effector_offset=np.array([0.55,0.0,0.0])
     J=jacobian70(q)
     T=transform_70(q)

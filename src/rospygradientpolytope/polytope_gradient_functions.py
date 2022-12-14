@@ -227,7 +227,7 @@ def Gamma_hat_gradient_joint(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plu
     d_Gamma_plus_flat = check_ndarray(d_Gamma_plus)
     d_Gamma_minus_flat = check_ndarray(d_Gamma_minus)
     
-    d_Gamma_all = hstack((d_Gamma_plus_flat,d_Gamma_minus_flat))
+    d_Gamma_all = hstack((d_Gamma_plus_flat,-d_Gamma_minus_flat))
     
     #Eq. 35 is here
     #d_Gamma_hat_d_Gamma = exp_normalize(-Gamma_total)
@@ -359,7 +359,8 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
     
     sigmoid_slope_joint = sigmoid_slope
     
-    
+    #print('Jacobian inside Gamma_hat_gradient',JE)
+    input('Jacobian inside Gamma_hat_gradient')
     
     for test_joint in range(0,shape(JE)[1]):
         
@@ -370,6 +371,7 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
                         p_minus_hat,qdot_min,qdot_max,cartesian_desired_vertices,test_joint,sigmoid_slope_joint)    
             
             
+        #print('d_Gamma_all',d_Gamma_all)
         #Gamma_gradient(test_joint,sigmoid_slope)
         
         ### Analytical gradient of gamma is here: 
@@ -380,20 +382,32 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
         
         #print('Gamma_hat--> check if positive',self.polytope_model.Gamma_total_hat)
         #input('wait here 1')
-        Gamma_all_array = -1*Gamma_total_hat
+        #Gamma_all_array = -1*Gamma_total_hat
+        Gamma_all_array = -1.0*Gamma_total_hat
         
-        d_LSE_dq_arr = exp_normalize(10000*Gamma_all_array)
+        d_LSE_dq_arr = exp_normalize(100000000000000.0*Gamma_all_array)
 
-        d_LSE_dq = max(d_LSE_dq_arr)
+        print('d_LSE_dq_arr',d_LSE_dq_arr)
+        #d_LSE_dq = max(d_LSE_dq_arr)
+        #d_LSE_dq = max(d_LSE_dq_arr)
+
+        d_LSE_dq = d_LSE_dq_arr[Gamma_min_index_hat]
+
+
         
-        d_LSE_dq_min = d_LSE_dq_arr[Gamma_min_index_hat]
+        #d_LSE_dq_min = d_LSE_dq_arr[Gamma_min_index_hat]
 
-        #print('d_LSE_dq',d_LSE_dq)
+        print('d_LSE_dq',d_LSE_dq)
+        print('test_joint',test_joint)
+        print('d_gamma_max_dq',d_gamma_max_dq)
         #print('d_LSE_dq_min',d_LSE_dq_min)
-        #input('stop here to do the checking')
+
+        
         
 
         d_gamma_hat[test_joint] = 1.0*d_LSE_dq*d_gamma_max_dq
+
+        #d_gamma_hat[test_joint] = 1.0*d_gamma_max_dq
 
         #print('d_gamma_hat[test_joint]',d_gamma_hat[test_joint] )
         #print('d_LSE_dq',d_LSE_dq)

@@ -6,13 +6,20 @@ Created on Tue Jul 26 14:44:09 2022
 """
 import scipy.optimize as sco
 
-from numpy import array,pi
+from numpy import array,pi,vstack,linspace,shape,zeros
 from numpy.linalg import norm
 from numpy.random import randn
 
 from shapely.geometry import Polygon,LineString
 from linearalgebra import isclose
 import matplotlib.pyplot as plt
+from polytope_functions_2D import get_capacity_margin, get_polytope_hyperplane
+from WrenchMatrix import get_wrench_matrix
+
+from visual_polytope import force_polytope_2D
+
+import time
+
 #from GenerateCanvas import GenerateCanvas
 #import cProfile
 #from linearalgebra import 
@@ -30,7 +37,8 @@ class OptimizationModel:
 
         self.gamma_input = None
         self.func_deriv = None
-        self.bnds = (-1.0,1.0)
+
+        #self.bnds = (-1.0,1.0)
 
         self.initial_x0 = None
         self.cons = None
@@ -39,7 +47,7 @@ class OptimizationModel:
         self.opt_polytope_gradient_model = None
         self.qdot_min = None
         self.qdot_max = None
-        self.desired_vertices = None
+        self.cartesian_desired_vertices = None
 
         ##### Optimization PLot
 
@@ -91,10 +99,220 @@ class OptimizationModel:
         self.roi_center = None
         
         self.pos_bounds = None
+
+        # Length of the base point frame 
+        self.length_params = None
+        self.height_params = None
+
+        self.active_joints = None
+
+        self.sigmoid_slope = None
+
+        self.cartesian_dof_input = None
+
+        self.step_size = None
+
+
+        
     ## Constraint equations - Cons1
 
     #ef constraint1(self):
 
+
+    def generate_workspace(self):
+
+        # Plot the obstacle with cable and base_points
+
+        #ax = figure1.add_subplot(111, projection='2d')
+
+
+        #global figure1
+        #figure1 = plt.figure()
+
+        #plt.ion()
+
+        #plt.show()
+
+        color_arr = ['k','r','b','c']
+
+        self.active_joints = len(self.base_points)
+
+        q_boundary_actual = array([[-10000,-10000]])
+        q_boundary_estimated = array([[-10000,-10000]])
+        
+
+        q_feasible = array([[-10000,-10000]])
+        q_infeasible = array([[-10000,-10000]])
+        
+
+        q_in_x = linspace(self.pos_bounds[0,0],self.pos_bounds[0,1],self.step_size)
+        q_in_y = linspace(self.pos_bounds[1,0],self.pos_bounds[1,1],self.step_size)
+
+
+
+        loop_counter = 0
+        
+        for i in range(len(q_in_x)):
+            x_in = q_in_x[i]
+            for j in range(len(q_in_y)):
+                
+
+                print('loop_counter is',loop_counter)
+
+                loop_counter += 1
+                y_in = q_in_y[j]
+
+
+                q = array([x_in,y_in])
+
+
+
+
+                #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+                
+                W = zeros(shape=(2,self.active_joints))
+                for k in range(len(self.base_points)):
+                    cable_plt = array([[x_in,self.base_points[k,0]],[y_in,self.base_points[k,1]]])
+                    W[0,k] = self.base_points[k,0] - x_in 
+                    W[1,k] = self.base_points[k,1] - y_in
+                    #plt.plot(cable_plt[0,:],cable_plt[1,:],color = color_arr[k])
+                    #plt.pause(0.01)
+                    #print('cable number is:',k)
+                #print('Wrench matrix is is',W)
+                
+                #W = W
+                
+                #print('Wrench matrix is here', W)
+                #input('wait here')
+
+                
+                #input('stop here')
+                #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+
+                #W = -W
+                
+
+                #W = W_n
+                #JE = W
+                #print('JE is',JE)
+                #print('H is',H)
+                #print('Wrench matrix is', J)
+
+                h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = \
+                    get_polytope_hyperplane(W,self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.sigmoid_slope)
+                    
+                
+                Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = \
+                get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                        self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
+                
+                
+
+                
+ 
+                
+                #plt.scatter(self.base_points[:,0],self.base_points[:,1],color='k')
+                tol_value = 1e-1
+
+                #print('Gamma_min',Gamma_min)
+
+                #print('Gamma_min_softmax',Gamma_min_softmax)
+
+                #input('check estimates')
+                
+                if (Gamma_min_softmax < tol_value) and (Gamma_min_softmax) > -tol_value:
+                    #print('inside WFW - estimated')
+                    #input('stop here')
+                    print('estimated infeasible point')
+                    q_boundary_estimated = vstack((q_boundary_estimated,q))
+
+                #print('Gamma_min is',Gamma_min)
+
+                if (Gamma_min) > tol_value :
+                    print('feasible point')
+                    q_feasible = vstack((q_feasible,q))
+
+                    
+                
+                
+                
+                elif (Gamma_min) < -tol_value :
+
+                    print('infeasible point')
+                    q_infeasible = vstack((q_infeasible,q))
+
+                
+                elif (Gamma_min < tol_value) and (Gamma_min > -tol_value):
+                    
+                    print('infeasible point')
+                    '''
+                    polytope_vertices, polytope_faces, facet_pair_idx, capacity_margin_faces, \
+                        capacity_proj_vertex, polytope_vertices_est, polytope_faces_est, capacity_margin_faces_est, capacity_proj_vertex_est = \
+                            force_polytope_2D(W,self.qdot_min, self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
+                    '''
+                    #figure1.canvas.draw()
+                    #print('inside WFW - actual')
+                    
+                    #input('stop here')
+                    #print('Feasiblyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy')
+                    
+                    #scaling_factor = 0.005
+                    #cartesian_desired_vertices_plt = (scaling_factor*self.cartesian_desired_vertices) + array([[x_in,y_in]])
+
+                    #plt.plot(cartesian_desired_vertices_plt[:,0], cartesian_desired_vertices_plt[:,1],color = 'green')
+
+                    #print('polytope_Vertices before',polytope_vertices)
+                    #polytope_vertices = vstack((polytope_vertices,polytope_vertices[0,:]))
+                    #polytope_vertices_plt = (scaling_factor*polytope_vertices) + array([[x_in,y_in]])
+
+                    #print('polytope_Vertices after',polytope_vertices)
+                    
+                    #plt.plot(polytope_vertices_plt[:,0], polytope_vertices_plt[:,1],color = 'k')
+
+                    #print('polytope_Vertices offset',polytope_vertices)
+                    #print('polytope_faces',polytope_faces)
+
+                    #print('facet_pair_idx',facet_pair_idx)
+                    #print('capacity_margin_faces',capacity_margin_faces)
+                    #print('capacity_proj_vertex',capacity_proj_vertex)
+                    #desired_vertex_set = plt.scatter(cartesian_desired_vertices_plt[:,0], cartesian_desired_vertices_plt[:,1],color = 'k')
+                    
+                    '''
+                    for i in range(len(n_k)):
+                        
+                        plt.plot([x_in,1*n_k[i,0]],[y_in,1*n_k[i,1]],color=color_arr[i])
+                    '''
+                    #plt.cla()
+
+                    #figure1.canvas.flush_events()
+
+
+                    q_boundary_actual = vstack((q_boundary_actual,q))
+
+                    #input('testing here')
+
+                    
+                    
+                    #plt.show()
+
+                
+
+                    
+
+                #plt.pause(0.01)
+                #plt.gcf().clear()
+        
+        q_feasible = q_feasible[1:,:]
+        q_infeasible = q_infeasible[1:,:]
+        q_boundary_estimated = q_boundary_estimated[1:,:]
+        q_boundary_actual = q_boundary_actual[1:,:]
+
+
+
+        return q_boundary_actual , q_boundary_estimated, q_feasible, q_infeasible
+        
+
+        
 
 
     ## Constraint equations - Cons2
@@ -114,8 +332,8 @@ class OptimizationModel:
         #self.canvas_input_opt.set_params(view_ang1=30,view_ang2=45,x_limits=[-20,20],y_limits=[-20,20],z_limits=[-20,20],axis_off_on = True)
 
         # Plot the obstacle with cable and base_points
-        global figure1
-        figure1 = plt.figure()
+        global figure2
+        figure2 = plt.figure()
         '''
         
         self.sigmoid_slope = sigmoid_slope_inp
@@ -236,7 +454,7 @@ class OptimizationModel:
         if self.analytical_solver:
 
             self.q_joints_opt = sco.minimize(fun = self.obj_function,  x0 = self.initial_x0,bounds = self.pos_bounds,\
-                                         jac =None, constraints = cons,method='SLSQP', \
+                                         jac =self.jac_func, constraints = cons,method='SLSQP', \
                                              options={'disp': True,'maxiter':5000})
         else:
 

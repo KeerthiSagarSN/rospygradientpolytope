@@ -47,13 +47,14 @@ from rospygradientpolytope.visual_polytope import velocity_polytope,desired_poly
 from rospygradientpolytope.polytope_ros_message import create_polytopes_msg, create_polygon_msg,create_capacity_vertex_msg, create_segment_msg
 from rospygradientpolytope.polytope_functions import get_polytope_hyperplane, get_capacity_margin
 from rospygradientpolytope.polytope_gradient_functions import Gamma_hat_gradient, Gamma_hat_gradient_joint
-from rospygradientpolytope.sawyer_functions import jacobianE0, position_70
+from rospygradientpolytope.sawyer_functions import jacobianE0, position_70, jacobian70
 from rospygradientpolytope.robot_functions import getHessian, exp_normalize
 
 #################### Linear Algebra ####################################################
 
 from numpy.core.numeric import cross
 from numpy import matrix,matmul,transpose,isclose,array,rad2deg,abs,vstack,hstack,shape,eye,zeros,ones , random, savez, load
+from numpy import polyfit,poly1d
 
 from numpy.linalg import norm,det
 from math import atan2, pi,asin,acos
@@ -100,7 +101,7 @@ robot_urdf = URDF.from_parameter_server()
 ### For Universal Robot - UR5
 base_link = "right_arm_base_link"
 
-tip_link = "right_l6"
+tip_link = "right_hand"
 
 
 
@@ -162,7 +163,7 @@ class LaunchSawyerRobot():
 
         #self.robot_joint_state_subscriber = rospy.Subscriber("/joint_states",JointState,self.joint_state_callback,queue_size=1)
 
-        self.cartesian_desired_vertices = array([[0.20000, 0.50000, 0.50000],
+        self.cartesian_desired_vertices = 0.5*array([[0.20000, 0.50000, 0.50000],
                                         [0.50000, -0.10000, 0.50000],
                                         [0.50000, 0.50000, -0.60000],
                                         [0.50000, -0.10000, -0.60000],
@@ -172,11 +173,11 @@ class LaunchSawyerRobot():
                                         [-0.30000, -0.10000, -0.60000]])
         
         
-        self.desired_vertices = zeros(shape = (len(self.cartesian_desired_vertices),3))
+        self.desired_vertices = self.cartesian_desired_vertices
         
         self.pub_rate = 500 #Hz
 
-        self.sigmoid_slope = 150
+        #self.sigmoid_slope = 150
         self.robot_joint_names = ['right_j0','right_j1','right_j2','right_j3','right_j4','right_j5','right_j6']
 
         self.robot_joint_names_pub = ['right_j0','head_pan','right_j1','right_j2','right_j3','right_j4','right_j5','right_j6']
@@ -198,8 +199,8 @@ class LaunchSawyerRobot():
         self.qdot_max = array(self.qdot_limit)
         self.qdot_min = -1*self.qdot_max
 
-        print('self.qdot_max',self.qdot_max)
-        print('self.qdot_min',self.qdot_min)
+        #print('self.qdot_max',self.qdot_max)
+        #print('self.qdot_min',self.qdot_min)
         self.q_in = zeros(7)
 
 
@@ -217,20 +218,29 @@ class LaunchSawyerRobot():
         self.q_lower_limit = array([self.pykdl_util_kin.joint_limits_lower]).T
         #self.q_lower_limit = self.pykdl_util_kin.joint_limits_lower
 
+        
+        BASE_PATH = "/home/imr/catkin_ws_build/src/rospygradientpolytope/test_results/"
+        test_case = 3
+        self.test_case = test_case
+        file_name = 'q_in_sawyer_test_'+str(test_case)
         '''
+        
         ## First generate a list of random joints in numpy and save in numpy savez array - First generation
-        self.q_in_array = zeros(shape = (100,7))
-        for i in range(100):
-            for j in range(7):
-                self.q_in_array[i,j] = random.uniform(self.q_lower_limit[j,0],self.q_upper_limit[j,0])
+        self.q_in_array = zeros(shape = (1000,7))
+        #for i in range(100):
+        for j in range(7):
+            self.q_in_array[:,j] = random.uniform(self.q_lower_limit[j,0],self.q_upper_limit[j,0],size=(1000))
         
         # Save the file as npz 
-        savez('q_in_sawyer', q_in_arr = self.q_in_array)
+        #savez('q_in_sawyer', q_in_arr = self.q_in_array)
+        savez(os.path.join(BASE_PATH, file_name),q_in_arr = self.q_in_array)
         '''
         # Load random joint configurations within the limit
-            
-        q_in_array_load = load('q_in_sawyer.npz')
-        self.q_in_array = q_in_array_load['q_in_arr']
+        data_load = load(os.path.join(BASE_PATH, file_name)+str('.npz'))
+        #q_in_array_load = load('q_in_sawyer_test_1.npz')
+        self.q_in_array = data_load['q_in_arr']
+
+        
 
         #print('self.q_in_array',self.q_in_array)
 
@@ -245,18 +255,40 @@ class LaunchSawyerRobot():
         #print('self.q_bounds',self.q_bounds)
         #print('self.q_upper_limit',self.q_upper_limit)
         #print('self.q_lower_limit',self.q_lower_limit)
-        print('Velocity limits are', self.qdot_limit)
+        #print('Velocity limits are', self.qdot_limit)
         #input('stop here')
         self.Gamma_min_softmax = None
         self.pos_desired = array([[0.49, 0.412, 0.625]])
 
         seq_list = range(0,100)
         random_array_test = random.randint(100, size=10)
-        print('random_array_test',random_array_test)
-        input('wait here')
-        sigmoid_slope_test = array([50,100,150,200,400])
-        for i in range(5):
-            self.test_Gamma_vs_Gamma_hat(sigmoid_slope_test[i])
+        #print('random_array_test',random_array_test)
+        #input('wait here')
+
+        #while not rospy.is_shutdown():
+            
+        self.sigmoid_slope_test = array([50,100,150,200,400])
+
+        self.Error_gamma_array = zeros(shape=(len(self.q_in_array),len(self.sigmoid_slope_test)))
+
+        self.ts_arr = zeros(shape=(len(self.q_in_array),len(self.sigmoid_slope_test)))
+
+        self.Gamma_min_array =  zeros(shape=(len(self.q_in_array),len(self.sigmoid_slope_test)))
+
+        self.Gamma_min_softmax_array =  zeros(shape=(len(self.q_in_array),len(self.sigmoid_slope_test)))
+
+
+        #self.test_Gamma_vs_Gamma_hat(self.sigmoid_slope_test)
+        self.test_joint = 5
+        # Random configuration from the generated list
+        self.random_q_config = 374
+        self.step_size = 0.001
+        self.iter_limit = 500
+        self.test_Gamma_vs_Gamma_hat_gradient(self.test_joint,self.random_q_config,self.iter_limit,self.step_size,self.sigmoid_slope_test)
+
+        
+            
+            
         
        
         
@@ -312,10 +344,6 @@ class LaunchSawyerRobot():
             mutex.release()
         '''
     
-    def analyze_test_Gamma_vs_Gamma_hat():
-
-
-        from numpy import load
 
 
     def test_Gamma_vs_Gamma_hat(self,sigmoid_slope_test):
@@ -323,6 +351,8 @@ class LaunchSawyerRobot():
         import time
         from numpy.linalg import det
         from numpy import sum,mean,average
+        import matplotlib.pyplot as plt
+
         #from numpy.random import randn
         #from numpy.linalg import norm
         #from linearalgebra import V_unit
@@ -335,7 +365,7 @@ class LaunchSawyerRobot():
         #from numpy.linalg import det
         #from numpy import sum
 
-        sigmoid_slope_inp = sigmoid_slope_test
+        
 
         
 
@@ -351,66 +381,733 @@ class LaunchSawyerRobot():
         #self.opt_robot_model.urdf_transform(q_joints=q_des)
         #canvas_input.generate_axis()
         BASE_PATH = "/home/imr/catkin_ws_build/src/rospygradientpolytope/test_results/"
-        
+        #test_case = 1
+        #file_name = 'q_arr_sawyer_test_'+str(test_case)
         
         #full_name = os.path.join(BASE_PATH, file_name)
-        print('completed one test case')
-
-        Gamma_min_array = zeros(shape = len(self.q_in_array))
-        Gamma_min_softmax_arr = zeros(shape = len(self.q_in_array))
-        Error_arr = zeros(shape = len(self.q_in_array))
-        ts_arr = zeros(shape = len(self.q_in_array))
-        for i in range(len(self.q_in_array)):
-            start_time = time.time()
-            J_Hess = jacobianE0(self.q_in_array[i,:])   
-            #J_Hess_pykdl = array(self.pykdl_util_kin.jacobian(q_in))
-            #J_Hess = J_Hess[0:3,:]
-            ##print('J_Hess',J_Hess)
-            #print('J_Hess_pykdl',J_Hess_pykdl)
-            #input('wait here')
-            h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(
-                J_Hess,active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
-                qdot_max=self.qdot_max,cartesian_desired_vertices= self.cartesian_desired_vertices,sigmoid_slope=sigmoid_slope_inp )
-
-
-            Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = get_capacity_margin(\
-                J_Hess, n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
-                            active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
-                qdot_max=self.qdot_max,cartesian_desired_vertices= self.cartesian_desired_vertices,sigmoid_slope=sigmoid_slope_inp )
-            Gamma_min_array[i] = Gamma_min
-            Gamma_min_softmax_arr[i] = Gamma_min_softmax
-
-
-            Gamma_min_prev = Gamma_min_softmax
-
-            #for i in range(0,limit,step_size):
-
-            Error_arr[i] = ((Gamma_min_softmax - Gamma_min)/(1.0*Gamma_min))*100 
-            ts_arr[i] = (time.time() - start_time)
-
-
-
-            file_name = 'sawyer_test_Gamma_vs_Gamma_hat_slope_'+str(sigmoid_slope_inp) + str('_') + str(i)
         
-            savez(os.path.join(BASE_PATH, file_name),q_in = self.q_in_array,sigmoid_slope_inp = sigmoid_slope_inp, ts = ts_arr[i],\
-                h_plus = h_plus, h_plus_hat = h_plus_hat, h_minus = h_minus, h_minus_hat = h_minus_hat,\
-            Gamma_minus = Gamma_minus, Gamma_plus = Gamma_plus, Gamma_total_hat = Gamma_total_hat, Gamma_min = Gamma_min, Gamma_min_softmax = Gamma_min_softmax, \
-                Gamma_min_index_hat =  Gamma_min_index_hat, facet_pair_idx = facet_pair_idx, hyper_plane_sign = hyper_plane_sign)
+
+        #Gamma_min_array = zeros(shape = len(self.q_in_array))
+        #Gamma_min_softmax_arr = zeros(shape = len(self.q_in_array))
+        #Error_arr = zeros(shape = len(self.q_in_array))
+        #ts_arr = zeros(shape = len(self.q_in_array))
+
+        Gamma_min_prev = None
+
+        test_joint = 0
+        #q_add = zeros(7)
+        #q_add[test_joint] = 1
+        step_size = 0.001
+
+        ## 52,47, 33 test case works perfectly
+
+        #q_in = self.q_in_array[33,:]
+        '''
+        q_in = q_add
+        q_in[0] = 0.50
+        q_in[1] = 0.25
+        q_in[2] = -0.46
+        q_in[3] = -0.75
+        q_in[4] = 0.75
+        q_in[5] = 1.50
+        q_in[6] = -0.76
+        '''
+        #q_in = self.q_in_array[57,:]
+        for j in range(0,len(sigmoid_slope_test)):
+            sigmoid_slope_inp = sigmoid_slope_test[j]
+            print('completed one test case')
+            for i in range(len(self.q_in_array)):
+                start_time = time.time()
+                #q_in[test_joint] += step_size
+                q_in = self.q_in_array[i,:]
+                self.q_in = q_in
+
+                #print('self.q_in',q_in)
+
+                #self.joint_state_publisher_robot()
+                #time.sleep(0.5)
+
+                # Publish joint sates to Rviz for the robot
                 
+
+                #J_Hess = jacobianE0(q_in) 
+                #ef_pose = self.pykdl_util_kin.forward(q_in)[:3,3]
+                J_Hess = array(self.pykdl_util_kin.jacobian(q_in,pos=None))
+
+
+                #q_in = 
+                #J_Hess_pykdl = array(self.pykdl_util_kin.jacobian(q_in))
+                #J_Hess = J_Hess[0:3,:]
+                ##print('J_Hess',J_Hess)
+                #print('J_Hess_pykdl',J_Hess_pykdl)
+                #input('wait here')
+                h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(
+                    J_Hess,active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+                    qdot_max=self.qdot_max,cartesian_desired_vertices= self.cartesian_desired_vertices,sigmoid_slope=sigmoid_slope_inp )
+
+
+                Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = get_capacity_margin(\
+                    J_Hess, n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                                active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+                    qdot_max=self.qdot_max,cartesian_desired_vertices= self.cartesian_desired_vertices,sigmoid_slope=sigmoid_slope_inp )
+                #self.Gamma_min_array[i] = Gamma_min
+                #Gamma_min_softmax_arr[i] = Gamma_min_softmax
+
+
+
+
+            
+                scaling_factor = 10.0
+
+                '''    
+                ### Actual polytope plot
+                polytope_verts, polytope_faces, facet_vertex_idx, capacity_faces, capacity_margin_proj_vertex = \
+                                                velocity_polytope(pykdl_kin_jac,self.qdot_limit,-1*self.qdot_limit)
+                '''
+                
+                ### Polytope plot with estimation
+                '''
+                #pykdl_kin_jac = pykdl_util_kin.jacobian(self.q_in_numpy)
+                polytope_verts, polytope_faces, facet_vertex_idx, capacity_faces, capacity_margin_proj_vertex, \
+                    polytope_verts_est, polytope_faces_est, capacity_faces_est, capacity_margin_proj_vertex_est = \
+                                                velocity_polytope_with_estimation(J_Hess,self.qdot_max,self.qdot_min,self.cartesian_desired_vertices,sigmoid_slope_inp)
+                desired_polytope_verts, desired_polytope_faces = desired_polytope(self.cartesian_desired_vertices)
+
+                #print('facet_vertex_idx',facet_vertex_idx)
+                #print('capacity_margin_proj_vertex',capacity_margin_proj_vertex)
+                #print('capacity_margin_proj_vertex_est',capacity_margin_proj_vertex_est)
+                
+
+                # Only for visualization - Polytope at end-effector - No physical significance
+                #ef_pose = pykdl_util_kin.forward(self.q_in_numpy)[:3,3]
+
+                mutex.acquire()
+                
+
+                # Get end-effector of the robot here for the polytope offset
+
+                #ef_pose = position_70(q_in)
+
+                ef_pose = self.pykdl_util_kin.forward(q_in)[:3,3]
+
+                ########### Actual POlytope plot ###########################################################################
+                # Publish polytope faces
+                polyArray_message = self.publish_velocity_polytope.publish(create_polytopes_msg(polytope_verts, polytope_faces, \
+                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
+                
+                
+                ### Desired polytope set - Publish
+
+                DesiredpolyArray_message = self.publish_desired_polytope.publish(create_polytopes_msg(desired_polytope_verts, desired_polytope_faces, \
+                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
+
+
+                ### Vertex for capacity margin on the Desired Polytope
+                #print('facet_vertex_idx',facet_vertex_idx)
+                closest_vertex = self.cartesian_desired_vertices[facet_vertex_idx[0,1]]
+                #print('closest_vertex',closest_vertex)
+
+                CapacityvertexArray_message = self.publish_vertex_capacity.publish(create_capacity_vertex_msg(closest_vertex, \
+                                                                                            ef_pose, "right_arm_base_link", scaling_factor))
+                
+                ### Vertex for capacity margin on the Available Polytope
+                CapacityprojvertexArray_message = self.publish_vertex_proj_capacity.publish(create_capacity_vertex_msg(capacity_margin_proj_vertex, \
+                                                                                            ef_pose, "right_arm_base_link", scaling_factor))
+                ### Plane for capacity margin 
+                #print('capacity_faces',capacity_faces)
+
+                ### Vertex for capacity margin on the Available Polytope
+                CapacitymarginactualArray_message = self.publish_capacity_margin_actual.publish(create_segment_msg(closest_vertex, \
+                                                    capacity_margin_proj_vertex,ef_pose, "right_arm_base_link", scaling_factor))
+                
+                capacityArray_message = self.publish_capacity_margin_polytope.publish(create_polytopes_msg(polytope_verts, capacity_faces, \
+                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
+
+
+                ########### Estimated Polytope plot ###########################################################################
+                
+                # Publish polytope faces
+                EstpolyArray_message = self.publish_velocity_polytope_est.publish(create_polytopes_msg(polytope_verts_est, polytope_faces_est, \
+                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
+                
+                
+
+                ### Vertex for capacity margin on the Available Polytope
+                EstCapacityprojvertexArray_message = self.publish_vertex_proj_capacity_est.publish(create_capacity_vertex_msg(capacity_margin_proj_vertex_est, \
+                                                                                            ef_pose, "right_arm_base_link", scaling_factor))
+
+
+                ### Vertex for capacity margin on the Available Polytope
+                EstCapacitymarginactualArray_message = self.publish_capacity_margin_actual_est.publish(create_segment_msg(closest_vertex, \
+                                                    capacity_margin_proj_vertex_est,ef_pose, "right_arm_base_link", scaling_factor))
+                
+
+                EstcapacityArray_message = self.publish_capacity_margin_polytope_est.publish(create_polytopes_msg(polytope_verts_est, capacity_faces_est, \
+                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
+
+                
+                ### Vertex 
+                
+                ##############################################################################################################
+                mutex.release()
+                '''
+                #Hess = getHessian(J_Hess)
+                #print('Gamma_min_softmax',Gamma_min_softmax)
+                '''
+                jac_output = Gamma_hat_gradient(J_Hess,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+                    p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
+                    self.qdot_min,self.qdot_max,self.desired_vertices,sigmoid_slope=sigmoid_slope_inp)
+                
+                if Gamma_min_prev != None:
+
+                    #for i in range(0,limit,step_size):
+                    numerical_gradient = (Gamma_min_prev - Gamma_min_softmax)/(step_size*1.0)
+
+                    print('numerical_gradient',numerical_gradient)
+                    print('Jacobian output is',jac_output)
+                    analytical_gradient = jac_output[test_joint+1
+                    ]
+                    print('analytical_gradient',analytical_gradient)
+
+                    error_grad = ((analytical_gradient - numerical_gradient)/(numerical_gradient*1.0))*100.0
+
+                    
+                    print('error is',error_grad)
+                Gamma_min_prev = Gamma_min_softmax
+                '''
+                
+                self.Error_gamma_array[i,j] = (Gamma_min - Gamma_min_softmax)#/(1.0*Gamma_min))*100 
+                
+
+                self.Gamma_min_array[i,j] = Gamma_min
+
+                self.Gamma_min_softmax_array[i,j] = Gamma_min_softmax
+
+                self.ts_arr[i,j] = (time.time() - start_time)
+
+
+                #self.Error_arr[i] = ((Gamma_min_softmax - Gamma_min)/(1.0*Gamma_min))*100 
+                #ts_arr[i] = (time.time() - start_time)
+
+                
+
+
+                '''
+
+                file_name = 'sawyer_test_Gamma_vs_Gamma_hat_slope_'+str(sigmoid_slope_inp) + str('_') + str(i)
+            
+                savez(os.path.join(BASE_PATH, file_name),q_in = self.q_in_array,sigmoid_slope_inp = sigmoid_slope_inp, ts = self.ts_arr[i,j],\
+                    h_plus = h_plus, h_plus_hat = h_plus_hat, h_minus = h_minus, h_minus_hat = h_minus_hat,\
+                Gamma_minus = Gamma_minus, Gamma_plus = Gamma_plus, Gamma_total_hat = Gamma_total_hat, Gamma_min = Gamma_min, Gamma_min_softmax = Gamma_min_softmax, \
+                    Gamma_min_index_hat =  Gamma_min_index_hat, facet_pair_idx = facet_pair_idx, hyper_plane_sign = hyper_plane_sign)
+                '''    
         print('completed one test case')
-        print('Gamma_min_arr_Mean is:',mean(Gamma_min_array))
-        print('Gamma_min_arr_average is:',average(Gamma_min_array))
-        print('Gamma_min_softmax Mean is',mean(Gamma_min_softmax_arr))
-        print('Gamma_min_softmax Average is',average(Gamma_min_softmax_arr))
+        print('Gamma_min_arr_Mean is:',mean(self.Gamma_min_array))
+        print('Gamma_min_arr_average is:',average(self.Gamma_min_array))
+        print('Gamma_min_softmax Mean is',mean(self.Gamma_min_softmax_array))
+        print('Gamma_min_softmax Average is',average(self.Gamma_min_softmax_array))
 
         print('sigmoid_slope is',sigmoid_slope_inp)
-        print('Mean error is:',mean(Error_arr))
-        print('Average error is:',average(Error_arr))
-        print('Average time to execute',average(ts_arr))
+        print('Mean error is:',mean(self.Error_gamma_array))
+        print('Average error is:',average(self.Error_gamma_array))
+        print('Average time to execute',average(self.ts_arr))
+
+        fig, ax = plt.subplots()
+
+        max_gamma = zeros(shape=(len(sigmoid_slope_test)))
+
+        ## Get the maximum value of the Capacity margin to normalize the vector of error
+        for i in range(len(sigmoid_slope_test)):
+            max_gamma[i] = max(self.Gamma_min_array[:,i])
+        
+        data_to_plot = [self.Error_gamma_array[:,0]/(1.0*max_gamma[0]),self.Error_gamma_array[:,1]/(1.0*max_gamma[1]),\
+                        self.Error_gamma_array[:,2]/(1.0*max_gamma[2]),self.Error_gamma_array[:,3]/(1.0*max_gamma[3]),self.Error_gamma_array[:,4]/(1.0*max_gamma[4])]
+
+        # List of labels from sigmoid slope
+        # List of labels from sigmoid slope
+        ax.set_xticklabels(['','50','100','150','200','400'])
+        plt.xlabel("Sigmoid Slope",size=15)
+        plt.ylabel("Error",size=15)
+        # Create the boxplot
+        bp = ax.violinplot(data_to_plot)
+        for pc in bp['bodies']:
+            pc.set_facecolor('orange')
+            pc.set_edgecolor('orange')
+
+        #ax.set_aspect(1)
+        
+        plt.savefig('Error_plot_sawyer_' + str(self.test_case)+('.png'))
+        plt.show()
+
+
+        file_name = 'error_plot_sawyer_'+str(self.test_case)
+
+        savez(os.path.join(BASE_PATH, file_name),q_in = self.q_in_array,sigmoid_slope_inp = sigmoid_slope_test, ts = self.ts_arr,\
+            Gamma_min_array = self.Gamma_min_array, Gamma_min_softmax_array = self.Gamma_min_softmax_array,Error_gamma_array = self.Error_gamma_array)
+
+        fig2, ax2 = plt.subplots()
+        # List of five airlines to plot
+        sigmoid_slope_plot = ['50', '100', '150', '200', '400']
+
+        # Iterate through the five airlines
+        '''
+
+        for i in range(len(sigmoid_slope_plot)):
+            # Subset to the airline
+            subset = flights[flights['name'] == airline]
+            
+            # Draw the density plot
+            sns.distplot(subset['arr_delay'], hist = False, kde = True,
+                        kde_kws = {'linewidth': 3},
+                        label = sigmoid_slope_plot[i])
+        plt.legend(prop={'size': 16}, title = 'Sigmoid Slope')
+        #plt.title('Density Plot with Multiple Airlines')
+        plt.xlabel('Error (%)')
+        plt.ylabel('Capacity Margin')
+
+        sns.distplot(subset['arr_delay'], hist = False, kde = True,
+                 kde_kws = {'shade': True, 'linewidth': 3}, 
+                  label = Sigmoid Slope)
+            
+        '''
+        # Plot formatting
+
+        ax2.set_ylim([-0.02, 0.12])
+        #self.Gamma_min_array[:,0] = self.Gamma_min_array[:,0]
+
+        plt_sigmoid_50 = plt.scatter(self.Gamma_min_array[:,0],self.Error_gamma_array[:,0]/(1.0*max_gamma[0]),color='c',s=0.5,alpha=0.5)
+
+        #calculate equation for trendline
+        z_50 = polyfit(self.Gamma_min_array[:,0], self.Error_gamma_array[:,0]/(1.0*max_gamma[0]), 1)
+        p_50 = poly1d(z_50)
+
+        #add trendline to plot
+        plt.plot(self.Gamma_min_array[:,0], p_50(self.Gamma_min_array[:,0]),color='c')   
+
+        plt_sigmoid_100 = plt.scatter(self.Gamma_min_array[:,1],self.Error_gamma_array[:,1]/(1.0*max_gamma[1]),color='m',s=0.5,alpha=0.5)
+
+        #calculate equation for trendline
+        z_100 = polyfit(self.Gamma_min_array[:,1], self.Error_gamma_array[:,1]/(1.0*max_gamma[1]), 1)
+        p_100 = poly1d(z_100)
+
+        #add trendline to plot
+        plt.plot(self.Gamma_min_array[:,1], p_100(self.Gamma_min_array[:,1]),color='m')   
+
+
+        plt_sigmoid_150 = plt.scatter(self.Gamma_min_array[:,2],self.Error_gamma_array[:,2]/(1.0*max_gamma[2]),color='y',s=0.5,alpha=0.5)
+
+
+        #calculate equation for trendline
+        z_150 = polyfit(self.Gamma_min_array[:,2], self.Error_gamma_array[:,2]/(1.0*max_gamma[2]), 1)
+        p_150 = poly1d(z_150)
+
+        #add trendline to plot
+        plt.plot(self.Gamma_min_array[:,2], p_150(self.Gamma_min_array[:,2]),color='y')   
+
+        plt_sigmoid_200 = plt.scatter(self.Gamma_min_array[:,3],self.Error_gamma_array[:,3]/(1.0*max_gamma[3]),color='k',s=0.5,alpha=0.5)
+
+
+        #calculate equation for trendline
+        z_200 = polyfit(self.Gamma_min_array[:,3], self.Error_gamma_array[:,3]/(1.0*max_gamma[3]), 1)
+        p_200 = poly1d(z_200)
+
+        #add trendline to plot
+        plt.plot(self.Gamma_min_array[:,3], p_200(self.Gamma_min_array[:,3]),color='k')   
+
+        plt_sigmoid_400 = plt.scatter(self.Gamma_min_array[:,4],self.Error_gamma_array[:,4]/(1.0*max_gamma[4]),color='r',s=0.5,alpha=0.5)
+        #plt.scatter(plt_sigmoid_50_x,plt_sigmoid_50_y,'r')
+
+
+        #calculate equation for trendline
+        z_400 = polyfit(self.Gamma_min_array[:,4], self.Error_gamma_array[:,4]/(1.0*max_gamma[4]), 1)
+        p_400 = poly1d(z_400)
+
+        #add trendline to plot
+        plt.plot(self.Gamma_min_array[:,4], p_400(self.Gamma_min_array[:,4]),color='r')  
+
+        plt.legend((plt_sigmoid_50 ,plt_sigmoid_100 ,plt_sigmoid_150 ,plt_sigmoid_200, plt_sigmoid_400  ),('50','100', '150','200','400'),title='Sigmoid Slope',markerscale=5)
+        plt.xlabel('Actual Capacity Margin (m/s)',size=15)
+        plt.ylabel('Error',size = 15,labelpad=-6)
+        #self.Gamma_min_array
+
+        
+
+        plt.show()
 
 
 
-    def test_Gamma_vs_Gamma_hat_gradient(self,sigmoid_slope_test):
+    def test_Gamma_vs_Gamma_hat_gradient(self,test_joint,q_config,iter_limit,step_size,sigmoid_slope_test):
+        
+        import time
+        from numpy.linalg import det
+        from numpy import sum,mean,average
+        import matplotlib.pyplot as plt
+
+        #from numpy.random import randn
+        #from numpy.linalg import norm
+        #from linearalgebra import V_unit
+        #from copy import deepcopy
+        #from numpy import amax,max,exp,dot,matmul,ones
+        #from polytope_functions import get_hyperplane_parameters,get_gamma,get_gamma_hat
+        #from robot_functions import exp_sum,exp_normalize,smooth_max_gradient
+        #from numpy import unravel_index,argmax,min
+
+        #from numpy.linalg import det
+        #from numpy import sum
+
+        
+
+        
+
+        #print('q_in is',q_in)
+        #input('wait here in the objective function')
+        #pos_act_mat = self.pykdl_util_kin.forward(q0,tip_link,base_link)
+        #pos_act = pos_act_mat[0:3,3]
+        #print('self.pos_reference',self.pos_reference)
+        #print('Current position in optimization is',pos_act)
+        #print('pos_act is this in the objective function',pos_act)
+        #input('inside obj func')
+        #self.canvas_input_opt.generate_axis()
+        #self.opt_robot_model.urdf_transform(q_joints=q_des)
+        #canvas_input.generate_axis()
+        BASE_PATH = "/home/imr/catkin_ws_build/src/rospygradientpolytope/test_results/"
+        #test_case = 1
+        #file_name = 'q_arr_sawyer_test_'+str(test_case)
+        
+        #full_name = os.path.join(BASE_PATH, file_name)
+        
+
+        #Gamma_min_array = zeros(shape = len(self.q_in_array))
+        #Gamma_min_softmax_arr = zeros(shape = len(self.q_in_array))
+        #Error_arr = zeros(shape = len(self.q_in_array))
+        #ts_arr = zeros(shape = len(self.q_in_array))
+
+        Gamma_min_prev = None
+
+        #test_joint = 0
+        #q_add = zeros(7)
+        #q_add[test_joint] = 1
+        #step_size = 0.001
+
+        ## 52,47, 33 test case works perfectly
+
+        #q_in = self.q_in_array[33,:]
+        '''
+        q_in = q_add
+        q_in[0] = 0.50
+        q_in[1] = 0.25
+        q_in[2] = -0.46
+        q_in[3] = -0.75
+        q_in[4] = 0.75
+        q_in[5] = 1.50
+        q_in[6] = -0.76
+        '''
+        q_in = self.q_in_array[q_config,:]
+        for j in range(2,len(sigmoid_slope_test)):
+            sigmoid_slope_inp = sigmoid_slope_test[j]
+            print('completed one test case')
+            for i in range(iter_limit):
+                start_time = time.time()
+                #q_in[test_joint] += step_size
+                q_in[test_joint] += step_size
+                self.q_in = q_in
+
+                #print('self.q_in',q_in)
+
+                self.joint_state_publisher_robot()
+                #time.sleep(0.5)
+
+                # Publish joint sates to Rviz for the robot
+                
+
+                #J_Hess = jacobianE0(q_in) 
+                #ef_pose = self.pykdl_util_kin.forward(q_in)[:3,3]
+                J_Hess = array(self.pykdl_util_kin.jacobian(q_in,pos=None))
+
+
+                #q_in = 
+                #J_Hess_pykdl = array(self.pykdl_util_kin.jacobian(q_in))
+                #J_Hess = J_Hess[0:3,:]
+                ##print('J_Hess',J_Hess)
+                #print('J_Hess_pykdl',J_Hess_pykdl)
+                #input('wait here')
+                h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(
+                    J_Hess,active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+                    qdot_max=self.qdot_max,cartesian_desired_vertices= self.cartesian_desired_vertices,sigmoid_slope=sigmoid_slope_inp )
+
+
+                Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = get_capacity_margin(\
+                    J_Hess, n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                                active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+                    qdot_max=self.qdot_max,cartesian_desired_vertices= self.cartesian_desired_vertices,sigmoid_slope=sigmoid_slope_inp )
+                #self.Gamma_min_array[i] = Gamma_min
+                #Gamma_min_softmax_arr[i] = Gamma_min_softmax
+
+
+
+
+            
+                scaling_factor = 10.0
+
+                '''    
+                ### Actual polytope plot
+                polytope_verts, polytope_faces, facet_vertex_idx, capacity_faces, capacity_margin_proj_vertex = \
+                                                velocity_polytope(pykdl_kin_jac,self.qdot_limit,-1*self.qdot_limit)
+                '''
+                
+                ### Polytope plot with estimation
+                
+                #pykdl_kin_jac = pykdl_util_kin.jacobian(self.q_in_numpy)
+                polytope_verts, polytope_faces, facet_vertex_idx, capacity_faces, capacity_margin_proj_vertex, \
+                    polytope_verts_est, polytope_faces_est, capacity_faces_est, capacity_margin_proj_vertex_est = \
+                                                velocity_polytope_with_estimation(J_Hess,self.qdot_max,self.qdot_min,self.cartesian_desired_vertices,sigmoid_slope_inp)
+                desired_polytope_verts, desired_polytope_faces = desired_polytope(self.cartesian_desired_vertices)
+
+                #print('facet_vertex_idx',facet_vertex_idx)
+                #print('capacity_margin_proj_vertex',capacity_margin_proj_vertex)
+                #print('capacity_margin_proj_vertex_est',capacity_margin_proj_vertex_est)
+                
+
+                # Only for visualization - Polytope at end-effector - No physical significance
+                #ef_pose = pykdl_util_kin.forward(self.q_in_numpy)[:3,3]
+
+                mutex.acquire()
+                
+
+                # Get end-effector of the robot here for the polytope offset
+
+                #ef_pose = position_70(q_in)
+
+                ef_pose = self.pykdl_util_kin.forward(q_in)[:3,3]
+
+                ########### Actual POlytope plot ###########################################################################
+                # Publish polytope faces
+                polyArray_message = self.publish_velocity_polytope.publish(create_polytopes_msg(polytope_verts, polytope_faces, \
+                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
+                
+                
+                ### Desired polytope set - Publish
+
+                DesiredpolyArray_message = self.publish_desired_polytope.publish(create_polytopes_msg(desired_polytope_verts, desired_polytope_faces, \
+                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
+
+
+                ### Vertex for capacity margin on the Desired Polytope
+                #print('facet_vertex_idx',facet_vertex_idx)
+                closest_vertex = self.cartesian_desired_vertices[facet_vertex_idx[0,1]]
+                #print('closest_vertex',closest_vertex)
+
+                CapacityvertexArray_message = self.publish_vertex_capacity.publish(create_capacity_vertex_msg(closest_vertex, \
+                                                                                            ef_pose, "right_arm_base_link", scaling_factor))
+                
+                ### Vertex for capacity margin on the Available Polytope
+                CapacityprojvertexArray_message = self.publish_vertex_proj_capacity.publish(create_capacity_vertex_msg(capacity_margin_proj_vertex, \
+                                                                                            ef_pose, "right_arm_base_link", scaling_factor))
+                ### Plane for capacity margin 
+                #print('capacity_faces',capacity_faces)
+
+                ### Vertex for capacity margin on the Available Polytope
+                CapacitymarginactualArray_message = self.publish_capacity_margin_actual.publish(create_segment_msg(closest_vertex, \
+                                                    capacity_margin_proj_vertex,ef_pose, "right_arm_base_link", scaling_factor))
+                
+                capacityArray_message = self.publish_capacity_margin_polytope.publish(create_polytopes_msg(polytope_verts, capacity_faces, \
+                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
+
+
+                ########### Estimated Polytope plot ###########################################################################
+                
+                # Publish polytope faces
+                EstpolyArray_message = self.publish_velocity_polytope_est.publish(create_polytopes_msg(polytope_verts_est, polytope_faces_est, \
+                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
+                
+                
+
+                ### Vertex for capacity margin on the Available Polytope
+                EstCapacityprojvertexArray_message = self.publish_vertex_proj_capacity_est.publish(create_capacity_vertex_msg(capacity_margin_proj_vertex_est, \
+                                                                                            ef_pose, "right_arm_base_link", scaling_factor))
+
+
+                ### Vertex for capacity margin on the Available Polytope
+                EstCapacitymarginactualArray_message = self.publish_capacity_margin_actual_est.publish(create_segment_msg(closest_vertex, \
+                                                    capacity_margin_proj_vertex_est,ef_pose, "right_arm_base_link", scaling_factor))
+                
+
+                EstcapacityArray_message = self.publish_capacity_margin_polytope_est.publish(create_polytopes_msg(polytope_verts_est, capacity_faces_est, \
+                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
+
+                
+                ### Vertex 
+                
+                ##############################################################################################################
+                mutex.release()
+                
+                Hess = getHessian(J_Hess)
+                #print('Gamma_min_softmax',Gamma_min_softmax)
+                
+                jac_output = Gamma_hat_gradient(J_Hess,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+                    p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
+                    self.qdot_min,self.qdot_max,self.desired_vertices,sigmoid_slope=sigmoid_slope_inp)
+                
+                if Gamma_min_prev != None:
+
+                    #for i in range(0,limit,step_size):
+                    numerical_gradient = (Gamma_min_prev - Gamma_min_softmax)/(step_size*1.0)
+
+                    print('numerical_gradient',numerical_gradient)
+                    print('Jacobian output is',jac_output)
+                    analytical_gradient = jac_output[test_joint]
+                    print('analytical_gradient',analytical_gradient)
+
+                    error_grad = (analytical_gradient - numerical_gradient)
+
+                    
+                    print('error is',error_grad)
+                Gamma_min_prev = Gamma_min_softmax
+                
+
+                
+                self.Error_gamma_array[i,j] = (Gamma_min - Gamma_min_softmax)#/(1.0*Gamma_min))*100 
+                
+
+                self.Gamma_min_array[i,j] = Gamma_min
+
+                self.Gamma_min_softmax_array[i,j] = Gamma_min_softmax
+
+                self.ts_arr[i,j] = (time.time() - start_time)
+
+
+                #self.Error_arr[i] = ((Gamma_min_softmax - Gamma_min)/(1.0*Gamma_min))*100 
+                #ts_arr[i] = (time.time() - start_time)
+
+                
+
+
+                '''
+
+                file_name = 'sawyer_test_Gamma_vs_Gamma_hat_slope_'+str(sigmoid_slope_inp) + str('_') + str(i)
+            
+                savez(os.path.join(BASE_PATH, file_name),q_in = self.q_in_array,sigmoid_slope_inp = sigmoid_slope_inp, ts = self.ts_arr[i,j],\
+                    h_plus = h_plus, h_plus_hat = h_plus_hat, h_minus = h_minus, h_minus_hat = h_minus_hat,\
+                Gamma_minus = Gamma_minus, Gamma_plus = Gamma_plus, Gamma_total_hat = Gamma_total_hat, Gamma_min = Gamma_min, Gamma_min_softmax = Gamma_min_softmax, \
+                    Gamma_min_index_hat =  Gamma_min_index_hat, facet_pair_idx = facet_pair_idx, hyper_plane_sign = hyper_plane_sign)
+                '''    
+        '''
+        print('completed one test case')
+        print('Gamma_min_arr_Mean is:',mean(self.Gamma_min_array))
+        print('Gamma_min_arr_average is:',average(self.Gamma_min_array))
+        print('Gamma_min_softmax Mean is',mean(self.Gamma_min_softmax_array))
+        print('Gamma_min_softmax Average is',average(self.Gamma_min_softmax_array))
+
+        print('sigmoid_slope is',sigmoid_slope_inp)
+        print('Mean error is:',mean(self.Error_gamma_array))
+        print('Average error is:',average(self.Error_gamma_array))
+        print('Average time to execute',average(self.ts_arr))
+
+        fig, ax = plt.subplots()
+
+        max_gamma = zeros(shape=(len(sigmoid_slope_test)))
+
+        ## Get the maximum value of the Capacity margin to normalize the vector of error
+        for i in range(len(sigmoid_slope_test)):
+            max_gamma[i] = max(self.Gamma_min_array[:,i])
+        
+        data_to_plot = [self.Error_gamma_array[:,0]/(1.0*max_gamma[0]),self.Error_gamma_array[:,1]/(1.0*max_gamma[1]),\
+                        self.Error_gamma_array[:,2]/(1.0*max_gamma[2]),self.Error_gamma_array[:,3]/(1.0*max_gamma[3]),self.Error_gamma_array[:,4]/(1.0*max_gamma[4])]
+
+        # List of labels from sigmoid slope
+        # List of labels from sigmoid slope
+        ax.set_xticklabels(['','50','100','150','200','400'])
+        plt.xlabel("Sigmoid Slope",size=15)
+        plt.ylabel("Error",size=15)
+        # Create the boxplot
+        bp = ax.violinplot(data_to_plot)
+        for pc in bp['bodies']:
+            pc.set_facecolor('orange')
+            pc.set_edgecolor('orange')
+
+        #ax.set_aspect(1)
+        
+        plt.savefig('Error_plot_sawyer_' + str(self.test_case)+('.png'))
+        plt.show()
+
+
+        file_name = 'error_plot_sawyer_'+str(self.test_case)
+
+        savez(os.path.join(BASE_PATH, file_name),q_in = self.q_in_array,sigmoid_slope_inp = sigmoid_slope_test, ts = self.ts_arr,\
+            Gamma_min_array = self.Gamma_min_array, Gamma_min_softmax_array = self.Gamma_min_softmax_array,Error_gamma_array = self.Error_gamma_array)
+        '''
+        fig2, ax2 = plt.subplots()
+        # List of five airlines to plot
+        sigmoid_slope_plot = ['50', '100', '150', '200', '400']
+
+
+        # Plot formatting
+        '''
+        ax2.set_ylim([-0.02, 0.12])
+        #self.Gamma_min_array[:,0] = self.Gamma_min_array[:,0]
+
+        plt_sigmoid_50 = plt.scatter(self.Gamma_min_array[:,0],self.Error_gamma_array[:,0]/(1.0*max_gamma[0]),color='c',s=0.5,alpha=0.5)
+
+        #calculate equation for trendline
+        z_50 = polyfit(self.Gamma_min_array[:,0], self.Error_gamma_array[:,0]/(1.0*max_gamma[0]), 1)
+        p_50 = poly1d(z_50)
+
+        #add trendline to plot
+        plt.plot(self.Gamma_min_array[:,0], p_50(self.Gamma_min_array[:,0]),color='c')   
+
+        plt_sigmoid_100 = plt.scatter(self.Gamma_min_array[:,1],self.Error_gamma_array[:,1]/(1.0*max_gamma[1]),color='m',s=0.5,alpha=0.5)
+
+        #calculate equation for trendline
+        z_100 = polyfit(self.Gamma_min_array[:,1], self.Error_gamma_array[:,1]/(1.0*max_gamma[1]), 1)
+        p_100 = poly1d(z_100)
+
+        #add trendline to plot
+        plt.plot(self.Gamma_min_array[:,1], p_100(self.Gamma_min_array[:,1]),color='m')   
+
+
+        plt_sigmoid_150 = plt.scatter(self.Gamma_min_array[:,2],self.Error_gamma_array[:,2]/(1.0*max_gamma[2]),color='y',s=0.5,alpha=0.5)
+
+
+        #calculate equation for trendline
+        z_150 = polyfit(self.Gamma_min_array[:,2], self.Error_gamma_array[:,2]/(1.0*max_gamma[2]), 1)
+        p_150 = poly1d(z_150)
+
+        #add trendline to plot
+        plt.plot(self.Gamma_min_array[:,2], p_150(self.Gamma_min_array[:,2]),color='y')   
+
+        plt_sigmoid_200 = plt.scatter(self.Gamma_min_array[:,3],self.Error_gamma_array[:,3]/(1.0*max_gamma[3]),color='k',s=0.5,alpha=0.5)
+
+
+        #calculate equation for trendline
+        z_200 = polyfit(self.Gamma_min_array[:,3], self.Error_gamma_array[:,3]/(1.0*max_gamma[3]), 1)
+        p_200 = poly1d(z_200)
+
+        #add trendline to plot
+        plt.plot(self.Gamma_min_array[:,3], p_200(self.Gamma_min_array[:,3]),color='k')   
+
+        plt_sigmoid_400 = plt.scatter(self.Gamma_min_array[:,4],self.Error_gamma_array[:,4]/(1.0*max_gamma[4]),color='r',s=0.5,alpha=0.5)
+        #plt.scatter(plt_sigmoid_50_x,plt_sigmoid_50_y,'r')
+
+
+        #calculate equation for trendline
+        z_400 = polyfit(self.Gamma_min_array[:,4], self.Error_gamma_array[:,4]/(1.0*max_gamma[4]), 1)
+        p_400 = poly1d(z_400)
+
+        #add trendline to plot
+        plt.plot(self.Gamma_min_array[:,4], p_400(self.Gamma_min_array[:,4]),color='r')  
+
+        plt.legend((plt_sigmoid_50 ,plt_sigmoid_100 ,plt_sigmoid_150 ,plt_sigmoid_200, plt_sigmoid_400  ),('50','100', '150','200','400'),title='Sigmoid Slope',markerscale=5)
+        plt.xlabel('Actual Capacity Margin (m/s)',size=15)
+        plt.ylabel('Error',size = 15,labelpad=-6)
+        #self.Gamma_min_array
+
+        
+
+        plt.show()
+
+        '''
+
+    def test_Gamma_vs_Gamma_hat_gradient_old(self,sigmoid_slope_test):
         
         import time
         from numpy.linalg import det
@@ -479,14 +1176,15 @@ class LaunchSawyerRobot():
             
 
             
-
+            '''
             Hess = getHessian(J_Hess)
             
+            for i in range():
 
             jac_output = Gamma_hat_gradient(J_Hess,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
                 p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
                 self.qdot_min,self.qdot_max,self.desired_vertices,sigmoid_slope=100)
-            
+            '''
             
             
             
@@ -496,14 +1194,14 @@ class LaunchSawyerRobot():
             ts_arr[i] = (time.time() - start_time)
 
 
-
+            '''
             file_name = 'sawyer_test_Gamma_vs_Gamma_hat_slope_'+str(sigmoid_slope_inp) + str('_') + str(i)
         
             savez(os.path.join(BASE_PATH, file_name),q_in = self.q_in_array,sigmoid_slope_inp = sigmoid_slope_inp, ts = ts_arr[i],\
                 h_plus = h_plus, h_plus_hat = h_plus_hat, h_minus = h_minus, h_minus_hat = h_minus_hat,\
             Gamma_minus = Gamma_minus, Gamma_plus = Gamma_plus, Gamma_total_hat = Gamma_total_hat, Gamma_min = Gamma_min, Gamma_min_softmax = Gamma_min_softmax, \
                 Gamma_min_index_hat =  Gamma_min_index_hat, facet_pair_idx = facet_pair_idx, hyper_plane_sign = hyper_plane_sign)
-                
+            '''    
         print('completed one test case')
         print('Gamma_min_arr_Mean is:',mean(Gamma_min_array))
         print('Gamma_min_arr_average is:',average(Gamma_min_array))
@@ -517,6 +1215,21 @@ class LaunchSawyerRobot():
 
 
 
+    def joint_state_publisher_robot(self):
+        
+
+        
+        q_in = self.q_in
+        msg = JointState()
+
+        msg.name = [self.robot_joint_names_pub[0], self.robot_joint_names_pub[1],self.robot_joint_names_pub[2],self.robot_joint_names_pub[3],
+                    self.robot_joint_names_pub[4], self.robot_joint_names_pub[5], self.robot_joint_names_pub[6], self.robot_joint_names_pub[7]]
+        msg.header.stamp = rospy.Time.now()
+        msg.header.frame_id = 'sawyer_base'
+        msg.position = [q_in[0],0.0,q_in[1],q_in[2],q_in[3],q_in[4],q_in[5],q_in[6]]
+        msg.velocity = []
+        msg.effort = []        
+        self.robot_joint_state_publisher.publish(msg)
 
     def joint_state_callback(self,sawyer_joints):
 

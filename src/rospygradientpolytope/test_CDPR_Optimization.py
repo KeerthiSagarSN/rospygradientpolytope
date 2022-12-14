@@ -48,7 +48,7 @@ CDPR_optimizer.roi_center = array([0,0])
 CDPR_optimizer.pos_bounds = array([[-3,3],[-3,3]])
 
 q = array([-3,-3.5])
-CDPR_optimizer.analytical_solver = False
+CDPR_optimizer.analytical_solver = True
 
 
 

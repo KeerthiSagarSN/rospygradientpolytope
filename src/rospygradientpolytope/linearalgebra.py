@@ -624,6 +624,23 @@ def skew(u):
         print('Not yet implemented method')
         return 0
                   
+def skew_2D(u):
+    from numpy import zeros
+    u = check_ndarray(u)
+
+    #print('u before skewing is',u)
+    if len(u) == 2:
+        uskew = zeros((1, 2))
+        uskew[0, 0] = u[1]
+        uskew[0, 1] = -u[0]
+        
+        #print('uskew is',uskew)
+        #input('test uskew is')
+        return uskew
+    else:
+        print('Not yet implemented method')
+        return 0
+                  
 
 
 

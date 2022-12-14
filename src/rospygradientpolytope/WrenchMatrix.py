@@ -10,6 +10,7 @@ from numpy.linalg import norm
 
 ## Only for 2-DOF as of now
 
+
 def get_wrench_matrix(q,L,H):
     
     ##### Wrench matrix
@@ -45,9 +46,9 @@ def get_wrench_matrix(q,L,H):
                    [(-y)*((sqrt(abs(L**2 - 2*L*x + x**2 + y**2))**(-1)))]])
     
     
-    W = hstack((uv1_n,uv2_n,uv3_n,uv4_n))
+    W = hstack((uv1,uv2,uv3,uv4))
     
-    W2 = hstack((uv1,uv2,uv3,uv4))
+    W_n = hstack((uv1_n,uv2_n,uv3_n,uv4_n))
     #############
     
     d_W_dx = empty(shape = (2,4))
@@ -193,4 +194,20 @@ def get_wrench_matrix(q,L,H):
     Hessian_matrix[:,:,1] = d_W_dy
     
     
-    return W,Hessian_matrix
+    return W,W_n,Hessian_matrix
+
+'''
+def main():
+
+    q_inp = array([0.1,0.5])
+    L = 1
+    H = 1
+
+
+    W,W_n,H = get_wrench_matrix(q_inp,L,H)
+    print('W is',W)
+    print('W_n is',W_n)
+    
+if __name__ == "__main__":
+    main()
+'''

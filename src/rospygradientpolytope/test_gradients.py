@@ -1696,14 +1696,14 @@ if __name__ == '__main__':
     # Tested- Working- But error isnt very less
     #print("Testing sigmoid gradient here", test_gradient.test_sigmoid_gradient(limits = [0.3,pi/3.0], step = 0.001))
     
-    print("Testing hyperplane gradient here",test_gradient.test_hyperplane_gradient(limits = [pi/3.0,pi/2.0], step = 0.001))
+    #print("Testing hyperplane gradient here",test_gradient.test_hyperplane_gradient(limits = [pi/3.0,pi/2.0], step = 0.001))
     
     #print("Testing test_gamma_gradient here",test_gradient.test_gamma_gradient(limits = [0.0,pi/3.0], step = 0.01))
     
     
     #print("Testing test_gamma_hat_gradient here",test_gradient.test_gamma_hat_gradient(limits = [pi/3.0,pi/2.0], step = 0.01))
 
-    #print("Testing gamma vs gamma hat error", test_gradient.test_Gamma_vs_Gamma_hat([-1.0, 1.0], 0.001))
+    print("Testing gamma vs gamma hat error", test_gradient.test_Gamma_vs_Gamma_hat([-1.0, 1.0], 0.001))
     
     #print("Testing h vs h hat error", test_gradient.test_h_vs_h_hat([-1.0, 1.0], 0.01))
     #print("Testing gamma gradient", test_gammas_gradient([-1.0, 0.0], 0.001))
