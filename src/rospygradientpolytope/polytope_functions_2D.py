@@ -7,7 +7,8 @@ Created on Thu Sep 15 15:46:19 2022
 
 import polytope as pc
 
-from numpy import shape,arange,array,zeros,cross,count_nonzero,transpose,matmul,dot
+from numpy import shape,arange,array,zeros,cross,count_nonzero,transpose,matmul,dot,ones
+from numpy.linalg import det,qr
 import polytope
 import robot_functions
 import matplotlib.pyplot as plt
@@ -15,6 +16,7 @@ from scipy.spatial import Delaunay, ConvexHull
 import itertools
 from linearalgebra import V_unit,check_ndarray,skew_2D
 from numpy import unravel_index,argmax,min,hstack,vstack, argwhere
+import numpy.ma as ma
 
 
 def get_Cartesian_polytope(jacobian, joint_space_vrep):
@@ -42,7 +44,7 @@ def plot_polytope_3d(poly):
     return ax
 
 
-def get_polytope_hyperplane(W,active_joints,cartesian_dof_input,qdot_min,qdot_max,sigmoid_slope):
+def get_polytope_hyperplane(Wm,active_joints,cartesian_dof_input,qdot_min,qdot_max,sigmoid_slope):
     
     from numpy import unravel_index,argmax,min,zeros,count_nonzero
     from numpy.linalg import qr
@@ -52,7 +54,7 @@ def get_polytope_hyperplane(W,active_joints,cartesian_dof_input,qdot_min,qdot_ma
 
     deltaqq = qdot_max - qdot_min
 
-    JE = W
+    JE = Wm
     
     ### Cartesian degrees of freedom - Mostly 3 - Velocity
     ## Input a 6x1^T vector - [vx=True,vy=True,vz=True,wx=False,wy=False,wz = False]
@@ -90,9 +92,9 @@ def get_polytope_hyperplane(W,active_joints,cartesian_dof_input,qdot_min,qdot_ma
     
    
     #v_k = JE[cartesian_dof_mask,:]
+    print('Wrench matrix inside the fuction s is',Wm)
 
-
-    v_k = W
+    v_k = Wm
     #print('v_k',self.v_k)
     
     # Eq,14
@@ -117,15 +119,34 @@ def get_polytope_hyperplane(W,active_joints,cartesian_dof_input,qdot_min,qdot_ma
 
     #v_k = Q_mat[:,-1
 
-    for i in range(len(n_k)):
+    for k in range(len(Nmatrix)):
      
         
          ## Switch between 2-OF and 3-DOF cartesian space
         if cartesian_dof == 3:
-            n_k[i] = (V_unit(cross(v_k[:,Nmatrix[i,0]], v_k[:,Nmatrix[i,1]])))
+            n_k[k] = (V_unit(cross(v_k[:,Nmatrix[k,0]], v_k[:,Nmatrix[k,1]])))
         elif cartesian_dof == 2:
             
-            n_k[i] = V_unit(skew_2D(W[:,i]))
+            #n_k[k] = V_unit(skew_2D(Wm[:,k]))
+            print('Nmatrix is',Nmatrix)
+            print('Wm is',Wm)
+
+            print('Nmatrix[k,0]',Nmatrix[k,0])
+            print('Wm[:,Nmatrix[k,0]]',Wm[:,Nmatrix[k,0]])
+            Wmk = array([Wm[:,Nmatrix[k,0]]])
+            print('Wmk is',Wmk)
+            Q_mat,R_mat = qr(transpose(Wmk))
+            print('Q_mat',Q_mat)
+            n_k[k,0] = Q_mat[0]
+            n_k[k,1] = Q_mat[1]
+            #n_k[k] = V_unit(skew_2D(Wm[:,k]))
+            print('n_k is',n_k)
+            #masked_array = ones(shape=(cartesian_dof,shape(v_k)[1]))
+            #masked_array[:,Nmatrix[k]] = 0
+            #print('v_k',v_k)
+            #v_k_det_arr = ma.masked_array(v_k,mask=masked_array)
+
+            #n_k[i] = (-1)**(k+1)*(det(v_k_det_arr))
             #print('W inside is',W)
 
             #n_k[i] = V_unit()
@@ -149,17 +170,21 @@ def get_polytope_hyperplane(W,active_joints,cartesian_dof_input,qdot_min,qdot_ma
         ## l_k = n_k x  v_k x 3
     #print('n_k after population is',n_k)
     #input('check_normals here')
+
+    #n_k = array([[-0.7071,0.7071],[0.7071,0.7071],[-0.7071,0.7071],[0.7071,0.7071]])
+        
+    l_k = zeros(shape = (len(n_k),shape(Wm)[1]))
     
-    l_k = zeros(shape = (len(n_k),shape(Nnot)[1]))
     
-     
+    print('n_k',n_k)
     ## Already 2D compatible here 
     
     for i in range(len(n_k)):
-        for j in range(shape(Nnot)[1]):
+        for j in range(shape(Wm)[1]):
+        #for j in range(len(n_k)):
 
             
-         
+            
             ### Should i be taking the unit vector here ??????
 
 
@@ -181,8 +206,10 @@ def get_polytope_hyperplane(W,active_joints,cartesian_dof_input,qdot_min,qdot_ma
 
             #input('stop here now')
             
-            #self.l_k[i,j] = transpose(dot(self.n_k[i,:],V_unit(self.v_k[:,self.Nnot[i,j]])))
-            l_k[i,j] = dot(n_k[i,:],v_k[:,Nnot[i,j]])
+            l_k[i,j] = matmul(n_k[i,:],transpose(Wm[:,j]))
+            #l_k[i] = matmul(transpose(Wm),n_k[i,:])
+    
+            print('l_k is',l_k[i,j])
     
 
     #print('l_k is',l_k[i,j])
@@ -202,16 +229,25 @@ def get_polytope_hyperplane(W,active_joints,cartesian_dof_input,qdot_min,qdot_ma
      ## Eq.19 and Eq.20 from paper here
      ## Sigmoid function from Philip's robot_functions.py
      ########### Actual hyperplane parameters
-
+    deltaqq[:] = 25
+    dq = 25
     for i in range(len(n_k)):
-        for j in range(shape(Nnot)[1]):
+        for j in range(shape(Wm)[1]):
     
-            h_plus[i] = h_plus[i] + max(0,(deltaqq[Nnot[i,j]]*(l_k[i,j])))          
+            #h_plus[i] = h_plus[i] + max(0,(deltaqq[Nnot[i,j]]*(l_k[i,j])))      
+            #h_plus[i] = h_plus[i] + max(0,(deltaqq[Nnot[i,j]]*(l_k[i,j])))    
+            #h_plus[i] = h_plus[i] + max(0,(dq*l_k[i,j]))    
             
+            h_plus[i] = h_plus[i] + max(array([0,(dq*l_k[i,j])]))
+            #print('min is',min(array([0,(deltaqq[Nnot[i,j]]*(l_k[i,j]))])))
             
-            h_minus[i] = h_minus[i] + min(array([0,(deltaqq[Nnot[i,j]]*(l_k[i,j]))]))
+            h_minus[i] = h_minus[i] + min(array([0,(-dq*l_k[i,j])]))
+            #h_minus[i] = h_minus[i] + min(0,(dq*(l_k[i,j])))   
+
+    print('h_plus',h_plus)   
+    print('h_minus',h_minus) 
      
-     #print(self.deltaqq[self.Nnot[i,j]]*(self.l_k[i,j]))
+     
     
      
      
@@ -220,13 +256,14 @@ def get_polytope_hyperplane(W,active_joints,cartesian_dof_input,qdot_min,qdot_ma
     ########## Estimated hyperplane parameters
     
     for i in range(len(n_k)):
-        for j in range(shape(Nnot)[1]):
+        for j in range(shape(Wm)[1]):
      
          #print('self.l_k dot product is',self.l_k[i,j])
          
-         h_plus_hat[i] = h_plus_hat[i] + robot_functions.sigmoid(l_k[i,j],sigmoid_slope)*deltaqq[Nnot[i,j]]*(l_k[i,j])
+         #h_plus_hat[i] = h_plus_hat[i] + robot_functions.sigmoid(l_k[i,j],sigmoid_slope)*deltaqq[Nnot[i,j]]*(l_k[i,j])
+         h_plus_hat[i] = h_plus_hat[i] + robot_functions.sigmoid(l_k[i,j],sigmoid_slope)*dq*(l_k[i,j])
          
-         h_minus_hat[i] = h_minus_hat[i] + robot_functions.sigmoid(l_k[i,j],-sigmoid_slope)*deltaqq[Nnot[i,j]]*(l_k[i,j])
+         h_minus_hat[i] = h_minus_hat[i] + robot_functions.sigmoid(l_k[i,j],1.0*sigmoid_slope)*dq*(-l_k[i,j])
          
          '''
          print('robot_functions.sigmoid(self.l_k[i,j],sigmoid_slope)',robot_functions.sigmoid(self.l_k[i,j],sigmoid_slope))
@@ -244,7 +281,8 @@ def get_polytope_hyperplane(W,active_joints,cartesian_dof_input,qdot_min,qdot_ma
     #input('wait here')
    
     
-    
+    print('h_plus_hat is',h_plus_hat)
+    print('h_minus_hat is',h_minus_hat)
     # Eq . 23 here
     ## ALl vertices on the hyper-plane are defined below - p_plus points on the 
     
@@ -270,10 +308,13 @@ def get_polytope_hyperplane(W,active_joints,cartesian_dof_input,qdot_min,qdot_ma
     for i in range(len(l_k)):
         
         ## ## Switch between 2-OF and 3-DOF cartesian space
-        p_plus[i,:] = h_plus[i]*n_k[i,:]  + transpose(matmul(JE[0:cartesian_dof,:],qdot_min))
+        p_plus[i,:] = h_plus[i]*n_k[i,:]  # + transpose(matmul(JE[0:cartesian_dof,:],qdot_min))
        
-        p_minus[i,:] = h_minus[i]*n_k[i,:]  + transpose(matmul(JE[0:cartesian_dof,:],qdot_min))
-   
+        p_minus[i,:] = h_minus[i]*n_k[i,:]  # + transpose(matmul(JE[0:cartesian_dof,:],qdot_min))
+
+
+        print('nTp+ term is', dot(n_k[i,:],p_plus[i,:]))
+        print('nTp- term is', dot(-n_k[i,:],p_minus[i,:]))
    
     ##### Estimated parameters are here
     
@@ -281,18 +322,19 @@ def get_polytope_hyperplane(W,active_joints,cartesian_dof_input,qdot_min,qdot_ma
         #p_plus = h_plus[i]*n[i,:] + matmul(JE,qmin)
         #p_plus = np.vstack((p_plus,h_plus[i]*n[i,:])) 
         ## ## Switch between 2-OF and 3-DOF cartesian space
-        p_plus_hat[i,:] = h_plus_hat[i]*n_k[i,:]  + transpose(matmul(JE[0:cartesian_dof,:],qdot_min))
+        p_plus_hat[i,:] = h_plus_hat[i]*n_k[i,:]  #+ transpose(matmul(JE[0:cartesian_dof,:],qdot_min))
         #p_minus = h_minus[i]*n[i,:] + matmul(JE,qmin)
-        p_minus_hat[i,:] = h_minus_hat[i]*n_k[i,:]  + transpose(matmul(JE[0:cartesian_dof,:],qdot_min))
+        p_minus_hat[i,:] = h_minus_hat[i]*n_k[i,:]  #+ transpose(matmul(JE[0:cartesian_dof,:],qdot_min))
      
-     
+        
         '''
         print('p_plus',self.p_plus)
         print('p_minus is',self.p_minus)
         print('p_plus_hat is',self.p_plus_hat)
         print('p_minus_hat',self.p_minus_hat)
         '''
-    #input('wait here')
+ 
+
     
     return h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot
     
@@ -338,18 +380,20 @@ def get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
     v_k = W
     JE = W
     
-    Gamma_plus_LHS = transpose(array([h_plus])) + matmul(matmul(n_k,JE),transpose(array([qdot_min])))
+    Gamma_plus_LHS = transpose(array([h_plus])) # + matmul(matmul(n_k,JE),transpose(array([qdot_min])))
     
    
     #input('wait here')
-    Gamma_plus_hat_LHS = transpose(array([h_plus_hat])) + matmul(matmul(n_k,JE),transpose(array([qdot_min])))
+    Gamma_plus_hat_LHS = transpose(array([h_plus_hat])) #  + matmul(matmul(n_k,JE),transpose(array([qdot_min])))
     
-    Gamma_minus_LHS = transpose(array([h_minus])) + matmul(matmul(n_k,JE),transpose(array([qdot_min])))
+    Gamma_minus_LHS = transpose(array([h_minus])) # + matmul(matmul(n_k,JE),transpose(array([qdot_min])))
     
-    Gamma_minus_hat_LHS = transpose(array([h_minus_hat])) + matmul(matmul(n_k,JE),transpose(array([qdot_min])))
+    Gamma_minus_hat_LHS = transpose(array([h_minus_hat]))  #+ matmul(matmul(n_k,JE),transpose(array([qdot_min])))
+    print('len(v_k_d)',len(v_k_d))
     for vertex in range(len(v_k_d)):
         #print 'vertex'
         #print vertex
+        print('vertex is',vertex)
         #self.Gamma_plus[facets,vertex] = abs(matmul(transpose(self.n_k[facets,:]),self.p_plus[facets,:]) - matmul(transpose(self.n_k[facets,:]),self.v_k_d[vertex,:]))
         
         '''
@@ -398,7 +442,9 @@ def get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
     
     Gamma_total_hat = hstack((Gamma_plus_flat_hat,-1*Gamma_minus_flat_hat))
     
-    
+    print('Gamma_total',Gamma_total)
+
+    print('Gamma_total_hat',Gamma_total_hat)
     #print('self.Gamma_total',self.Gamma_total)
     #print('self.Gamma_total_hat',self.Gamma_total_hat)
     

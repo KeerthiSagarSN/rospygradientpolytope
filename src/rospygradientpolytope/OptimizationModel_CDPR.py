@@ -11,7 +11,7 @@ from numpy.linalg import norm
 from numpy.random import randn
 
 from shapely.geometry import Polygon,LineString
-from linearalgebra import isclose
+from linearalgebra import isclose,V_unit
 import matplotlib.pyplot as plt
 from polytope_functions_2D import get_capacity_margin, get_polytope_hyperplane
 from WrenchMatrix import get_wrench_matrix
@@ -152,15 +152,20 @@ class OptimizationModel:
 
         loop_counter = 0
         
-        for i in range(len(q_in_x)):
-            x_in = q_in_x[i]
-            for j in range(len(q_in_y)):
+        #for i in range(len(q_in_x)):
+        for i in range(0,1): #len(q_in_x)):
+            #x_in = q_in_x[i]
+            x_in = 0.5
+            #for j in range(len(q_in_y)):
+            for j in range(0,1):
                 
 
                 print('loop_counter is',loop_counter)
 
                 loop_counter += 1
-                y_in = q_in_y[j]
+                #y_in = q_in_y[j]
+                y_in = 0.5
+
 
 
                 q = array([x_in,y_in])
@@ -175,6 +180,8 @@ class OptimizationModel:
                     cable_plt = array([[x_in,self.base_points[k,0]],[y_in,self.base_points[k,1]]])
                     W[0,k] = self.base_points[k,0] - x_in 
                     W[1,k] = self.base_points[k,1] - y_in
+
+                    W[:,k] = V_unit(W[:,k])
                     #plt.plot(cable_plt[0,:],cable_plt[1,:],color = color_arr[k])
                     #plt.pause(0.01)
                     #print('cable number is:',k)
@@ -188,8 +195,10 @@ class OptimizationModel:
                 
                 #input('stop here')
                 #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
-
-                #W = -W
+                Wm = array([[-0.7071,0.7071,-0.7071,0.7071],[0.7071,0.7071,0.7071,0.7071]])
+                #Wm = array([[-0.7071,-0.7071,0.7071,0.7071],[-0.7071,0.7071,0.7071,-0.7071]])
+                #print('Wrench matrix is is',Wm)
+                W = -Wm
                 
 
                 #W = W_n
@@ -209,7 +218,9 @@ class OptimizationModel:
                 
 
                 
- 
+                print('Gamma_min is',Gamma_min)
+                print('Gamma_min softmax is',Gamma_min_softmax)
+                input('stop and test')
                 
                 #plt.scatter(self.base_points[:,0],self.base_points[:,1],color='k')
                 tol_value = 1e-1

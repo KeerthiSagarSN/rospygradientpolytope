@@ -8,7 +8,7 @@ Created on Sat Oct  1 19:54:59 2022
 from WrenchMatrix import get_wrench_matrix
 
 ## Library imports here
-from numpy import array,savez,load,shape
+from numpy import array,savez,load,shape,transpose
 import os
 
 import polytope
@@ -62,19 +62,19 @@ input('test here')
 
 
 #CDPR_optimizer.cartesian_desired_vertices = 1*array([[3,3],[1,10]])
-CDPR_optimizer.cartesian_desired_vertices = 1*array([[-5,-5],[-5,5],[5,5],[5,-5]])
+CDPR_optimizer.cartesian_desired_vertices = array([[0,-9.8*5]])
 
 CDPR_optimizer.qdot_max = 1*array([25,25,25,25])
-CDPR_optimizer.qdot_min = 1*array([1,1,1,1])
+CDPR_optimizer.qdot_min = 0*array([0,0,0,0])
 
 CDPR_optimizer.length_params = base_points[2,0] - base_points[0,0]
 CDPR_optimizer.height_params = base_points[2,1] - base_points[0,1]
 
-CDPR_optimizer.sigmoid_slope = 50
+CDPR_optimizer.sigmoid_slope = 200
 
 CDPR_optimizer.cartesian_dof_input = array([True,True,False,False,False,False])
 
-CDPR_optimizer.step_size = 50
+CDPR_optimizer.step_size = 100
 
 #q = array([-3,-3.5])
 #CDPR_optimizer.analytical_solver = True
