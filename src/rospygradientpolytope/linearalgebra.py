@@ -625,14 +625,26 @@ def skew(u):
         return 0
                   
 def skew_2D(u):
-    from numpy import zeros
+    # Get results specific to QR decomposition for 2D Wrench matrix
+    # Replicate results using scipy.linalg.qr to get the same orthonormal basis vectors
+    from numpy import zeros,sign
     u = check_ndarray(u)
 
     #print('u before skewing is',u)
     if len(u) == 2:
         uskew = zeros((1, 2))
-        uskew[0, 0] = u[1]
-        uskew[0, 1] = -u[0]
+
+        sig_x = sign(u[0])
+        sig_y = sign(u[1])
+
+        if (sig_x > 0 and sig_y > 0 ) or (sig_x < 0 and sig_y < 0):
+        
+            uskew[0, 0] = -u[1]
+            uskew[0, 1] = u[0]
+        else:
+            uskew[0, 0] = -u[1]
+            uskew[0, 1] = u[0]
+
         
         #print('uskew is',uskew)
         #input('test uskew is')

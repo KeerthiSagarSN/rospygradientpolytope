@@ -35,10 +35,10 @@ def twist_gradient(twist_index,H,test_joint):
     Hessian - H
     
     
-    Function for 3- DOF - Linear velocity
+    Function for 2- DOF - Forces
     
     '''
-    return H[0:3,twist_index,test_joint]
+    return H[0:2,twist_index,test_joint]
          
  
 # Eq. 37 and 38 is here
@@ -121,7 +121,7 @@ def cross_product_norm_gradient(twist_index_1,twist_index_2,JE,H,test_joint):
 ## Eq.44 full equation is here --> d_nT_vk_dq
 ## Function very specific to the paper - Not a generic function
 
-def normal_twist_projected_gradient(twist_index_1,twist_index_2,twist_index_projected, JE,H,test_joint):
+def normal_twist_projected_gradient(twist_index_1,twist_index_projected, JE,H,test_joint):
     
 
     
@@ -149,18 +149,23 @@ def normal_twist_projected_gradient(twist_index_1,twist_index_2,twist_index_proj
     
     '''
     
-    v1 = JE[0:3,twist_index_1]
-    v2 = JE[0:3,twist_index_2]
+    v1 = JE[0:2,twist_index_1]
     
-    vk = JE[0:3,twist_index_projected]
     
-    nt = transpose(V_unit(cross(v1,v2)))
+    vk = JE[0:2,twist_index_projected]
+    
+    Wmk = array([Wm[:,Nmatrix[k,0]]])
+    #print('Wmk is',Wmk)
+    Q_mat,R_mat = qr(transpose(Wmk))
+    #print('Q_mat',Q_mat)
+    nt = Q_mat[:,-1]
+
     
    
     
     
     
-    d_nt_dq = normal_gradient(twist_index_1,twist_index_2,JE,H,test_joint)
+    d_nt_dq = normal_gradient(twist_index_1,JE,H,test_joint)
     
     d_vk_dq = twist_gradient(twist_index_projected,H,test_joint)
     
@@ -180,20 +185,22 @@ def normal_twist_projected_gradient(twist_index_1,twist_index_2,twist_index_proj
  
  # Eq. 41 is here
  
-def normal_gradient(twist_index_1,twist_index_2,JE,H,test_joint):
+def normal_gradient(H):
+    
+    from numpy import shape,zeros
+    from copy import deepcopy
     
           
     '''
     
-    Partial derivative of a norm vctor
-   dn/dq = d(v1xv2)/dq||v1xv2|| - (v1xv2)d(||v1xv2||)/dq
-           ---------------------------------------------
-                          ||v1xv2||^2
+    Partial derivative of a normal vector - 2D 
+   dn/dq = dW/dq
+
+
     
     Args
-    Twist index :  v1
-    Twist index 2: v2
-    test_joint: dq
+
+
     JE - Jacobian
     H - Hessian
     
@@ -207,51 +214,52 @@ def normal_gradient(twist_index_1,twist_index_2,JE,H,test_joint):
     '''
         
     #  (d(v1xv2)/dq)( ||v1 x v2||)  -  (v1 x v2)(d(|| v1 x v2 ||)/dq)/(|| v1 x v2 ||^2)
-    
+    dn_dq = deepcopy(H)
 
+    print('H',H)
+    input('wait once')
+    dn_dq[0,:,0] = H[1,:,0]
+    dn_dq[1,:,0] = -H[0,:,0]
+
+    dn_dq[0,:,1] = H[1,:,1]
+    dn_dq[1,:,1] = -H[0,:,1]
     
-    v1_x_v2 = cross(JE[0:3,twist_index_1],JE[0:3,twist_index_2])
-    
-    #print('v1_x_v2',v1_x_v2)
-    v1_x_v2_norm = norm(v1_x_v2)
-    
-    d_v1_x_v2_dq = cross_product_gradient(twist_index_1, twist_index_2, JE,H,test_joint)
-    
-    d_v1_x_v2_norm_dq = cross_product_norm_gradient(twist_index_1,twist_index_2,JE,H,test_joint)
-    
-    
-    numerator = d_v1_x_v2_dq*v1_x_v2_norm - (v1_x_v2*d_v1_x_v2_norm_dq)
-    
-    denom = v1_x_v2_norm**2
     #print('denom',denom)
     
-    return numerator*(denom**(-1))
+    return dn_dq
  
  
  ## Eq. 43. is here
  ## Function very specific to the paper and not generalized need to write a generalized sigmoid graident - refer to Philip's code-poly_gradient_fns for that
-def sigmoid_gradient(twist_index_1,twist_index_2,twist_index_projected,JE,H,test_joint,sigmoid_slope):
+ # 2D sigmoid gradient
+def sigmoid_gradient(normal_index,twist_index,dn_dq,n,JE,H,test_joint,sigmoid_slope):
     
     
     ### dsig(x)/dq = sig(x)(1-sig(x))dx/dq
     from numpy import cross,matmul,transpose
     from robot_functions import sigmoid
     
-    v1 = JE[0:3,twist_index_1]
-    v2 = JE[0:3,twist_index_2]
+
+
+    #for i in range(len(dn_dq)):
+
+
+        
+
+        
+    vk = JE[0:2,twist_index]
+
+    nT_vk = matmul(transpose(n[normal_index,:]),vk)
     
-    ## Write exception case here to see if the twist index of normal and projected are not same
-    
+    x = nT_vk
+    #n = V_unit(cross(v1,v2))
+    #n = V_unit(cross(v1,v2))
 
     
-    vk = JE[0:3,twist_index_projected]
+    #x = matmul(transpose(n),vk)
+    #x = nT_vk[normal_index]
     
-    n = V_unit(cross(v1,v2))
-   
-    
-    x = matmul(transpose(n),vk)
-    
-    dx_dq = normal_twist_projected_gradient(twist_index_1,twist_index_2,twist_index_projected,JE,H,test_joint)
+    dx_dq = matmul(dn_dq[normal_index,:,test_joint],vk) + matmul(transpose(n[normal_index,:]),H[twist_index,:,test_joint])
     #dx_dq = matmul(d_nt_dq,vk) + matmul(transpose(n),d_vk_dq)
     
     #print('dx_dq',dx_dq)
@@ -262,3 +270,120 @@ def sigmoid_gradient(twist_index_1,twist_index_2,twist_index_projected,JE,H,test
     #print('sigmoid_term', sigmoid_term)
     
     return sigmoid_term*dx_dq
+
+'''
+def normal_qr_gradient(Wm):
+    # Compute the gradient of the QR decomposition with respect to W
+    # Input the wrench matrix and compute the gradient here
+    from numpy import shape,zeros,array
+    from scipy.linalg import qr
+    
+    dn_dq = zeros(shape = (shape(Wm)[1],2))
+    
+    
+
+    
+
+    for ij in range(shape(Wm)[1]):
+
+        #W = array([Wm[:,j]])
+        
+
+        Wmk = transpose(array([Wm[:,ij]]))
+
+        Q, R = qr(Wmk)
+        print('n_k inside the loop',Q)
+        m, n = Wmk.shape
+        #n = 1
+        dQ = zeros((m, n, m, n))
+        dR = zeros((m, n, m, n))
+        for i in range(m):
+            for j in range(n):
+                for k in range(m):
+                    for l in range(n):
+                        if k == i and l == j:
+                            dR[i, j, k, l] = 1
+                        elif k == i:
+                            dR[i, j, k, l] = -Q[i, l] / R[j, j]
+                        elif l == j:
+                            dR[i, j, k, l] = Q[k, j] / R[j, j]
+                        else:
+                            dR[i, j, k, l] = 0
+        for i in range(m):
+            for j in range(n):
+                for k in range(m):
+                    for l in range(n):
+                        dQ[i, j, k, l] = sum(dR[i, j, :, l] * Q[k, :])
+
+        print('n_k in QR decomp is',Q[:,-1])
+        print('dQ',dQ)
+        dQ_n = dQ[:,-1,-1,-1]
+        print('dQ_n',dQ_n)
+        dn_dq[ij,:] = dQ_n
+        print('dn_dq[ij,:]',dn_dq[ij,:])
+        
+        print('dn_dq',dn_dq)
+        input('wait here')
+        
+    return dn_dq
+'''
+
+def normal_qr_gradient(Wm,H):
+    # Compute the gradient of the QR decomposition with respect to W
+    # Input the wrench matrix and compute the gradient here
+    from numpy import shape,zeros,array,triu,outer,eye
+    from numpy.linalg import pinv
+    from scipy.linalg import qr
+    
+    dn_dq = zeros(shape = (shape(Wm)[0],shape(Wm)[1],2))
+    
+    
+    for dq in range(shape(Wm)[0]):
+    
+
+        for ij in range(shape(Wm)[1]):
+
+            #W = array([Wm[:,j]])
+            
+            '''
+            Wmk = transpose(array([Wm[:,ij]]))
+            print('Wmk',Wmk)
+            Q, R = qr(Wmk)
+            print('Q is',Q)
+            Q = Q[:,-1]
+            print('n_k inside the loop',Q)
+            R_inv = pinv(R)
+            
+            # Compute gradient of R with respect to A
+            R_grad = triu(outer(R, R_inv) - eye(Q.shape[0]))
+            
+            # Compute gradient of Q with respect to A
+            Q_grad = Q @ (eye(Q.shape[0]) - R_inv @ R_grad)
+
+            print('Q_grad',Q_grad)
+            input('wait here')
+            '''
+            ## Skew2D format - here too - Similar to scipy.qr decompsition method
+            sign_x = Wm[0,ij]
+            sign_y = Wm[1,ij]
+
+            print('testing ij',ij)
+            if ((sign_x > 1) and (sign_y > 1)) or ((sign_x < 1) and (sign_y < 1)):
+
+                dn_dq[0,ij,dq] = -H[1,ij,dq]
+                dn_dq[1,ij,dq] = H[0,ij,dq]
+
+            
+            if ((sign_x > 1) and (sign_y <1)) or ((sign_x < 1) and (sign_y > 1)):
+                dn_dq[0,ij,dq] = -H[1,ij,dq]
+                dn_dq[1,ij,dq] = H[0,ij,dq]
+
+
+
+
+
+
+    print('dn_dq',dn_dq)
+    input('wait here')
+        
+    return dn_dq

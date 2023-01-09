@@ -132,30 +132,47 @@ def getHessian(J):
     
     return H
 
-def getHessian_2(J):
+def getHessian_2(Wn):
     # get kinematic Hessian matrix for a robot of revolute joints
     # Paper derivation http://dx.doi.org/10.1016/0094-114X(95)00069-B
     # Input Jacobian  J = [v_1 v_2....v_n]  matrix of unit twists  6  x n
     # Output Hessian Tensor (nxm) xn   H[:,:,j] = [dv_1 / dq_j dv_2 / dq_j dv_n / dq_j]
     # H contains n matrices H[:,:,1] is the second full matrix
+    from scipy.linalg import qr
+    from numpy import transpose,array,hstack,zeros,shape
+
+    J = Wn
     rows, cols = np.shape(J)
     H = np.zeros([rows, cols, cols])
     for i in range(cols):
         for j in range(cols):
-            twist_i = J[:, i]
-            twist_j = J[:, j]
+            twist_i = zeros(shape=(4,1))
+            
+            twist_i[0,0] = J[0,i]
+            twist_i[1,0] = J[1,i]
+            twist_j = zeros(shape=(4,1))
+            
+            twist_j[0,0] = J[0,j]
+            twist_j[1,0] = J[1,j]
+            
+            
             if i < j:
-                omega_i_hat = skew(J[3:6, i])
-                a_rows13 = np.hstack((omega_i_hat, np.zeros([3, 3])))
-                a_rows36 = np.zeros([3, 6])
+                Q,R = qr(transpose(array([J[0:2,i]])))
+                omega_i_hat = Q
+                a_rows13 = np.hstack((omega_i_hat, np.zeros([2, 2])))
+                a_rows36 = np.zeros([2, 4])
                 a = np.vstack((a_rows13, a_rows36))
-                H[:, i, j] = np.matmul(a, twist_j)
+                H[:, i, j] = np.matmul(a, twist_j)[0:2][0]
             elif i >= j:
-                omega_j_hat = skew(J[3:6, j])
-                a_rows13 = np.hstack((omega_j_hat, np.zeros([3, 3])))
-                a_rows36 = np.hstack((np.zeros([3, 3]), omega_j_hat))
+                Q,R = qr(transpose(array([J[0:2,j]])))
+                omega_j_hat = Q
+                a_rows13 = np.hstack((omega_j_hat, np.zeros([2, 2])))
+                a_rows36 = np.hstack((np.zeros([2, 2]), omega_j_hat))
                 a = np.vstack([a_rows13, a_rows36])
-                H[:, i, j] = np.matmul(a, twist_i)
+                print('shaoe of a',shape(a))
+                print('twist_i',shape(twist_i))
+                print('np.matmul(a, twist_i)',np.matmul(a, twist_i)[0:2])
+                H[:, i, j] = np.matmul(a, twist_i)[0:2][0]
     return H
 
 def getDofCombinations(active_joints, m):

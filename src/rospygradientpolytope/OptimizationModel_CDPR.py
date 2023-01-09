@@ -6,7 +6,7 @@ Created on Tue Jul 26 14:44:09 2022
 """
 import scipy.optimize as sco
 
-from numpy import array,pi,vstack,linspace,shape,zeros
+from numpy import array,pi,vstack,linspace,shape,zeros,hstack,transpose
 from numpy.linalg import norm
 from numpy.random import randn
 
@@ -112,14 +112,35 @@ class OptimizationModel:
 
         self.step_size = None
 
+        self.tol_value = None
+        self.lower_bound = None
+
 
         
     ## Constraint equations - Cons1
 
     #ef constraint1(self):
+    def gradient_descent_2D(f, grad_f, x0, learning_rate=0.1, tolerance=1e-6):
+    
+        from numpy.linalg import norm
+        # Initial starting point
 
+        x = x0
+        previous_step_size = float("inf")
+        
+        while previous_step_size > tolerance:
+            # Calculate the gradient at the current point
+            grad = grad_f(x)
+            
+            # Update x in the direction of the negative gradient
+            x = x - learning_rate * grad
+            
+            # Calculate the size of the last step
+            previous_step_size = norm(learning_rate * grad)
+        
+        return x
 
-    def generate_workspace(self):
+    def test_gradient_2D(self):
 
         # Plot the obstacle with cable and base_points
 
@@ -137,12 +158,7 @@ class OptimizationModel:
 
         self.active_joints = len(self.base_points)
 
-        q_boundary_actual = array([[-10000,-10000]])
-        q_boundary_estimated = array([[-10000,-10000]])
-        
 
-        q_feasible = array([[-10000,-10000]])
-        q_infeasible = array([[-10000,-10000]])
         
 
         q_in_x = linspace(self.pos_bounds[0,0],self.pos_bounds[0,1],self.step_size)
@@ -150,21 +166,47 @@ class OptimizationModel:
 
 
 
+        q_boundary_actual = zeros(shape = (len(q_in_x),len(q_in_y),2))
+        q_boundary_actual[:,:,:] = -10000
+        q_boundary_estimated = zeros(shape = (len(q_in_x),len(q_in_y),2))
+        q_boundary_estimated[:,:,:] = -10000
+
+        q_feasible = zeros(shape = (len(q_in_x),len(q_in_y),2))
+        q_feasible[:,:,:] = -10000
+
+        #q_total = zeros(shape = (len(q_in_x),len(q_in_y),2))
+        q_total = zeros(shape=(len(q_in_x),len(q_in_y),2))
+
+        q_total[:,:,:] = -10000
+        q_infeasible = zeros(shape = (len(q_in_x),len(q_in_y),2))
+        q_infeasible[:,:,:] = -10000
+
+        CM_array_total_est = zeros(shape = (len(q_in_x),len(q_in_y)))
+
+        CM_array_total_est[:,:] = -10000
+        CM_array_total_actual = zeros(shape = (len(q_in_x),len(q_in_y)))
+        CM_array_total_actual[:,:] = -10000
+
+        CM_array_actual = zeros(shape = (len(q_in_x),len(q_in_y)))
+        
+        
+        CM_array_est = zeros(shape = (len(q_in_x),len(q_in_y)))
+        
         loop_counter = 0
         
-        #for i in range(len(q_in_x)):
-        for i in range(0,1): #len(q_in_x)):
-            #x_in = q_in_x[i]
-            x_in = 0.5
-            #for j in range(len(q_in_y)):
-            for j in range(0,1):
+        for i in range(len(q_in_x)):
+        #for i in range(0,1): #len(q_in_x)):
+            x_in = q_in_x[i]
+            #x_in = 0.5
+            for j in range(len(q_in_y)):
+            #for j in range(0,1):
                 
 
                 print('loop_counter is',loop_counter)
 
                 loop_counter += 1
-                #y_in = q_in_y[j]
-                y_in = 0.5
+                y_in = q_in_y[j]
+                #y_in = 1.0
 
 
 
@@ -175,13 +217,20 @@ class OptimizationModel:
 
                 #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
                 
-                W = zeros(shape=(2,self.active_joints))
+                Wm = zeros(shape=(2,self.active_joints))
                 for k in range(len(self.base_points)):
                     cable_plt = array([[x_in,self.base_points[k,0]],[y_in,self.base_points[k,1]]])
-                    W[0,k] = self.base_points[k,0] - x_in 
-                    W[1,k] = self.base_points[k,1] - y_in
+                    Wm[0,k] = self.base_points[k,0] - x_in
+                    Wm[1,k] = self.base_points[k,1] - y_in
 
-                    W[:,k] = V_unit(W[:,k])
+                    #print('self.base_points',self.base_points[k,:])
+
+                    #input('stop and check')
+
+                    #Wm[0,k] = W[0,k]*((norm(W[:,k]))**(-1))
+                    #Wm[1,k] = W[1,k]*((norm(W[:,k]))**(-1))
+
+                    Wm[:,k] = V_unit(Wm[:,k])
                     #plt.plot(cable_plt[0,:],cable_plt[1,:],color = color_arr[k])
                     #plt.pause(0.01)
                     #print('cable number is:',k)
@@ -195,8 +244,8 @@ class OptimizationModel:
                 
                 #input('stop here')
                 #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
-                Wm = array([[-0.7071,0.7071,-0.7071,0.7071],[0.7071,0.7071,0.7071,0.7071]])
-                #Wm = array([[-0.7071,-0.7071,0.7071,0.7071],[-0.7071,0.7071,0.7071,-0.7071]])
+                #Wm = array([[-0.7071,-0.7071,-0.7071,-0.7071],[0.7071,0.7071,0.7071,0.7071]])
+                
                 #print('Wrench matrix is is',Wm)
                 W = -Wm
                 
@@ -216,46 +265,194 @@ class OptimizationModel:
                         self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
                 
                 
+                
+
+                CM_array_total_actual[i,j] = Gamma_min
+
+                CM_array_total_est[i,j] = Gamma_min_softmax
+
+    def generate_workspace(self):
+
+        # Plot the obstacle with cable and base_points
+
+        #ax = figure1.add_subplot(111, projection='2d')
+
+
+        #global figure1
+        #figure1 = plt.figure()
+
+        #plt.ion()
+
+        #plt.show()
+
+        color_arr = ['k','r','b','c']
+
+        self.active_joints = len(self.base_points)
+
+
+        
+
+        q_in_x = linspace(self.pos_bounds[0,0],self.pos_bounds[0,1],self.step_size)
+        q_in_y = linspace(self.pos_bounds[1,0],self.pos_bounds[1,1],self.step_size)
+
+
+
+        q_boundary_actual = zeros(shape = (len(q_in_x),len(q_in_y),2))
+        q_boundary_actual[:,:,:] = -10000
+        q_boundary_estimated = zeros(shape = (len(q_in_x),len(q_in_y),2))
+        q_boundary_estimated[:,:,:] = -10000
+
+        q_feasible = zeros(shape = (len(q_in_x),len(q_in_y),2))
+        q_feasible[:,:,:] = -10000
+
+        #q_total = zeros(shape = (len(q_in_x),len(q_in_y),2))
+        q_total = zeros(shape=(len(q_in_x),len(q_in_y),2))
+
+        q_total[:,:,:] = -10000
+        q_infeasible = zeros(shape = (len(q_in_x),len(q_in_y),2))
+        q_infeasible[:,:,:] = -10000
+
+        CM_array_total_est = zeros(shape = (len(q_in_x),len(q_in_y)))
+
+        CM_array_total_est[:,:] = -10000
+        CM_array_total_actual = zeros(shape = (len(q_in_x),len(q_in_y)))
+        CM_array_total_actual[:,:] = -10000
+
+        CM_array_actual = zeros(shape = (len(q_in_x),len(q_in_y)))
+        
+        
+        CM_array_est = zeros(shape = (len(q_in_x),len(q_in_y)))
+        
+        loop_counter = 0
+        first_iteration = True
+        
+        for i in range(len(q_in_x)):
+        #for i in range(0,1): #len(q_in_x)):
+            x_in = q_in_x[i]
+            #x_in = 0.5
+            for j in range(len(q_in_y)):
+            #for j in range(0,1):
+                
+
+                print('loop_counter is',loop_counter)
+
+                loop_counter += 1
+                y_in = q_in_y[j]
+                #y_in = 1.0
+
+
+
+                q = array([x_in,y_in])
+
+
+
+
+                #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+                
+                Wm = zeros(shape=(2,self.active_joints))
+                for k in range(len(self.base_points)):
+                    cable_plt = array([[x_in,self.base_points[k,0]],[y_in,self.base_points[k,1]]])
+                    Wm[0,k] = self.base_points[k,0] - x_in
+                    Wm[1,k] = self.base_points[k,1] - y_in
+
+                    #print('self.base_points',self.base_points[k,:])
+
+                    #input('stop and check')
+
+                    #Wm[0,k] = W[0,k]*((norm(W[:,k]))**(-1))
+                    #Wm[1,k] = W[1,k]*((norm(W[:,k]))**(-1))
+
+                    Wm[:,k] = V_unit(Wm[:,k])
+                    #plt.plot(cable_plt[0,:],cable_plt[1,:],color = color_arr[k])
+                    #plt.pause(0.01)
+                    #print('cable number is:',k)
+                #print('Wrench matrix is is',W)
+                
+                #W = W
+                
+                #print('Wrench matrix is here', W)
+                #input('wait here')
 
                 
-                print('Gamma_min is',Gamma_min)
-                print('Gamma_min softmax is',Gamma_min_softmax)
-                input('stop and test')
+                #input('stop here')
+                #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+                #Wm = array([[-0.7071,-0.7071,-0.7071,-0.7071],[0.7071,0.7071,0.7071,0.7071]])
+                
+                #print('Wrench matrix is is',Wm)
+                W = -Wm
+                
+
+                #W = W_n
+                #JE = W
+                #print('JE is',JE)
+                #print('H is',H)
+                #print('Wrench matrix is', J)
+
+                h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = \
+                    get_polytope_hyperplane(W,self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.sigmoid_slope)
+                    
+                
+                Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = \
+                get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                        self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
+                
+                Wu,Wn,H= get_wrench_matrix(q,self.length_params,self.height_params)
+                
+
+                d_gamma_hat = Gamma_hat_gradient(W,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+                        p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
+                        self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
+
+                CM_array_total_actual[i,j] = Gamma_min
+
+                CM_array_total_est[i,j] = Gamma_min_softmax
+
+
+                
+                #print('Gamma_min is',Gamma_min)
+                #print('Gamma_min softmax is',Gamma_min_softmax)
+                #input('stop and test')
                 
                 #plt.scatter(self.base_points[:,0],self.base_points[:,1],color='k')
-                tol_value = 1e-1
+                #self.tol_value = 1e-3
+
+                q_total[i,j,:] = q
+
+
 
                 #print('Gamma_min',Gamma_min)
 
                 #print('Gamma_min_softmax',Gamma_min_softmax)
 
                 #input('check estimates')
+
+                if not first_iteration:
+
+
+
+
+
+                if first_iteration:
+
+                    prev_gamma_min = Gamma_min_softmax
+                    first_iteration = False
                 
-                if (Gamma_min_softmax < tol_value) and (Gamma_min_softmax) > -tol_value:
+                if (Gamma_min_softmax < self.tol_value) and (Gamma_min_softmax) > -self.lower_bound:
                     #print('inside WFW - estimated')
                     #input('stop here')
                     print('estimated infeasible point')
-                    q_boundary_estimated = vstack((q_boundary_estimated,q))
-
+                    #q_boundary_estimated = vstack((q_boundary_estimated,q))
+                    q_boundary_estimated[i,j,:] = q
+                    #CM_array_est = vstack((CM_array_est,Gamma_min_softmax))
+                    CM_array_est[i,j] = Gamma_min_softmax
                 #print('Gamma_min is',Gamma_min)
 
-                if (Gamma_min) > tol_value :
-                    print('feasible point')
-                    q_feasible = vstack((q_feasible,q))
 
+
+                
+                if (Gamma_min < self.tol_value) and (Gamma_min > self.lower_bound):
                     
-                
-                
-                
-                elif (Gamma_min) < -tol_value :
-
-                    print('infeasible point')
-                    q_infeasible = vstack((q_infeasible,q))
-
-                
-                elif (Gamma_min < tol_value) and (Gamma_min > -tol_value):
-                    
-                    print('infeasible point')
+                    print('boundary pointtttttttttttttttttttttttttttttttttttttttttttttttt')
                     '''
                     polytope_vertices, polytope_faces, facet_pair_idx, capacity_margin_faces, \
                         capacity_proj_vertex, polytope_vertices_est, polytope_faces_est, capacity_margin_faces_est, capacity_proj_vertex_est = \
@@ -298,29 +495,49 @@ class OptimizationModel:
                     #figure1.canvas.flush_events()
 
 
-                    q_boundary_actual = vstack((q_boundary_actual,q))
+                    #q_boundary_actual = vstack((q_boundary_actual,q))
 
+                    q_boundary_actual[i,j,:] = q
+                    #CM_array_actual = vstack((CM_array_actual,Gamma_min))
+                    CM_array_actual[i,j] = Gamma_min
                     #input('testing here')
 
                     
                     
                     #plt.show()
+                if (Gamma_min) > 0 :
+                    print('feasible point')
+                    #q_feasible = vstack((q_feasible,q))
 
+                    q_feasible[i,j,:] = q
+
+                    
+                
+                
+                
+                elif (Gamma_min) < -self.lower_bound :
+
+                    print('infeasible point')
+                    #q_infeasible = vstack((q_infeasible,q))
+                    q_infeasible[i,j,:] = q
                 
 
                     
 
                 #plt.pause(0.01)
                 #plt.gcf().clear()
-        
+        '''
         q_feasible = q_feasible[1:,:]
         q_infeasible = q_infeasible[1:,:]
         q_boundary_estimated = q_boundary_estimated[1:,:]
         q_boundary_actual = q_boundary_actual[1:,:]
+        CM_array_actual = CM_array_actual[1:,:]
+
+        CM_array_est = CM_array_est[1:,:]
+        '''
 
 
-
-        return q_boundary_actual , q_boundary_estimated, q_feasible, q_infeasible
+        return q_boundary_actual , q_boundary_estimated, q_feasible, q_infeasible, q_total,CM_array_actual, CM_array_est, CM_array_total_actual, CM_array_total_est
         
 
         
@@ -1137,13 +1354,4 @@ class OptimizationModel:
 
         #jac_output = sum(jac_output)
         return jac_output
-
-    def hess_func(self,q_des):
-
-        self.opt_robot_model.urdf_transform(q_joints=q_des)
-
-        #self.opt_polytope_gradient_model.compute_polytope_gradient_parameters(self.opt_robot_model,self.opt_polytope_model)
-        #self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=1000)
-        hess_output = self.opt_polytope_gradient_model.d_softmax_dq
-
-        return hess_output
+        
