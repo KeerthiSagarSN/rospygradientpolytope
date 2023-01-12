@@ -121,7 +121,7 @@ def cross_product_norm_gradient(twist_index_1,twist_index_2,JE,H,test_joint):
 ## Eq.44 full equation is here --> d_nT_vk_dq
 ## Function very specific to the paper - Not a generic function
 
-def normal_twist_projected_gradient(twist_index_1,twist_index_projected, JE,H,test_joint):
+def normal_twist_projected_gradient_2D(normal_index,twist_index,dn_dq,n,JE,H,test_joint):
     
 
     
@@ -149,38 +149,49 @@ def normal_twist_projected_gradient(twist_index_1,twist_index_projected, JE,H,te
     
     '''
     
-    v1 = JE[0:2,twist_index_1]
+        ### dsig(x)/dq = sig(x)(1-sig(x))dx/dq
+    from numpy import cross,matmul,transpose,shape
+    from robot_functions import sigmoid
     
+
+
+    #for i in range(len(dn_dq)):
+
+
+        
+
+        
+    vk = JE[0:2,twist_index]
+
+    nT_vk = matmul(transpose(n[normal_index,:]),vk)
     
-    vk = JE[0:2,twist_index_projected]
-    
-    Wmk = array([Wm[:,Nmatrix[k,0]]])
-    #print('Wmk is',Wmk)
-    Q_mat,R_mat = qr(transpose(Wmk))
-    #print('Q_mat',Q_mat)
-    nt = Q_mat[:,-1]
+    x = nT_vk
+    #n = V_unit(cross(v1,v2))
+    #n = V_unit(cross(v1,v2))
 
     
-   
+    #x = matmul(transpose(n),vk)
+    #x = nT_vk[normal_index]
+    #print('shape of dn_dq',shape(dn_dq))
+    #print('vk',shape(vk))
+
+    #print('shape of n is',shape(n))
+
+    #print('shape of H is',shape(H))
+
+    dx_dq = matmul(dn_dq[:,normal_index,test_joint],vk) + matmul(transpose(n[normal_index,:]),H[:,twist_index,test_joint])
+    #dx_dq = matmul(d_nt_dq,vk) + matmul(transpose(n),d_vk_dq)
+    
+    #print('dx_dq',dx_dq)
     
     
+        
+
+    #print('sigmoid_term', sigmoid_term)
     
-    d_nt_dq = normal_gradient(twist_index_1,JE,H,test_joint)
-    
-    d_vk_dq = twist_gradient(twist_index_projected,H,test_joint)
-    
-    ## Eq. 44 is here
-    
-    #print('d_nt_dq',d_nt_dq)
-    #print('vk',vk)
-    #print('n',n)
-    #print('d_vk_dq',d_vk_dq)
+    return dx_dq
     
     
-    
-    dx_dq = matmul(d_nt_dq,vk) + matmul(nt,d_vk_dq)
-    
-    return dx_dq 
  
  
  # Eq. 41 is here
@@ -215,14 +226,19 @@ def normal_gradient(H):
         
     #  (d(v1xv2)/dq)( ||v1 x v2||)  -  (v1 x v2)(d(|| v1 x v2 ||)/dq)/(|| v1 x v2 ||^2)
     dn_dq = deepcopy(H)
+    
 
-    print('H',H)
-    input('wait once')
-    dn_dq[0,:,0] = H[1,:,0]
-    dn_dq[1,:,0] = -H[0,:,0]
+    #print('H is',H)
+    #print('dn_dq',H[1,:,0])
 
-    dn_dq[0,:,1] = H[1,:,1]
-    dn_dq[1,:,1] = -H[0,:,1]
+    #input('test normal gradient')
+    #print('H',H)
+    #input('wait once')
+    dn_dq[0,:,0] = -H[0,:,1]
+    dn_dq[0,:,1] = H[0,:,0]
+
+    dn_dq[1,:,0] = -H[1,:,1]
+    dn_dq[1,:,1] = H[1,:,0]
     
     #print('denom',denom)
     
@@ -259,7 +275,8 @@ def sigmoid_gradient(normal_index,twist_index,dn_dq,n,JE,H,test_joint,sigmoid_sl
     #x = matmul(transpose(n),vk)
     #x = nT_vk[normal_index]
     
-    dx_dq = matmul(dn_dq[normal_index,:,test_joint],vk) + matmul(transpose(n[normal_index,:]),H[twist_index,:,test_joint])
+    dx_dq = matmul(dn_dq[:,normal_index,test_joint],vk) + matmul(transpose(n[normal_index,:]),H[:,twist_index,test_joint])
+    
     #dx_dq = matmul(d_nt_dq,vk) + matmul(transpose(n),d_vk_dq)
     
     #print('dx_dq',dx_dq)
@@ -367,7 +384,7 @@ def normal_qr_gradient(Wm,H):
             sign_x = Wm[0,ij]
             sign_y = Wm[1,ij]
 
-            print('testing ij',ij)
+            #print('testing ij',ij)
             if ((sign_x > 1) and (sign_y > 1)) or ((sign_x < 1) and (sign_y < 1)):
 
                 dn_dq[0,ij,dq] = -H[1,ij,dq]
@@ -383,7 +400,7 @@ def normal_qr_gradient(Wm,H):
 
 
 
-    print('dn_dq',dn_dq)
-    input('wait here')
+    #print('dn_dq',dn_dq)
+    
         
     return dn_dq

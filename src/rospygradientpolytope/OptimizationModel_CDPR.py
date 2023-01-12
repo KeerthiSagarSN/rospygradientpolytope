@@ -14,6 +14,8 @@ from shapely.geometry import Polygon,LineString
 from linearalgebra import isclose,V_unit
 import matplotlib.pyplot as plt
 from polytope_functions_2D import get_capacity_margin, get_polytope_hyperplane
+from polytope_gradient_functions_2D import Gamma_hat_gradient_2D
+from gradient_functions_2D import normal_gradient
 from WrenchMatrix import get_wrench_matrix
 
 from visual_polytope import force_polytope_2D
@@ -292,8 +294,8 @@ class OptimizationModel:
 
         
 
-        q_in_x = linspace(self.pos_bounds[0,0],self.pos_bounds[0,1],self.step_size)
-        q_in_y = linspace(self.pos_bounds[1,0],self.pos_bounds[1,1],self.step_size)
+        q_in_x = linspace(self.pos_bounds[0,0]+0.0001,self.pos_bounds[0,1]-0.001,self.step_size)
+        q_in_y = linspace(self.pos_bounds[1,0]+0.0001,self.pos_bounds[1,1]-0.001,self.step_size)
 
 
 
@@ -325,20 +327,22 @@ class OptimizationModel:
         
         loop_counter = 0
         first_iteration = True
-        
+        step_iter = self.step_size
         for i in range(len(q_in_x)):
         #for i in range(0,1): #len(q_in_x)):
             x_in = q_in_x[i]
-            #x_in = 0.5
+            #x_in = 0.42
+            #y_in = 0.30
+            #
             for j in range(len(q_in_y)):
             #for j in range(0,1):
                 
 
-                print('loop_counter is',loop_counter)
+                #print('loop_counter is',loop_counter)
 
                 loop_counter += 1
                 y_in = q_in_y[j]
-                #y_in = 1.0
+                #y_in += step_iter
 
 
 
@@ -396,10 +400,12 @@ class OptimizationModel:
                 get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
                         self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
                 
-                Wu,Wn,H= get_wrench_matrix(q,self.length_params,self.height_params)
-                
+                Wu,Wn,Hess= get_wrench_matrix(q,self.length_params,self.height_params)
 
-                d_gamma_hat = Gamma_hat_gradient(W,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+
+                print('HEssian before gradient is',Hess)
+
+                d_gamma_hat = Gamma_hat_gradient_2D(Wn,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
                         p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
                         self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
 
@@ -418,8 +424,16 @@ class OptimizationModel:
 
                 q_total[i,j,:] = q
 
+                #dnk_dq_a = normal_gradient(Hess)
+    
+                #print('dnk_dq_a')
+                #dnk_dq_a = Jy(x_in,y_in)
+                #print('Hess',Hess)
+                #dnk_dq_a = dnk_dq_a[:,:,1]
 
+                d_gamma_hat_a = d_gamma_hat[0]
 
+                #print('Analytical gradient',d_gamma_hat_a)
                 #print('Gamma_min',Gamma_min)
 
                 #print('Gamma_min_softmax',Gamma_min_softmax)
@@ -428,12 +442,27 @@ class OptimizationModel:
 
                 if not first_iteration:
 
+                    
 
+                    d_gamma_hat_n = (Gamma_min_softmax - prev_gamma_min)/step_iter
+
+                    #print('NUmerical gradient is',d_gamma_hat_n)
+                    #print('Analytical gradient is',d_gamma_hat_a)
+
+                    #print('Error')
+                    #print(norm(d_gamma_hat_n- d_gamma_hat_a))
+
+                    prev_gamma_min = Gamma_min_softmax
+
+
+                    prev_n_k = n_k
 
 
 
                 if first_iteration:
 
+                    prev_n_k = n_k
+                    prev_twist = Wn
                     prev_gamma_min = Gamma_min_softmax
                     first_iteration = False
                 
@@ -522,7 +551,7 @@ class OptimizationModel:
                     q_infeasible[i,j,:] = q
                 
 
-                    
+                   
 
                 #plt.pause(0.01)
                 #plt.gcf().clear()
@@ -537,13 +566,171 @@ class OptimizationModel:
         '''
 
 
+        ef_total = q_total
+        
+        CM_estimated = CM_array_total_est
+
+        
+        #print('q_estimated is',q_estimated)
+        #print('shape(0q_est)',shape(q_estimated))
+
+        #global figure 7
+
+        fig_1 = plt.figure()
+
+        ax = plt.axes(projection='3d')
+
+
+
+        CM_estimated_density = CM_estimated
+        #print('CM_estimated',CM_estimated_density)
+        #input('test here')
+
+        #print('shape(CM_estimated density)',shape(CM_estimated_density))
+        #print('shape of ef_total',shape(ef_total[:,:,0]))
+
+        #X_dens,Y_dens = meshgrid(ef_total[:,:,0],ef_total[:,:,1])
+        w = ax.plot_surface(ef_total[:,:,0], ef_total[:,:,1], CM_estimated_density,cmap='spring',alpha=0.4)
+        # change the fontsize
+
+
+        ax.set_xlabel('x [m]',fontsize=13)
+        ax.set_ylabel('y [m]',fontsize=13)
+        ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+        ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+        ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+        #ax.set_zlabel('$\hat{\gamma}$',fontsize=20)
+        #ax.set_zlabel('$\hat{\gamma}$',rotation=145)
+        ax.set_zlabel(r"$\hat{\gamma}$" + str(' [N]'),rotation=90,fontsize=16)
+        
+        ### Test gradient descent here
+        fig_2 = plt.figure()
+
+        ax2 = plt.axes()
+        num_iterations = 1000
+        learning_rate = 0.001
+        ### Good starting point x0 = 0.65, y0 = 0.72
+        #x0 = 0.65
+        #y0 = 0.72
+
+        x0 = 0.005
+        y0 = 0.005
+        #q = array([x_0,y_0])
+        first_iteration = True
+        for i in range(num_iterations):
+            
+            q = array([x0,y0])
+
+            x_in = x0
+            y_in = y0
+
+            #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+            
+            Wm = zeros(shape=(2,self.active_joints))
+            for k in range(len(self.base_points)):
+                cable_plt = array([[x_in,self.base_points[k,0]],[y_in,self.base_points[k,1]]])
+                Wm[0,k] = self.base_points[k,0] - x_in
+                Wm[1,k] = self.base_points[k,1] - y_in
+
+                #print('self.base_points',self.base_points[k,:])
+
+                #input('stop and check')
+
+                #Wm[0,k] = W[0,k]*((norm(W[:,k]))**(-1))
+                #Wm[1,k] = W[1,k]*((norm(W[:,k]))**(-1))
+
+                Wm[:,k] = V_unit(Wm[:,k])
+                #plt.plot(cable_plt[0,:],cable_plt[1,:],color = color_arr[k])
+                #plt.pause(0.01)
+                #print('cable number is:',k)
+            #print('Wrench matrix is is',W)
+            
+            #W = W
+            
+            #print('Wrench matrix is here', W)
+            #input('wait here')
+
+            
+            #input('stop here')
+            #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+            #Wm = array([[-0.7071,-0.7071,-0.7071,-0.7071],[0.7071,0.7071,0.7071,0.7071]])
+            
+            #print('Wrench matrix is is',Wm)
+            W = -Wm
+            
+
+            #W = W_n
+            #JE = W
+            #print('JE is',JE)
+            #print('H is',H)
+            #print('Wrench matrix is', J)
+
+            h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = \
+                get_polytope_hyperplane(W,self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.sigmoid_slope)
+                
+            
+            Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = \
+            get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                    self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
+            
+            Wu,Wn,Hess= get_wrench_matrix(q,self.length_params,self.height_params)
+            z0 = Gamma_min_softmax
+            
+            
+            #ax.scatter(x0,y0,z0,c='k',s=20)
+            
+
+            d_gamma_hat,d_LSE_dq ,d_LSE_dq_arr,d_gamma_max_dq,dn_dq = Gamma_hat_gradient_2D(Wn,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+                    p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
+                    self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
+
+            print('Gammaa_min softmax is',Gamma_min_softmax)
+            print('d_LSE_dq',d_LSE_dq)
+            print('d_LSE_dq_arr',d_LSE_dq_arr)
+            print('d_gamma_max_dq',d_gamma_max_dq)
+            x0 = x0 + learning_rate*d_gamma_hat[0]
+            y0 = y0 + learning_rate*d_gamma_hat[1]
+            #y0 += learning_rate
+            z0 = Gamma_min_softmax
+
+            dn_dq_a = normal_gradient(Hess)
+            
+                
+            if not first_iteration:
+                ax2.scatter(i,z0,c='k',s=10)
+                ax.scatter(x0,y0,z0,c='k',s=20)
+                print('NUmerical gradient of gamma',(Gamma_min_softmax-prev_Gamma_min_softmax)/(1.0*num_iterations))
+                print('ANalytical gradient',d_gamma_hat)
+                #input('test gradient')
+                dn_dq_n = (n_k - prev_n_k)/(1.0*learning_rate)
+                #print('NUmerical gradient normal n',dn_dq_n)
+                #dn_dq_a = dn_dq
+                #print('Analytical gradient normal n',dn_dq_a)
+
+                #print('Hessian is',Hess)
+
+                #print('d_gamma_hat[0]',d_gamma_hat[0])
+                #print('d_gamma_hat[1]',d_gamma_hat[1])
+                ax.set_xlabel('x [m]',fontsize=13)
+                ax.set_ylabel('y [m]',fontsize=13)
+                ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+                ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+                ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+                plt.pause(0.0001)
+                prev_Gamma_min_softmax = Gamma_min_softmax
+                prev_n_k = n_k
+            if first_iteration:
+                prev_Gamma_min_softmax = Gamma_min_softmax
+                prev_n_k = n_k
+                first_iteration = False
+            #input('test error here')
+        plt.show()
+            
+
+            
+
         return q_boundary_actual , q_boundary_estimated, q_feasible, q_infeasible, q_total,CM_array_actual, CM_array_est, CM_array_total_actual, CM_array_total_est
         
-
-        
-
-
-    ## Constraint equations - Cons2
 
 
 
@@ -1354,4 +1541,3 @@ class OptimizationModel:
 
         #jac_output = sum(jac_output)
         return jac_output
-        

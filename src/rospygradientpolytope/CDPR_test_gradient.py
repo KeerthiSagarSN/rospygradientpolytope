@@ -32,7 +32,7 @@ from shapely.geometry import Polygon,LineString
 
 from polytope_functions_2D import get_capacity_margin, get_polytope_hyperplane
 
-from polytope_gradient_functions_2D import Gamma_hat_gradient
+from polytope_gradient_functions_2D import Gamma_hat_gradient_2D
 from gradient_functions_2D import normal_gradient
 
 from WrenchMatrix import get_wrench_matrix
@@ -93,7 +93,8 @@ CDPR_optimizer.height_params = base_points[2,1] - base_points[0,1]
 print('Length is ', CDPR_optimizer.length_params )
 print('Height is ', CDPR_optimizer.height_params )
 #sigmoid_slope_array = array([10.0,50.0,100.0,150.0,400.0])
-sigmoid_slope_array = array([10.0,20.0,30.0,50])
+#sigmoid_slope_array = array([10.0,20.0,30.0,50]) ### Paper value here
+sigmoid_slope_array = array([100.0,200.0,300.0,500]) ### Paper value here
 #CDPR_optimizer.sigmoid_slope = 100
 
 CDPR_optimizer.cartesian_dof_input = array([True,True,False,False,False,False])
@@ -212,8 +213,8 @@ ax = plt.axes(projection='3d')
 
 CM_estimated_density = CM_estimated[3]
 
-print('shape(CM_estimated density)',shape(CM_estimated_density))
-print('shape of ef_total',shape(ef_total[:,:,0]))
+#print('shape(CM_estimated density)',shape(CM_estimated_density))
+#print('shape of ef_total',shape(ef_total[:,:,0]))
 
 #X_dens,Y_dens = meshgrid(ef_total[:,:,0],ef_total[:,:,1])
 w = ax.plot_surface(ef_total[:,:,0], ef_total[:,:,1], CM_estimated_density,cmap='spring')
@@ -367,8 +368,8 @@ for i in range(number_iterations):
 
     for l in range(shape(W)[1]):
         Wmk = array([W[:,l]])
-        print('Wmk is',Wmk)
-        Q_mat,R_mat = qr(transpose(Wmk))
+        #print('Wmk is',Wmk)
+        #Q_mat,R_mat = qr(transpose(Wmk))
 
         #print('Q_mat',Q_mat)
         #n_k[l,0] = Q_mat[0,-1]
@@ -387,6 +388,7 @@ for i in range(number_iterations):
     #dnk_dq = getHessian_2(W)
     #print('dnk_dq',dnk_dq)
     dnk_dq_a = normal_gradient(Hess)
+    
     #print('dnk_dq_a')
     #dnk_dq_a = Jy(x_in,y_in)
     print('Hess',Hess)

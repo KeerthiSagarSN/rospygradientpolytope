@@ -331,8 +331,11 @@ def get_wrench_matrix(q,length,height):
     
     #Hessian_matrix[:,:,1] = d_W_dy
     
+    #print('x,y',x,y)
     Hessian_matrix[:,:,0] = Jx(x,y)
     Hessian_matrix[:,:,1] = Jy(x,y)
+
+    #print('Resuting hessian matrix ',Hessian_matrix)
     return W,W_n,Hessian_matrix
 
 '''

@@ -21,14 +21,14 @@ from numpy.linalg import norm
 from rospygradientpolytope.linearalgebra import V_unit, check_ndarray
 from rospygradientpolytope.robot_functions import exp_sum,exp_normalize,smooth_max_gradient,sigmoid
 from math import isnan
-from rospygradientpolytope.gradient_functions import normal_gradient, normal_twist_projected_gradient, sigmoid_gradient
+from rospygradientpolytope.gradient_functions_2D import normal_gradient, normal_twist_projected_gradient_2D, sigmoid_gradient
 
-    
+
 
 ## Eq.42 is here
 ## All values here are with respect the estimated parameters in the polytope
 
-def hyperplane_gradient(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+def hyperplane_gradient_2D(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
                         p_minus_hat,qdot_min,qdot_max,\
                             test_joint,sigmoid_slope):
     
@@ -72,8 +72,8 @@ def hyperplane_gradient(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_pl
     
     
 
-    d_sig_nT_vk_dq = sigmoid_gradient(dn_dq,n,JE,H,test_joint,sigmoid_slope)
-    d_negative_sig_nT_vk_dq = sigmoid_gradient(dn_dq,n,JE,H,test_joint,sigmoid_slope)
+    #d_sig_nT_vk_dq = sigmoid_gradient(dn_dq,n,JE,H,test_joint,sigmoid_slope)
+    #d_negative_sig_nT_vk_dq = sigmoid_gradient(dn_dq,n,JE,H,test_joint,sigmoid_slope)
     
     
     for index_normal in range(shape(Nmatrix)[1]):
@@ -91,7 +91,7 @@ def hyperplane_gradient(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_pl
 
             #twist_index_projected = Nnot[normal_index,index_projected_screw]
             # All screws which do not generate the normal are projected on the normal: 
-            vk = J_Hessian[0:2,index_projected_screw]
+            vk = J_Hessian[0:2,int(index_projected_screw)]
             
             
             
@@ -108,7 +108,7 @@ def hyperplane_gradient(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_pl
             #d_nT_vk_dq = dot(dn_dq[normal_index],vk[normal_index,index_projected_screw]) + dot(n_vk[normal_index],vk_dq[normal_index,index_projected_screw])
             ## Right side termn of 42 
             
-            d_nT_vk_dq = normal_twist_projected_gradient(index_projected_screw,dn_dq,JE,H,test_joint)
+            d_nT_vk_dq = normal_twist_projected_gradient_2D(normal_index, index_projected_screw, dn_dq,n_k,JE,H,test_joint)
             
             #deltaq_k = 
             
@@ -118,22 +118,30 @@ def hyperplane_gradient(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_pl
             
             #d_sig_nT_vk_dq = dot(sigmoid_gradient(n_T_vk[normal_index,index_projected_screw],100),d_nT_vk_dq)
             
-            d_sig_nT_vk_dq = sigmoid_gradient(normal_index, index_projected_screw, dn_dq,JE,H,test_joint,sigmoid_slope)
-            d_negative_sig_nT_vk_dq = sigmoid_gradient(normal_index, index_projected_screw, dn_dq,JE,H,test_joint,-sigmoid_slope)
+            d_sig_nT_vk_dq = sigmoid_gradient(normal_index, index_projected_screw, dn_dq,n_k,JE,H,test_joint,sigmoid_slope)
+            d_negative_sig_nT_vk_dq = sigmoid_gradient(normal_index, index_projected_screw, dn_dq,n_k,JE,H,test_joint,-sigmoid_slope)
             
             # Initialize the parameter
             dh_plus_dq = 0
             
+            '''
             dh_plus_dq =  d_sig_nT_vk_dq*deltaqq[index_projected_screw]*n_T_vk[normal_index,index_projected_screw] + \
                                                                             (sig_nT_vk*deltaqq[index_projected_screw]*d_nT_vk_dq)
-            
+            '''
+
+            dh_plus_dq =  d_sig_nT_vk_dq*deltaqq[index_projected_screw]*nT_dot_vk + \
+                                                                (sig_nT_vk*deltaqq[index_projected_screw]*d_nT_vk_dq)
             # Initialize dh_minus parameter                
             
             dh_minus_dq = 0                
             
+            '''
             dh_minus_dq =  d_negative_sig_nT_vk_dq*deltaqq[index_projected_screw]*n_T_vk[normal_index,index_projected_screw] + \
                                                                             (sig_negative_nT_vk*deltaqq[index_projected_screw]*d_nT_vk_dq)
-            
+            '''
+
+            dh_minus_dq =  d_negative_sig_nT_vk_dq*deltaqq[index_projected_screw]*nT_dot_vk + \
+                                                                            (sig_negative_nT_vk*deltaqq[index_projected_screw]*d_nT_vk_dq)
             #print('dh_plus_dq',dh_plus_dq)
             
             h_plus_gradient[normal_index] +=  dh_plus_dq
@@ -161,7 +169,7 @@ def hyperplane_gradient(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_pl
 ## All values here are with respect the estimated parameters in the polytope
  
     
-def Gamma_hat_gradient_joint(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+def Gamma_hat_gradient_joint_2D(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
                         p_minus_hat,qdot_min,qdot_max,\
                             cartesian_desired_vertices,test_joint,sigmoid_slope_joint):
     
@@ -185,9 +193,7 @@ def Gamma_hat_gradient_joint(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat
     
     ## Get all intrinsic parameters of the robot here: 
     
-    d_h_plus_dq, d_h_minus_dq = hyperplane_gradient(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
-                p_minus_hat,qdot_min,qdot_max,\
-                    test_joint,sigmoid_slope_joint)
+    d_h_plus_dq, d_h_minus_dq = hyperplane_gradient_2D(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,p_minus_hat,qdot_min,qdot_max,test_joint,sigmoid_slope_joint)
         
     ## Get Capacity Margin parameters for the desired polytope
     
@@ -206,10 +212,18 @@ def Gamma_hat_gradient_joint(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat
     
     
     #
+    '''
+    print('matmul(matmul(n,H[:,:,test_joint]),deltaqq)',matmul(matmul(n,H[:,:,test_joint]),deltaqq))
+
+    print('matmul(matmul(transpose(dn_dq[:,:,test_joint]),J_Hessian[0:2,:]),deltaqq)',matmul(matmul(transpose(dn_dq[:,:,test_joint]),J_Hessian[0:2,:]),deltaqq))
+
+    print('transpose(array([d_h_plus_dq])) ',transpose(array([d_h_plus_dq])) )
+    '''
+
     
-    Gamma_plus_LHS = transpose(array([d_h_plus_dq])) + matmul(matmul(dn_dq,J_Hessian[0:2,:]),deltaqq) + matmul(matmul(n,H[0:2,:,test_joint]),deltaqq)
+    Gamma_plus_LHS = transpose(array([d_h_plus_dq])) + matmul(matmul(dn_dq[test_joint,:,:],J_Hessian[0:2,:]),deltaqq) + matmul(matmul(n,transpose(H[test_joint,:,:])),deltaqq)
     
-    Gamma_minus_LHS = transpose(array([d_h_minus_dq])) + matmul(matmul(dn_dq,J_Hessian[0:2,:]),deltaqq) + matmul(matmul(n,H[0:2,:,test_joint]),deltaqq)
+    Gamma_minus_LHS = transpose(array([d_h_minus_dq])) + matmul(matmul(dn_dq[test_joint,:,:],J_Hessian[0:2,:]),deltaqq) + matmul(matmul(n,transpose(H[test_joint,:,:])),deltaqq)
     
     #print('v_k_d is',v_k_d)
     
@@ -225,9 +239,9 @@ def Gamma_hat_gradient_joint(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat
         #print('d_Gamma_plus',Gamma_plus_LHS - matmul(self.dn_dq,transpose(array([v_k_d[vertex,:]]))))
         
         
-        d_Gamma_plus[:,vertex] =  transpose(Gamma_plus_LHS - matmul(dn_dq,transpose(array([v_k_d[vertex,:]]))))
+        d_Gamma_plus[:,vertex] =  transpose(Gamma_plus_LHS - matmul(dn_dq[test_joint,:,:],transpose(array([v_k_d[vertex,:]]))))
        
-        d_Gamma_minus[:,vertex] = transpose(Gamma_minus_LHS + matmul(dn_dq,transpose(array([v_k_d[vertex,:]]))))
+        d_Gamma_minus[:,vertex] = transpose(Gamma_minus_LHS + matmul(dn_dq[test_joint,:,:],transpose(array([v_k_d[vertex,:]]))))
     
         
     
@@ -341,7 +355,7 @@ def Gamma_hat_gradient_joint(self,test_joint,sigmoid_slope):
     
     # Second derivative with respect to itself dsoftmax_i_di
 '''
-def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+def Gamma_hat_gradient_2D(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
                         p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
                         qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope):
     
@@ -361,24 +375,24 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
     
     
     ## Number of joints - dq
-    d_gamma_hat = zeros(shape(JE)[1])
-    d_softmax_dq = zeros(shape(JE)[1])
+    d_gamma_hat = zeros(shape(JE)[0])
+    d_softmax_dq = zeros(shape(JE)[0])
     
     ## Get all hyperplane parameters
     
     sigmoid_slope_joint = sigmoid_slope
     
     #print('Jacobian inside Gamma_hat_gradient',JE)
-    input('Jacobian inside Gamma_hat_gradient')
+    #input('Jacobian inside Gamma_hat_gradient')
 
-    dn_dq = normal_gradient(JE,H)
+    dn_dq = normal_gradient(H)
     
     for test_joint in range(0,shape(JE)[0]):
         
             
         
             
-        d_Gamma_all = Gamma_hat_gradient_joint(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+        d_Gamma_all = Gamma_hat_gradient_joint_2D(JE,H,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
                         p_minus_hat,qdot_min,qdot_max,cartesian_desired_vertices,test_joint,sigmoid_slope_joint)    
             
             
@@ -390,15 +404,17 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
         
         
         d_gamma_max_dq = -1.0*d_Gamma_all[Gamma_min_index_hat]
+
+
         
         #print('Gamma_hat--> check if positive',self.polytope_model.Gamma_total_hat)
         #input('wait here 1')
         #Gamma_all_array = -1*Gamma_total_hat
         Gamma_all_array = -1.0*Gamma_total_hat
         
-        d_LSE_dq_arr = exp_normalize(100000000000000.0*Gamma_all_array)
+        d_LSE_dq_arr = exp_normalize(1000000.0*Gamma_all_array)
 
-        print('d_LSE_dq_arr',d_LSE_dq_arr)
+        #print('d_LSE_dq_arr',d_LSE_dq_arr)
         #d_LSE_dq = max(d_LSE_dq_arr)
         #d_LSE_dq = max(d_LSE_dq_arr)
 
@@ -408,9 +424,9 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
         
         #d_LSE_dq_min = d_LSE_dq_arr[Gamma_min_index_hat]
 
-        print('d_LSE_dq',d_LSE_dq)
-        print('test_joint',test_joint)
-        print('d_gamma_max_dq',d_gamma_max_dq)
+        #print('d_LSE_dq',d_LSE_dq)
+        #print('test_joint',test_joint)
+        #print('d_gamma_max_dq',d_gamma_max_dq)
         #print('d_LSE_dq_min',d_LSE_dq_min)
 
         
@@ -449,7 +465,7 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
             self.d_gamma_hat[test_joint] = 1.0*self.d_gamma_hat[test_joint]
         '''
     #print('d_gamma_hat',d_gamma_hat)
-    return d_gamma_hat
+    return d_gamma_hat,d_LSE_dq ,d_LSE_dq_arr,d_gamma_max_dq,dn_dq
             
     
     # Second derivative with respect to itself dsoftmax_i_di
