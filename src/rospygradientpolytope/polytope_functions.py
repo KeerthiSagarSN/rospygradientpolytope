@@ -7,7 +7,7 @@ Created on Thu Sep 15 15:46:19 2022
 
 import polytope as pc
 
-from numpy import shape,arange,array,zeros,cross,count_nonzero,transpose,matmul,dot
+from numpy import shape,arange,array,zeros,cross,count_nonzero,transpose,matmul,dot,zeros
 import polytope
 import rospygradientpolytope.robot_functions as robot_functions
 import matplotlib.pyplot as plt
@@ -208,7 +208,7 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
 
 
     ##### Estimated parameters are here
-
+        
     for i in range(len(l_k)):
         #p_plus = h_plus[i]*n[i,:] + matmul(JE,qmin)
         #p_plus = np.vstack((p_plus,h_plus[i]*n[i,:]))
@@ -219,12 +219,17 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
         p_minus_hat[i,:] = h_minus_hat[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],transpose(array([qdot_min]))))
 
 
-        '''
-        print('p_plus',self.p_plus)
-        print('p_minus is',self.p_minus)
-        print('p_plus_hat is',self.p_plus_hat)
-        print('p_minus_hat',self.p_minus_hat)
-        '''
+    '''
+    print('p_plus',p_plus)
+    print('p_minus is',p_minus)
+    print('p_plus_hat is',p_plus_hat)
+    print('p_minus_hat',p_minus_hat)
+
+    print('p_plus',h_plus)
+    print('p_minus is',h_minus)
+    print('p_plus_hat is',h_plus_hat)
+    print('p_minus_hat',h_minus_hat)
+    '''
     #input('wait here')
 
     return h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot
@@ -296,10 +301,12 @@ def get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
         print('matmul(self.n_k, transpose((array([self.v_k_d[vertex,:]]))))',matmul(self.n_k, transpose((array([self.v_k_d[vertex,:]])))))
         '''
         Gamma_plus[:,vertex] =  transpose(Gamma_plus_LHS  - matmul(n_k, transpose((array([v_k_d[vertex,:]])))))
+
+        
         ## Estimated parameters are here
         #self.Gamma_plus_hat[facets,vertex] = abs(matmul(transpose(self.n_k[facets,:]),self.p_plus_hat[facets,:]) - matmul(transpose(self.n_k[facets,:]),self.v_k_d[vertex,:]))
 
-        Gamma_minus[:,vertex] = transpose(Gamma_minus_LHS  + matmul(n_k, transpose((array([v_k_d[vertex,:]])))))
+        Gamma_minus[:,vertex] = transpose(Gamma_minus_LHS  - matmul(n_k, transpose((array([v_k_d[vertex,:]])))))
         #self.Gamma_plus[facets,vertex]= hstack((self.Gamma_plus,transpose(array([h_plus]))+ matmul(matmul(n, transpose(JE)), qmin) - matmul(n, transpose(desired_vertices[vertex, :]))))
         #self.Gamma_minus[facets,vertex]= hstack((Gamma_minus,transpose(array([h_minus]))+ matmul(matmul(-n, transpose(JE)), qmin) - matmul(-n, transpose(desired_vertices[vertex, :]))))
         #self.Gamma_minus[facets,vertex] = abs(matmul(transpose(self.n_k[facets,:]),self.p_minus[facets,:]) - matmul(-1*transpose(self.n_k[facets,:]),self.v_k_d[vertex,:]))
@@ -307,12 +314,16 @@ def get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
         Gamma_plus_hat[:,vertex] =  transpose(Gamma_plus_hat_LHS  - matmul(n_k, transpose((array([v_k_d[vertex,:]])))))
 
         ### estimated parameteres are here
-        Gamma_minus_hat[:,vertex] = transpose(Gamma_minus_hat_LHS  + matmul(n_k, transpose((array([v_k_d[vertex,:]])))))
+        Gamma_minus_hat[:,vertex] = transpose(Gamma_minus_hat_LHS  - matmul(n_k, transpose((array([v_k_d[vertex,:]])))))
 
 
 
     #print('Gamma_plus is',self.Gamma_plus)
     #input('stop here')
+    shape_gamma = shape(Gamma_plus)
+    Gamma_sum = zeros(shape=(shape_gamma[0],shape_gamma[1],2))
+    Gamma_sum[:,:,0] = Gamma_plus_hat
+    Gamma_sum[:,:,1] = -Gamma_minus_hat
 
     ## Eq.30 is here
 
@@ -358,10 +369,15 @@ def get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
         hyper_plane_sign = -1.0
         #print('gamma_minus is the minimum')
 
-
-
-
-
+    facet_pair_min = argwhere(Gamma_sum == min(Gamma_sum))
+    
+    #print('in whole is Gamma_plus',Gamma_plus_hat)
+    #print('in whole is Gamma_minus',Gamma_minus_hat)
+    
+    #print('facet_pair_min',facet_pair_min)
+    #print('shape pf gamma_plus',shape(Gamma_plus))
+    #print('facet_pair_idx',facet_pair_idx)
+    #input('facet-pair')
 
 
      ##### There are all estimated parameters
@@ -373,12 +389,12 @@ def get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
     #input('wait here')
 
     # eq.33 is here - Continuous analytical gamma_minimum
-    Gamma_min_softmax = -1*robot_functions.smooth_max(-1*Gamma_total_hat*1000)/1000.0  # Previsois value was 10000
+    Gamma_min_softmax = -1*robot_functions.smooth_max(-1*Gamma_total_hat*10000)/10000.0  # Previsois value was 10000
 
     #print('Gamma_min',Gamma_min)
     #print('Gamma_min_index_hat',Gamma_min_index_hat)
     #print('facet_pair_idx',facet_pair_idx)
-
+    
 
 
 

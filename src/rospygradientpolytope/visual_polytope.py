@@ -262,13 +262,14 @@ def force_polytope_2D(W,qdot_min, qdot_max,cartesian_desired_vertices,sigmoid_sl
             capacity_proj_vertex, polytope_vertices_est, polytope_faces_est, capacity_margin_faces_est, capacity_proj_vertex_est
 
 
-def velocity_polytope(JE, qdot_max, qdot_min):
+def velocity_polytope(JE, qdot_max, qdot_min,cartesian_desired_vertices):
 
     qdot_max = array(qdot_max)
     qdot_min = -1*array(qdot_max)
     active_joints = shape(JE)[1]
     cartesian_dof_input = array([True, True, True, False, False, False])
 
+    '''
     cartesian_desired_vertices = 3*array([[0.20000, 0.50000, 0.50000],
                                         [0.50000, -0.10000, 0.50000],
                                         [0.50000, 0.50000, -0.60000],
@@ -277,6 +278,7 @@ def velocity_polytope(JE, qdot_max, qdot_min):
                                         [-0.30000, -0.10000, 0.50000],
                                         [-0.30000, 0.50000, -0.60000],
                                         [-0.30000, -0.10000, -0.60000]])
+    '''
     sigmoid_slope = 100
     h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(
         JE, active_joints, cartesian_dof_input, qdot_min, qdot_max, cartesian_desired_vertices, sigmoid_slope)
@@ -549,8 +551,7 @@ def velocity_polytope_with_estimation(JE, qdot_max, qdot_min,cartesian_desired_v
     
     hull2.close()
 
-    print('sigmoid_slope is',sigmoid_slope)
-    input('test here')
+
 
     
     return polytope_vertices, polytope_faces, facet_pair_idx, capacity_margin_faces, \

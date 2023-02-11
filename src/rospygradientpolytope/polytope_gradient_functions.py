@@ -156,7 +156,7 @@ def Gamma_hat_gradient_joint(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plu
                         p_minus_hat,qdot_min,qdot_max,\
                             cartesian_desired_vertices,test_joint,sigmoid_slope_joint):
     
-    from numpy import empty,shape,cross,zeros,dot,transpose,matmul,array,hstack
+    from numpy import empty,shape,cross,zeros,dot,transpose,matmul,array,hstack,argwhere,argmin, unravel_index
     from numpy.linalg import norm
     from rospygradientpolytope.linearalgebra import V_unit, check_ndarray
     from rospygradientpolytope.robot_functions import exp_normalize
@@ -173,6 +173,8 @@ def Gamma_hat_gradient_joint(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plu
     
     deltaqq = qdot_max - qdot_min
     deltaqq = transpose(array([deltaqq]))
+
+    deltaqmin = transpose(array([qdot_min]))
     
     ## Get all intrinsic parameters of the robot here: 
     
@@ -198,9 +200,9 @@ def Gamma_hat_gradient_joint(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plu
     
     #
     
-    Gamma_plus_LHS = transpose(array([d_h_plus_dq])) + matmul(matmul(dn_dq,J_Hessian[0:3,:]),deltaqq) + matmul(matmul(n,H[0:3,:,test_joint]),deltaqq)
+    Gamma_plus_LHS = transpose(array([d_h_plus_dq])) + matmul(matmul(dn_dq,J_Hessian[0:3,:]),deltaqmin) + matmul(matmul(n,H[0:3,:,test_joint]),deltaqmin )
     
-    Gamma_minus_LHS = transpose(array([d_h_minus_dq])) + matmul(matmul(dn_dq,J_Hessian[0:3,:]),deltaqq) + matmul(matmul(n,H[0:3,:,test_joint]),deltaqq)
+    Gamma_minus_LHS = transpose(array([d_h_minus_dq])) + matmul(matmul(dn_dq,J_Hessian[0:3,:]),deltaqmin) + matmul(matmul(n,H[0:3,:,test_joint]),deltaqmin )
     
     #print('v_k_d is',v_k_d)
     
@@ -218,7 +220,7 @@ def Gamma_hat_gradient_joint(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plu
         
         d_Gamma_plus[:,vertex] =  transpose(Gamma_plus_LHS - matmul(dn_dq,transpose(array([v_k_d[vertex,:]]))))
        
-        d_Gamma_minus[:,vertex] = transpose(Gamma_minus_LHS + matmul(dn_dq,transpose(array([v_k_d[vertex,:]]))))
+        d_Gamma_minus[:,vertex] = transpose(Gamma_minus_LHS - matmul(dn_dq,transpose(array([v_k_d[vertex,:]]))))
     
         
     
@@ -232,7 +234,10 @@ def Gamma_hat_gradient_joint(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plu
     #Eq. 35 is here
     #d_Gamma_hat_d_Gamma = exp_normalize(-Gamma_total)
     #print('d_Gamma_all',d_Gamma_all)
+
+    #print('d_Gamma_plus',unravel_index(d_Gamma_plus.argmin(), d_Gamma_plus.shape))
     
+    #input('stop here')
     return d_Gamma_all
     #return self.d_Gamma_plus_flat    
     
@@ -360,7 +365,7 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
     sigmoid_slope_joint = sigmoid_slope
     
     #print('Jacobian inside Gamma_hat_gradient',JE)
-    input('Jacobian inside Gamma_hat_gradient')
+    #input('Jacobian inside Gamma_hat_gradient')
     
     for test_joint in range(0,shape(JE)[1]):
         
@@ -383,11 +388,14 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
         #print('Gamma_hat--> check if positive',self.polytope_model.Gamma_total_hat)
         #input('wait here 1')
         #Gamma_all_array = -1*Gamma_total_hat
+
+        #print('d_gamma_max_dq',d_gamma_max_dq)
         Gamma_all_array = -1.0*Gamma_total_hat
         
-        d_LSE_dq_arr = exp_normalize(100000000000000.0*Gamma_all_array)
+        d_LSE_dq_arr = exp_normalize(10000000.0*Gamma_all_array)
 
-        print('d_LSE_dq_arr',d_LSE_dq_arr)
+        #print('d_LSE_dq_arr',d_LSE_dq_arr)
+        #input('stop to test here')
         #d_LSE_dq = max(d_LSE_dq_arr)
         #d_LSE_dq = max(d_LSE_dq_arr)
 
@@ -397,9 +405,9 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
         
         #d_LSE_dq_min = d_LSE_dq_arr[Gamma_min_index_hat]
 
-        print('d_LSE_dq',d_LSE_dq)
-        print('test_joint',test_joint)
-        print('d_gamma_max_dq',d_gamma_max_dq)
+        #print('d_LSE_dq',d_LSE_dq_arr)
+        #print('test_joint',test_joint)
+        #print('d_gamma_max_dq',d_gamma_max_dq)
         #print('d_LSE_dq_min',d_LSE_dq_min)
 
         

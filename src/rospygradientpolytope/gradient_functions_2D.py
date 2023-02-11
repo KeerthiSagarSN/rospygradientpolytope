@@ -179,7 +179,7 @@ def normal_twist_projected_gradient_2D(normal_index,twist_index,dn_dq,n,JE,H,tes
 
     #print('shape of H is',shape(H))
 
-    dx_dq = matmul(dn_dq[:,normal_index,test_joint],vk) + matmul(transpose(n[normal_index,:]),H[:,twist_index,test_joint])
+    dx_dq = matmul(dn_dq[test_joint,normal_index,:],vk) + matmul(transpose(n[normal_index,:]),H[test_joint,twist_index,:])
     #dx_dq = matmul(d_nt_dq,vk) + matmul(transpose(n),d_vk_dq)
     
     #print('dx_dq',dx_dq)
@@ -275,15 +275,15 @@ def sigmoid_gradient(normal_index,twist_index,dn_dq,n,JE,H,test_joint,sigmoid_sl
     #x = matmul(transpose(n),vk)
     #x = nT_vk[normal_index]
     
-    dx_dq = matmul(dn_dq[:,normal_index,test_joint],vk) + matmul(transpose(n[normal_index,:]),H[:,twist_index,test_joint])
+    dx_dq = matmul(dn_dq[test_joint,normal_index,:],vk) + matmul(transpose(n[normal_index,:]),H[test_joint,twist_index,:])
     
     #dx_dq = matmul(d_nt_dq,vk) + matmul(transpose(n),d_vk_dq)
     
-    #print('dx_dq',dx_dq)
-    
+    #print('d_nT_vk_dq inside the loop is',dx_dq)
+    sigmoid_x = sigmoid(x,sigmoid_slope)
     
         
-    sigmoid_term = sigmoid(x,sigmoid_slope)*(1.0-sigmoid(x,sigmoid_slope))
+    sigmoid_term = sigmoid_x*(1.0-sigmoid_x)
     #print('sigmoid_term', sigmoid_term)
     
     return sigmoid_term*dx_dq

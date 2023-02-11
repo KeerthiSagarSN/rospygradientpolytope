@@ -58,6 +58,7 @@ from numpy import polyfit,poly1d
 
 from numpy.linalg import norm,det
 from math import atan2, pi,asin,acos
+from rospygradientpolytope.linearalgebra import check_ndarray
 
 
 from scipy.optimize import check_grad
@@ -96,7 +97,7 @@ mutex = Lock()
 # loading the root urdf from robot_description parameter
 # Get the URDF from the parameter server
 # Launch the robot 
-robot_urdf = URDF.from_parameter_server() 
+robot_urdf = URDF.from_parameter_server('robot_description') 
 
 ### For Universal Robot - UR5
 base_link = "right_arm_base_link"
@@ -258,7 +259,7 @@ class LaunchSawyerRobot():
         #print('Velocity limits are', self.qdot_limit)
         #input('stop here')
         self.Gamma_min_softmax = None
-        self.pos_desired = array([[0.49, 0.412, 0.625]])
+        self.pos_desired = array([0.49, 0.412, 0.625])
 
         seq_list = range(0,100)
         random_array_test = random.randint(100, size=10)
@@ -290,7 +291,9 @@ class LaunchSawyerRobot():
             
             
         
-       
+        #opt_solution = self.fmin_opt(self.pos_desired,analytical_solver = True)
+        #print('self.pos_desired',self.pos_desired)
+        print('opt_solution.x',opt_solution.x)
         
 
 
@@ -861,6 +864,8 @@ class LaunchSawyerRobot():
                 polytope_verts, polytope_faces, facet_vertex_idx, capacity_faces, capacity_margin_proj_vertex, \
                     polytope_verts_est, polytope_faces_est, capacity_faces_est, capacity_margin_proj_vertex_est = \
                                                 velocity_polytope_with_estimation(J_Hess,self.qdot_max,self.qdot_min,self.cartesian_desired_vertices,sigmoid_slope_inp)
+
+                '''
                 desired_polytope_verts, desired_polytope_faces = desired_polytope(self.cartesian_desired_vertices)
 
                 #print('facet_vertex_idx',facet_vertex_idx)
@@ -982,7 +987,7 @@ class LaunchSawyerRobot():
                 
 
 
-                '''
+                
 
                 file_name = 'sawyer_test_Gamma_vs_Gamma_hat_slope_'+str(sigmoid_slope_inp) + str('_') + str(i)
             
@@ -1350,8 +1355,8 @@ class LaunchSawyerRobot():
         '''
 
         if analytical_solver:
-            q_joints_opt = sco.minimize(fun = self.obj_function,  x0 = self.initial_x0,bounds = self.opt_bounds,\
-                                         jac = self.jac_func, constraints=cons,method='SLSQP',tol=1e-6,\
+            q_joints_opt = sco.minimize(fun = self.obj_func_IK,  x0 = self.initial_x0,bounds = self.opt_bounds,\
+                                         method='SLSQP',tol=1e-6,\
                                              options={'disp': True})
         else:
 
@@ -1363,8 +1368,8 @@ class LaunchSawyerRobot():
 
 
         
-
-
+        pos_opt = position_70(q_joints_opt.x)
+        print('OPtimized pose',pos_opt)
         print('q_joints_opt in this cycle')
         return q_joints_opt
         #hess = self.hess_func,
@@ -1432,13 +1437,48 @@ class LaunchSawyerRobot():
         
         #pos_act = pos_act_mat[0:3,3]
 
-        pos_act = position_70(q_in)
+        #pos_act = position_70(q_in)
+        pos_act = self.pykdl_util_kin._do_kdl_fk(q_in,7)[0:3,3]
         #print('self.pos_reference',self.pos_reference)
         #print('Current position in optimization is',pos_act)
         #input('Wait here ')
         return ( 1e-3 - norm(pos_act-self.pos_reference))
 
+    def obj_func_IK(self,q_in):
 
+        from numpy import float64
+
+        q_in = float64(q_in)
+        pos_act_mat = self.pykdl_util_kin.forward(q_in,tip_link,base_link)
+
+        #print('pos_act_mat_forward',pos_act_mat_forward)
+        #pos_act_mat = self.pykdl_util_kin._do_kdl_fk(q_in,7)
+        #pos_act_mat = self.pykdl_util_kin.FK(q_in)
+        
+        #print('pos_act_mat',pos_act_mat)
+
+        pos_act = float64(check_ndarray(pos_act_mat[0:3,3]))
+        #pos_act_num = pos_act_num[:,0]
+
+        #print('NUmerical position is',pos_act_num)
+
+        #pos_act = position_70(q_in)
+        #pos_act = pos_act_num
+        print('self.pos_reference',self.pos_reference)
+        #print('NUmerical position in optimization is',pos_act_num)
+        print('ANalytical position in optimization is',pos_act)
+
+        
+
+
+        self.q_in = q_in
+
+        #print('self.q_in',q_in)
+
+        self.joint_state_publisher_robot()
+        #input('stop to see')
+        #input('Wait here ')
+        return float64(norm(self.pos_reference - pos_act))
 
     ### Constraints should be actual IK - Actual vs desrired - Cartesian pos
 
@@ -1473,8 +1513,8 @@ class LaunchSawyerRobot():
         #q_in = zeros(7)
         #print('q_in',q_in)
         
-        #J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
-        J_Hess = jacobianE0(q_in)
+        J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
+        #J_Hess = jacobianE0(q_in)
         #J_Hess = J_Hess[0:3,:]
         #print('J_Hess',J_Hess)
         Hess = getHessian(J_Hess)

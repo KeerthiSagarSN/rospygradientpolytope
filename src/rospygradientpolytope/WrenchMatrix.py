@@ -68,6 +68,8 @@ def f_W_n(x,y):
     return np_autograd.hstack((uv1_n,uv2_n,uv3_n,uv4_n))
 def get_wrench_matrix(q,length,height):
 
+    from autograd import hessian,grad,jacobian
+
     global L, H
 
     L = length
@@ -115,11 +117,12 @@ def get_wrench_matrix(q,length,height):
     
     ## Autograd method
 
-    H1 = jacobian(W_1)
-    
-    H2 = jacobian(W_2)
-    H3 = jacobian(W_3)
-    H4 = jacobian(W_4)
+    #############
+
+    # H1 = jacobian(W_1)    
+    # H2 = jacobian(W_2)
+    # H3 = jacobian(W_3)
+    # H4 = jacobian(W_4)
 
     
     Jx= jacobian(f_W_n,argnum=0)
@@ -131,7 +134,7 @@ def get_wrench_matrix(q,length,height):
 
 
 
-    #########
+    
     '''
     ### Maple method
     d_W_dx = empty(shape = (2,4))
@@ -217,9 +220,9 @@ def get_wrench_matrix(q,length,height):
     d_W_dy[0,3] = (L - x) * (-2*y*h3y**-2)
     d_W_dy[1,3] = (-y) * (-1*h3y**-1) + (-1)*(h3y**-2)
 
-    '''
+    
     ## Manual method
-    '''
+    
 
 
     
@@ -335,21 +338,7 @@ def get_wrench_matrix(q,length,height):
     Hessian_matrix[:,:,0] = Jx(x,y)
     Hessian_matrix[:,:,1] = Jy(x,y)
 
-    #print('Resuting hessian matrix ',Hessian_matrix)
-    return W,W_n,Hessian_matrix
 
-'''
-def main():
-
-    q_inp = array([0.1,0.5])
-    L = 1
-    H = 1
-
-
-    W,W_n,H = get_wrench_matrix(q_inp,L,H)
-    print('W is',W)
-    print('W_n is',W_n)
     
-if __name__ == "__main__":
-    main()
-'''
+    
+    return W,W_n,Hessian_matrix

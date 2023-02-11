@@ -6,7 +6,7 @@ Created on Tue Jul 26 14:44:09 2022
 """
 import scipy.optimize as sco
 
-from numpy import array,pi,vstack,linspace,shape,zeros,hstack,transpose
+from numpy import array,pi,vstack,linspace,shape,zeros,hstack,transpose,matmul
 from numpy.linalg import norm
 from numpy.random import randn
 
@@ -14,9 +14,10 @@ from shapely.geometry import Polygon,LineString
 from linearalgebra import isclose,V_unit
 import matplotlib.pyplot as plt
 from polytope_functions_2D import get_capacity_margin, get_polytope_hyperplane
-from polytope_gradient_functions_2D import Gamma_hat_gradient_2D
-from gradient_functions_2D import normal_gradient
+from polytope_gradient_functions_2D import Gamma_hat_gradient_2D,hyperplane_gradient_2D
+from gradient_functions_2D import normal_gradient,sigmoid_gradient
 from WrenchMatrix import get_wrench_matrix
+from robot_functions import sigmoid
 
 from visual_polytope import force_polytope_2D
 
@@ -294,8 +295,8 @@ class OptimizationModel:
 
         
 
-        q_in_x = linspace(self.pos_bounds[0,0]+0.0001,self.pos_bounds[0,1]-0.001,self.step_size)
-        q_in_y = linspace(self.pos_bounds[1,0]+0.0001,self.pos_bounds[1,1]-0.001,self.step_size)
+        q_in_x = linspace(self.pos_bounds[0,0]+0.002,self.pos_bounds[0,1]-0.002,self.step_size)
+        q_in_y = linspace(self.pos_bounds[1,0]+0.002,self.pos_bounds[1,1]-0.002,self.step_size)
 
 
 
@@ -402,8 +403,7 @@ class OptimizationModel:
                 
                 Wu,Wn,Hess= get_wrench_matrix(q,self.length_params,self.height_params)
 
-
-                print('HEssian before gradient is',Hess)
+                #print('HEssian before gradient is',Hess)
 
                 d_gamma_hat = Gamma_hat_gradient_2D(Wn,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
                         p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
@@ -411,7 +411,9 @@ class OptimizationModel:
 
                 CM_array_total_actual[i,j] = Gamma_min
 
+
                 CM_array_total_est[i,j] = Gamma_min_softmax
+
 
 
                 
@@ -604,126 +606,314 @@ class OptimizationModel:
         ax.set_zlabel(r"$\hat{\gamma}$" + str(' [N]'),rotation=90,fontsize=16)
         
         ### Test gradient descent here
-        fig_2 = plt.figure()
+        #fig_2 = plt.figure()
 
-        ax2 = plt.axes()
+        #ax2 = plt.axes()
         num_iterations = 1000
-        learning_rate = 0.001
+        learning_rate = 0.0001
         ### Good starting point x0 = 0.65, y0 = 0.72
         #x0 = 0.65
         #y0 = 0.72
 
         x0 = 0.005
+
+        #x0 = 0.48
         y0 = 0.005
+        y0 = 0.29
         #q = array([x_0,y_0])
         first_iteration = True
-        for i in range(num_iterations):
-            
-            q = array([x0,y0])
+
+        x0_start = array([0.005,0.5,0.9])
+        y0_start = array([0.1,0.1,0.9])
+
+        color_arr = ['cyan','k','green',]
+        color_arr = ['magenta','k','green','orange']
+        color_arr = ['magenta','k','green','orange']
+
+        color_arr = ['magenta','k','green','k']
+        x_in = x0
+        y_in = y0
+
+
+        
+        i0_plot = zeros(shape=(num_iterations))
+        #len(x0_start)
+        sigmoid_slope_arr = [10.0,20.0,30.0,50.0]
+        error_plot_a = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
+        error_plot_n = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
+        z0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
+        x0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
+        y0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
+
+        
+        #for lm in range(len(x0_start)):
+        for lm in range(3,len(sigmoid_slope_arr )):
+            self.sigmoid_slope = sigmoid_slope_arr[lm]
+            #x0 = x0_start[lm]
+            #x0 = 0.45 Good configuration to show
+            #y0 = y0_start[lm]
+
+            #y0 = 0.30 Good configuration to show
+            x0 = 0.5
+            y0 = 0.1
 
             x_in = x0
             y_in = y0
-
-            #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
-            
-            Wm = zeros(shape=(2,self.active_joints))
-            for k in range(len(self.base_points)):
-                cable_plt = array([[x_in,self.base_points[k,0]],[y_in,self.base_points[k,1]]])
-                Wm[0,k] = self.base_points[k,0] - x_in
-                Wm[1,k] = self.base_points[k,1] - y_in
-
-                #print('self.base_points',self.base_points[k,:])
-
-                #input('stop and check')
-
-                #Wm[0,k] = W[0,k]*((norm(W[:,k]))**(-1))
-                #Wm[1,k] = W[1,k]*((norm(W[:,k]))**(-1))
-
-                Wm[:,k] = V_unit(Wm[:,k])
-                #plt.plot(cable_plt[0,:],cable_plt[1,:],color = color_arr[k])
-                #plt.pause(0.01)
-                #print('cable number is:',k)
-            #print('Wrench matrix is is',W)
-            
-            #W = W
-            
-            #print('Wrench matrix is here', W)
-            #input('wait here')
-
-            
-            #input('stop here')
-            #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
-            #Wm = array([[-0.7071,-0.7071,-0.7071,-0.7071],[0.7071,0.7071,0.7071,0.7071]])
-            
-            #print('Wrench matrix is is',Wm)
-            W = -Wm
-            
-
-            #W = W_n
-            #JE = W
-            #print('JE is',JE)
-            #print('H is',H)
-            #print('Wrench matrix is', J)
-
-            h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = \
-                get_polytope_hyperplane(W,self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.sigmoid_slope)
+            for i in range(num_iterations):
                 
-            
-            Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = \
-            get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
-                    self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
-            
-            Wu,Wn,Hess= get_wrench_matrix(q,self.length_params,self.height_params)
-            z0 = Gamma_min_softmax
-            
-            
-            #ax.scatter(x0,y0,z0,c='k',s=20)
-            
-
-            d_gamma_hat,d_LSE_dq ,d_LSE_dq_arr,d_gamma_max_dq,dn_dq = Gamma_hat_gradient_2D(Wn,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
-                    p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
-                    self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
-
-            print('Gammaa_min softmax is',Gamma_min_softmax)
-            print('d_LSE_dq',d_LSE_dq)
-            print('d_LSE_dq_arr',d_LSE_dq_arr)
-            print('d_gamma_max_dq',d_gamma_max_dq)
-            x0 = x0 + learning_rate*d_gamma_hat[0]
-            y0 = y0 + learning_rate*d_gamma_hat[1]
-            #y0 += learning_rate
-            z0 = Gamma_min_softmax
-
-            dn_dq_a = normal_gradient(Hess)
-            
+                print('number of iterations',i)
+                i0_plot[i] = i
                 
-            if not first_iteration:
-                ax2.scatter(i,z0,c='k',s=10)
-                ax.scatter(x0,y0,z0,c='k',s=20)
-                print('NUmerical gradient of gamma',(Gamma_min_softmax-prev_Gamma_min_softmax)/(1.0*num_iterations))
-                print('ANalytical gradient',d_gamma_hat)
-                #input('test gradient')
-                dn_dq_n = (n_k - prev_n_k)/(1.0*learning_rate)
-                #print('NUmerical gradient normal n',dn_dq_n)
-                #dn_dq_a = dn_dq
-                #print('Analytical gradient normal n',dn_dq_a)
+                q = array([x0,y0])
+                #q = array([x_in,y_in])
 
-                #print('Hessian is',Hess)
+                x_in = x0
+                y_in = y0
+                #y_in += learning_rate
 
-                #print('d_gamma_hat[0]',d_gamma_hat[0])
-                #print('d_gamma_hat[1]',d_gamma_hat[1])
-                ax.set_xlabel('x [m]',fontsize=13)
-                ax.set_ylabel('y [m]',fontsize=13)
-                ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
-                ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
-                ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
-                plt.pause(0.0001)
-                prev_Gamma_min_softmax = Gamma_min_softmax
-                prev_n_k = n_k
-            if first_iteration:
-                prev_Gamma_min_softmax = Gamma_min_softmax
-                prev_n_k = n_k
-                first_iteration = False
-            #input('test error here')
+                test_joint = 1
+
+                x0_plot[i,lm] = x_in
+                y0_plot[i,lm] = y_in
+                #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+                
+                Wm = zeros(shape=(2,self.active_joints))
+                for k in range(len(self.base_points)):
+                    cable_plt = array([[x_in,self.base_points[k,0]],[y_in,self.base_points[k,1]]])
+                    Wm[0,k] = self.base_points[k,0] - x_in
+                    Wm[1,k] = self.base_points[k,1] - y_in
+
+                    #print('self.base_points',self.base_points[k,:])
+
+                    #input('stop and check')
+
+                    #Wm[0,k] = W[0,k]*((norm(W[:,k]))**(-1))
+                    #Wm[1,k] = W[1,k]*((norm(W[:,k]))**(-1))
+
+                    Wm[:,k] = V_unit(Wm[:,k])
+                    #plt.plot(cable_plt[0,:],cable_plt[1,:],color = color_arr[k])
+                    #plt.pause(0.01)
+                    #print('cable number is:',k)
+                #print('Wrench matrix is is',W)
+                
+                #W = W
+                
+                #print('Wrench matrix is here', W)
+                #input('wait here')
+
+                
+                #input('stop here')
+                #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+                #Wm = array([[-0.7071,-0.7071,-0.7071,-0.7071],[0.7071,0.7071,0.7071,0.7071]])
+                
+                #print('Wrench matrix is is',Wm)
+                W = Wm
+                
+                
+                #W = W_n
+                #JE = W
+                #print('JE is',JE)
+                #print('H is',H)
+                #print('Wrench matrix is', J)
+
+
+
+
+                h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = \
+                    get_polytope_hyperplane(W,self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.sigmoid_slope)
+                    
+                
+                Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = \
+                get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                        self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
+                
+                Wu,Wn,Hess= get_wrench_matrix(q,self.length_params,self.height_params)
+                z0 = Gamma_min_softmax
+
+                z0_plot[i,lm] = z0
+
+                print('capacity margin is',z0)
+
+                print('x position now is',x0)
+                print('y position now is',y0)
+
+                dn_dq = normal_gradient(Hess)            
+                ax.scatter(x0,y0,z0,c=color_arr[k],s=4)   
+                plt.pause(0.001)
+                #plt.show()
+                '''
+                d_h_plus_dq, d_h_minus_dq = hyperplane_gradient_2D(Wn,Hess,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+                            p_minus_hat,self.qdot_min,self.qdot_max,\
+                                test_joint,self.sigmoid_slope)
+                '''
+                
+                d_gamma_hat,d_LSE_dq ,d_LSE_dq_arr,d_gamma_max_dq,dn_dq = Gamma_hat_gradient_2D(Wn,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+                        p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
+                        self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
+
+                #print('Gamma min is',Gamma_min)
+                ##print('Gammaa_min softmax is',Gamma_min_softmax)
+                #print('d_LSE_dq',d_LSE_dq)
+                ##print('d_LSE_dq_arr',d_LSE_dq_arr)
+                #print('d_gamma_max_dq',d_gamma_max_dq)
+                x0 = x0 - learning_rate*d_gamma_hat[0]
+                y0 = y0 - learning_rate*d_gamma_hat[1]
+                #y0 += learning_rate
+                #z0 = Gamma_min_softmax
+                
+                d_G_dq_a = -d_gamma_hat[test_joint]
+                
+                #dvk_dq_a = Hess[test_joint,2,:]
+
+                #dvk_dq = Wn[:,2]
+                #dn_dq_a = normal_gradient(Hess)
+
+                #d_h_plus_dq_a = d_h_plus_dq
+                #d_h_minus_dq_a = d_h_minus_dq
+                
+                #x_term = matmul(transpose(n_k[2,:]),Wn[:,0])
+
+                #print('x_term is',x_term)
+
+                #dx_dq_a = matmul(dn_dq[test_joint,2,:],Wn[:,0]) + matmul(transpose(n_k[2,:]),Hess[test_joint,0,:])
+
+                
+
+                #dsig_dq_a = sigmoid_gradient(2,0,dn_dq,n_k,Wn,Hess,test_joint,self.sigmoid_slope)
+                #dsig_dq = sigmoid(x_term,self.sigmoid_slope)
+
+                #dsig_dq_a = (dsig_dq*(1.0-dsig_dq))*dx_dq_a
+                
+                    
+                if not first_iteration:
+                    #ax2.scatter(i,z0,c='k',s=10)
+                    #ax.scatter(x0,y0,z0,c='k',s=20)
+                    d_G_dq_n = (Gamma_min_softmax-prev_Gamma_min_softmax)/(1.0*learning_rate)
+
+                    #error_plot[i,lm] = ((d_G_dq_n - d_G_dq_a)/(d_G_dq_n))*100.0
+
+                    #error_plot[i,lm] = ((d_G_dq_n - d_G_dq_a))
+
+                    #error_plot_a[i,lm] = d_G_dq_a
+
+                    #error_plot_n[i,lm] = d_G_dq_n
+
+                    error_plot_n[i,lm] = ((d_G_dq_n - d_G_dq_a)/(d_G_dq_n))*100.0
+                    #print('NUmerical gradient of gamma',(Gamma_min_softmax-prev_Gamma_min_softmax)/(1.0*learning_rate))
+                    #print('ANalytical gradient',-d_gamma_hat)
+                    prev_Gamma_min_softmax = Gamma_min_softmax
+                    #input('test gradient')
+
+                    '''
+                    dn_dq_n = (n_k - prev_n_k)/(1.0*learning_rate)
+
+                    d_h_plus_dq_n = (h_plus_hat - prev_h_plus)/(1.0*learning_rate)
+                    d_h_minus_dq_n = (h_minus_hat - prev_h_minus)/(1.0*learning_rate)
+
+                    print('NUmerical gradient- h -plus',d_h_plus_dq_n)
+                    print('Analytical gradient - h-plus',d_h_plus_dq_a)
+
+
+
+                    print('NUmerical gradient- h -minus',d_h_minus_dq_n)
+                    print('Analytical gradient - h-minus',d_h_minus_dq_a)
+
+                    
+                    print('NUmerical gradient normal n',dn_dq_n)
+                    dn_dq_a = dn_dq
+                    print('Analytical gradient normal n',dn_dq_a[test_joint,:,:])
+                    print('Analytical gradient slice normal n',dn_dq_a[test_joint,0,:])
+
+                    
+
+                    dsig_dq_n = (dsig_dq-dsig_dq_prev)/(1.0*learning_rate)
+
+                    print('dx_dq_a is',dx_dq_a)
+                    print('Numerical sigmoid_term gradient is',dsig_dq_n)
+                    print('Analytical sigmoid gradient is',dsig_dq_a)
+
+
+
+                    dvk_dq_n = (dvk_dq - dvk_dq_prev)/(1.0*learning_rate)
+
+
+                    print('Numerical twist gradient is',dvk_dq_n)
+                    print('Analytical twist gradient is',dvk_dq_a)
+                    dvk_dq_prev = dvk_dq
+
+                    dx_dq_n = (x_term - x_term_prev)/(1.0*learning_rate)
+
+                    print('Numerical dx_dq gradient is',dx_dq_n)
+                    print('Analytical dx_dq gradient is',dx_dq_a)
+                    x_term_prev = x_term
+
+
+                    #input('test')
+                    dsig_dq_prev = dsig_dq
+
+                    #print('')
+                    #input('stop here')
+                    #print('Hessian is',Hess)
+
+                    #print('d_gamma_hat[0]',d_gamma_hat[0])
+                    #print('d_gamma_hat[1]',d_gamma_hat[1])
+                    ax.set_xlabel('x [m]',fontsize=13)
+                    ax.set_ylabel('y [m]',fontsize=13)
+                    ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+                    ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+                    ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+                    '''
+                    #plt.pause(0.0001)
+                    
+                    #prev_n_k = n_k
+                    #prev_h_plus = h_plus_hat
+                    #prev_h_minus = h_minus_hat
+                if first_iteration:
+                    prev_Gamma_min_softmax = Gamma_min_softmax
+                    #prev_n_k = n_k
+                    #prev_h_plus = h_plus_hat
+                    #prev_h_minus = h_minus_hat
+                    #dsig_dq_prev = dsig_dq
+                    #dvk_dq_prev = dvk_dq
+                    #x_term_prev = x_term
+                    first_iteration = False
+                #input('test error here')
+            
+        
+        '''
+        ax.plot(x0_plot[:,0],y0_plot[:,0],z0_plot[:,0],color=color_arr[0],marker='+', linestyle='dashed',label='x0:0.005, y0:0.1 ')
+        ax.plot(x0_plot[:,1],y0_plot[:,1],z0_plot[:,1],color=color_arr[1],marker='+', linestyle='dashed',label='x0:0.5, y0:0.1 ')
+        ax.plot(x0_plot[:,2],y0_plot[:,2],z0_plot[:,2],color=color_arr[2],marker='+', linestyle='dashed',label='x0:0.9, y0:0.9 ')
+        #ax.plot(x0_plot[:,3],y0_plot[:,3],z0_plot[:,3],color=color_arr[3],marker='+', linestyle='dashed')
+        ax.legend(loc="upper right",fontsize=25)
+        ax2.plot(i0_plot,z0_plot[:,0],color=color_arr[0],linestyle='dashed',label='x0:0.005, y0:0.1 ')
+        ax2.plot(i0_plot,z0_plot[:,1],color=color_arr[1],linestyle='dashed',label='x0:0.5, y0:0.1 ')
+        ax2.plot(i0_plot,z0_plot[:,2],color=color_arr[2],linestyle='dashed',label='x0:0.9, y0:0.9 ')
+
+
+        #ax2.plot(i0_plot,z0_plot[:,3],color=color_arr[3],linestyle='dashed')
+
+        ax2.set_xlabel('Number of Iterations',prop={'size': 20})
+        ax2.set_ylabel(r"$\hat{\gamma}$" + str(' [N]'),fontsize=13)
+        plt.legend(loc="lower right")
+        '''
+
+        #ax2.plot(y0_plot[1:,0],error_plot_a[1:,0],color=color_arr[0],linestyle='dashed',label='Analytical Slope: 10')
+        #ax2.plot(y0_plot[1:,0],error_plot_a[1:,1],color=color_arr[1],linestyle='dashed',label='Analytical Slope: 20')
+        #ax2.plot(y0_plot[1:,0],error_plot_a[1:,2],color=color_arr[2],linestyle='dashed',label='Analytical Slope: 30')
+        #ax2.plot(y0_plot[1:,0],error_plot_a[1:,3],color=color_arr[3],linestyle='dashed',label='Analytical Slope: 50')
+
+        input('second plot')
+        ax2.plot(y0_plot[1:,0],error_plot_n[1:,0],color=color_arr[0],linestyle='solid',label='Numerical Slope: 10')
+        ax2.plot(y0_plot[1:,0],error_plot_n[1:,1],color=color_arr[1],linestyle='solid',label='Numerical Slope: 20')
+        ax2.plot(y0_plot[1:,0],error_plot_n[1:,2],color=color_arr[2],linestyle='solid',label='Numerical Slope: 30')
+        ax2.plot(y0_plot[1:,0],error_plot_n[1:,3],color=color_arr[3],linestyle='solid',label='Numerical Slope: 50')
+        ax2.set_xlabel('Y (m)')
+        #ax2.set_ylabel(r"$\partial \hat{\gamma}$",fontsize=15)
+        ax2.set_ylabel('Error $(\%)$',fontsize=15)
+
+        plt.legend(loc="lower left")
+        plt.tight_layout()
         plt.show()
             
 
@@ -838,7 +1028,8 @@ class OptimizationModel:
                 {'type': 'ineq', 'fun': self.constraint_func_obstacles_2_c1},\
                 {'type': 'ineq', 'fun': self.constraint_func_obstacles_2_c2},\
                 {'type': 'ineq', 'fun': self.constraint_func_obstacles_2_c3},\
-                {'type': 'ineq', 'fun': self.constraint_func_obstacles_2_c4})
+                {'type': 'ineq', 'fun': self.constraint_func_obstacles_2_c4},\
+                {'type': 'ineq', 'fun': self.constr_function})
         
         print('self.pos_bounds',self.pos_bounds[0,0])
         input('wait here')
@@ -870,7 +1061,7 @@ class OptimizationModel:
 
             self.q_joints_opt = sco.minimize(fun = self.obj_function,  x0 = self.initial_x0,bounds = self.pos_bounds,\
                                          jac =self.jac_func, constraints = cons,method='SLSQP', \
-                                             options={'disp': True,'maxiter':5000})
+                                             options={'disp': True,'maxiter':50000})
         else:
 
             self.q_joints_opt = sco.minimize(fun = self.obj_function,  x0 = self.initial_x0,\
@@ -879,7 +1070,35 @@ class OptimizationModel:
 
 
 
-    
+        
+        if (self.q_joints_opt.success):
+            input('Success wait here to save plot') 
+
+            ef = self.q_joints_opt.x
+            for c in range(len(self.base_points)):
+                x = [ef[0],self.base_points[c,0]]
+                y = [ef[1],self.base_points[c,1]]
+                plt.plot(x,y,color = 'g')
+                plt.scatter(self.base_points[c,0],self.base_points[c,1],color='k')
+            
+            #plt.scatter()
+            plt.scatter(ef[0],ef[1],color='m')
+            obstacle_polytope_1 = self.obstacle_set[0]
+            obstacle_polytope_2 = self.obstacle_set[1]
+            x = [obstacle_polytope_1[0,0],obstacle_polytope_1[1,0],obstacle_polytope_1[2,0],obstacle_polytope_1[3,0],obstacle_polytope_1[0,0]]
+            y = [obstacle_polytope_1[0,1],obstacle_polytope_1[1,1],obstacle_polytope_1[2,1],obstacle_polytope_1[3,1],obstacle_polytope_1[0,1]]
+            plt.plot(x,y,color = 'r')
+        
+            x = [obstacle_polytope_2[0,0],obstacle_polytope_2[1,0],obstacle_polytope_2[2,0],obstacle_polytope_2[3,0],obstacle_polytope_2[0,0]]
+            y = [obstacle_polytope_2[0,1],obstacle_polytope_2[1,1],obstacle_polytope_2[2,1],obstacle_polytope_2[3,1],obstacle_polytope_2[0,1]]
+
+            roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)
+            plt.plot(x,y,color = 'r')
+            plt.xlabel('x [m]')
+            plt.ylabel('y [m]')
+            plt.savefig('CDPR_roi_optimization'+str('.png'),dpi=600)
+
+        
 
             
 
@@ -889,6 +1108,74 @@ class OptimizationModel:
     #def constraint2(self):
     ## Obj
     def obj_function(self,q_des):
+        self.active_joints = len(self.base_points)
+        q = q_des
+        #q = array([x_in,y_in])
+        x0 = q[0]
+        y0 = q[1]
+        x_in = x0
+        y_in = y0
+        #y_in += learning_rate
+
+        test_joint = 1
+
+        #x0_plot[i,lm] = x_in
+        #y0_plot[i,lm] = y_in
+        #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+        
+        Wm = zeros(shape=(2,self.active_joints))
+        for k in range(len(self.base_points)):
+            cable_plt = array([[x_in,self.base_points[k,0]],[y_in,self.base_points[k,1]]])
+            Wm[0,k] = self.base_points[k,0] - x_in
+            Wm[1,k] = self.base_points[k,1] - y_in
+
+            #print('self.base_points',self.base_points[k,:])
+
+            #input('stop and check')
+
+            #Wm[0,k] = W[0,k]*((norm(W[:,k]))**(-1))
+            #Wm[1,k] = W[1,k]*((norm(W[:,k]))**(-1))
+
+            Wm[:,k] = V_unit(Wm[:,k])
+            #plt.plot(cable_plt[0,:],cable_plt[1,:],color = color_arr[k])
+            #plt.pause(0.01)
+            #print('cable number is:',k)
+        #print('Wrench matrix is is',W)
+        
+        #W = W
+        
+        #print('Wrench matrix is here', W)
+        #input('wait here')
+
+        
+        #input('stop here')
+        #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+        #Wm = array([[-0.7071,-0.7071,-0.7071,-0.7071],[0.7071,0.7071,0.7071,0.7071]])
+        
+        #print('Wrench matrix is is',Wm)
+        W = Wm
+        
+        
+        #W = W_n
+        #JE = W
+        #print('JE is',JE)
+        #print('H is',H)
+        #print('Wrench matrix is', J)
+
+
+
+
+        h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = \
+            get_polytope_hyperplane(W,self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.sigmoid_slope)
+            
+        
+        Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = \
+        get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
+        print('Capacity Margin for function eval is',Gamma_min_softmax)
+        return -Gamma_min_softmax
+
+    def constr_function(self,q_des):
 
 
 
@@ -899,7 +1186,7 @@ class OptimizationModel:
         
         
         
-        print('Current objective function in optimization is', norm(self.roi_center - q_des))
+        #print('Current constraint function distance in optimization is', norm(self.roi_center - q_des))
         
         
         
@@ -920,12 +1207,16 @@ class OptimizationModel:
             x = [ef[0],self.base_points[c,0]]
             y = [ef[1],self.base_points[c,1]]
             plt.plot(x,y,color = cable_color)
-            
-        plt.pause(0.05)
+
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle)
+        plt.pause(0.0001)
         plt.cla()
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle) 
         
 
-        return norm(self.roi_center - q_des)
+        return norm(self.roi_center - q_des) - 0.2
         
 
             #plt.cla()
@@ -962,7 +1253,7 @@ class OptimizationModel:
 
         if dist_cable_obs < min_dist_obstacles:
             
-            print('min_dist_obstacles',dist_cable_obs)
+            #print('min_dist_obstacles',dist_cable_obs)
             min_dist_obstacles = dist_cable_obs
             
         if isclose(dist_cable_obs,0.0,1e-4):
@@ -987,15 +1278,18 @@ class OptimizationModel:
             x = [ef[0],self.base_points[c,0]]
             y = [ef[1],self.base_points[c,1]]
             plt.plot(x,y,color = cable_color)
-            
-        plt.pause(0.05)
+
+        plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)  
+        plt.pause(0.0001)
         plt.cla()
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle) 
         #input('wait here')
             
         
 
         
-        return min_dist_obstacles - 0.2
+        return min_dist_obstacles - 0.005
     
     def constraint_func_obstacles_1_c2(self,q_des):
         
@@ -1026,7 +1320,7 @@ class OptimizationModel:
 
         if dist_cable_obs < min_dist_obstacles:
             
-            print('min_dist_obstacles',dist_cable_obs)
+            #print('min_dist_obstacles',dist_cable_obs)
             min_dist_obstacles = dist_cable_obs
             
         if isclose(dist_cable_obs,0.0,1e-4):
@@ -1051,15 +1345,19 @@ class OptimizationModel:
             x = [ef[0],self.base_points[c,0]]
             y = [ef[1],self.base_points[c,1]]
             plt.plot(x,y,color = cable_color)
-            
-        plt.pause(0.05)
+        
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle)
+        plt.pause(0.0001)
         plt.cla()
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle) 
         #input('wait here')
             
         
 
         
-        return min_dist_obstacles - 0.2
+        return min_dist_obstacles - 0.005
     
     
     
@@ -1093,7 +1391,7 @@ class OptimizationModel:
 
         if dist_cable_obs < min_dist_obstacles:
             
-            print('min_dist_obstacles',dist_cable_obs)
+            #print('min_dist_obstacles',dist_cable_obs)
             min_dist_obstacles = dist_cable_obs
             
         if isclose(dist_cable_obs,0.0,1e-4):
@@ -1118,15 +1416,19 @@ class OptimizationModel:
             x = [ef[0],self.base_points[c,0]]
             y = [ef[1],self.base_points[c,1]]
             plt.plot(x,y,color = cable_color)
-            
-        plt.pause(0.05)
+
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle)  
+        plt.pause(0.0001)
         plt.cla()
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle) 
         #input('wait here')
             
         
 
         
-        return min_dist_obstacles - 0.2
+        return min_dist_obstacles - 0.005
     
     
     def constraint_func_obstacles_1_c4(self,q_des):
@@ -1158,7 +1460,7 @@ class OptimizationModel:
 
         if dist_cable_obs < min_dist_obstacles:
             
-            print('min_dist_obstacles',dist_cable_obs)
+            #print('min_dist_obstacles',dist_cable_obs)
             min_dist_obstacles = dist_cable_obs
         
         
@@ -1184,15 +1486,18 @@ class OptimizationModel:
             x = [ef[0],self.base_points[c,0]]
             y = [ef[1],self.base_points[c,1]]
             plt.plot(x,y,color = cable_color)
-            
-        plt.pause(0.05)
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle) 
+        plt.pause(0.0001)
         plt.cla()
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle) 
         #input('wait here')
             
         
 
         
-        return min_dist_obstacles -0.2
+        return min_dist_obstacles -0.005
     
     
     def constraint_func_obstacles_2_c1(self,q_des):
@@ -1224,7 +1529,7 @@ class OptimizationModel:
  
         if dist_cable_obs < min_dist_obstacles:
             
-            print('min_dist_obstacles',dist_cable_obs)
+            #print('min_dist_obstacles',dist_cable_obs)
             min_dist_obstacles = dist_cable_obs
         if isclose(dist_cable_obs,0.0,1e-4):
             
@@ -1248,15 +1553,19 @@ class OptimizationModel:
             x = [ef[0],self.base_points[c,0]]
             y = [ef[1],self.base_points[c,1]]
             plt.plot(x,y,color = cable_color)
-            
-        plt.pause(0.05)
+
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle)   
+        plt.pause(0.0001)
         plt.cla()
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle) 
         #input('wait here')
             
         
 
         
-        return min_dist_obstacles -0.2
+        return min_dist_obstacles -0.005
     
     
     def constraint_func_obstacles_2_c2(self,q_des):
@@ -1288,7 +1597,7 @@ class OptimizationModel:
 
         if dist_cable_obs < min_dist_obstacles:
             
-            print('min_dist_obstacles',dist_cable_obs)
+            #print('min_dist_obstacles',dist_cable_obs)
             min_dist_obstacles = dist_cable_obs
         
         if isclose(dist_cable_obs,0.0,1e-4):
@@ -1313,15 +1622,19 @@ class OptimizationModel:
             x = [ef[0],self.base_points[c,0]]
             y = [ef[1],self.base_points[c,1]]
             plt.plot(x,y,color = cable_color)
-            
-        plt.pause(0.05)
+
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle)
+        plt.pause(0.0001)
         plt.cla()
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle) 
         #input('wait here')
             
         
 
         
-        return min_dist_obstacles - 0.2
+        return min_dist_obstacles - 0.005
     
     
     def constraint_func_obstacles_2_c3(self,q_des):
@@ -1354,7 +1667,7 @@ class OptimizationModel:
             #return min_dist_obstacles 
         if dist_cable_obs < min_dist_obstacles:
             
-            print('min_dist_obstacles',dist_cable_obs)
+            #print('min_dist_obstacles',dist_cable_obs)
             min_dist_obstacles = dist_cable_obs
         
             
@@ -1378,15 +1691,19 @@ class OptimizationModel:
             x = [ef[0],self.base_points[c,0]]
             y = [ef[1],self.base_points[c,1]]
             plt.plot(x,y,color = cable_color)
-            
-        plt.pause(0.05)
+
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle)   
+        plt.pause(0.0001)
         plt.cla()
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle) 
         #input('wait here')
             
         
 
         
-        return min_dist_obstacles  - 0.2
+        return min_dist_obstacles  - 0.005
     
     def constraint_func_obstacles_2_c4(self,q_des):
         
@@ -1418,7 +1735,7 @@ class OptimizationModel:
             #return min_dist_obstacles 
         if dist_cable_obs < min_dist_obstacles:
             
-            print('min_dist_obstacles',dist_cable_obs)
+            #print('min_dist_obstacles',dist_cable_obs)
             min_dist_obstacles = dist_cable_obs
         if isclose(dist_cable_obs,0.0,1e-4):
             
@@ -1440,15 +1757,19 @@ class OptimizationModel:
             x = [ef[0],self.base_points[c,0]]
             y = [ef[1],self.base_points[c,1]]
             plt.plot(x,y,color = cable_color)
-            
-        plt.pause(0.05)
+
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle)   
+        plt.pause(0.0001)
         plt.cla()
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle) 
         #input('wait here')
             
         
 
         
-        return min_dist_obstacles  - 0.2
+        return min_dist_obstacles  - 0.005
     
     def constraint_func_obstacles_2(self,q_des):
         
@@ -1467,9 +1788,9 @@ class OptimizationModel:
         min_dist_obstacles = 10000
         for i in range(len(self.base_points)):           
             
-            print('q_des',q_des)
-            print('q_des',q_des)
-            print('base_points',self.base_points[i])
+            #print('q_des',q_des)
+            
+            #print('base_points',self.base_points[i])
             
             cables[i] = LineString([q_des,self.base_points[i]])
 
@@ -1484,7 +1805,7 @@ class OptimizationModel:
                 return min_dist_obstacles - 0.001
             if dist_cable_obs < min_dist_obstacles:
                 
-                print('min_dist_obstacles',dist_cable_obs)
+                #print('min_dist_obstacles',dist_cable_obs)
                 min_dist_obstacles = dist_cable_obs
             
         obstacle_polytope_1 = self.obstacle_set[0]
@@ -1504,20 +1825,25 @@ class OptimizationModel:
             x = [ef[0],self.base_points[c,0]]
             y = [ef[1],self.base_points[c,1]]
             plt.plot(x,y,color = cable_color)
-            
-        plt.pause(0.05)
+
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle) 
+        plt.pause(0.0001)
         plt.cla()
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle) 
         #input('wait here')
             
         
 
         
-        return min_dist_obstacles - 0.01
+        return min_dist_obstacles - 0.005
 
 
     ### Constraints should be actual IK - Actual vs desrired - Cartesian pos
 
     ## NOrm -- || || < 1eps-
+    '''
     def constraint_func_Gamma(self,q_des):
 
         
@@ -1528,16 +1854,94 @@ class OptimizationModel:
         
         
         return self.opt_polytope_model.Gamma_min_softmax
-
+    '''
     def jac_func(self,q_des):
-        from numpy import sum
+        #q = array([x0,y0])
+        self.active_joints = len(self.base_points)
+        q = q_des
+        #q = array([x_in,y_in])
+        x0 = q[0]
+        y0 = q[1]
+        x_in = x0
+        y_in = y0
+        #y_in += learning_rate
 
-        self.opt_robot_model.urdf_transform(q_joints=q_des)
+        test_joint = 1
 
-        #self.opt_polytope_gradient_model.compute_polytope_gradient_parameters(self.opt_robot_model,self.opt_polytope_model)
-        #self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=1000)
-        jac_output = self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=self.sigmoid_slope)
-        #print('jac_output',jac_output)
+        #x0_plot[i,lm] = x_in
+        #y0_plot[i,lm] = y_in
+        #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+        
+        Wm = zeros(shape=(2,self.active_joints))
+        for k in range(len(self.base_points)):
+            cable_plt = array([[x_in,self.base_points[k,0]],[y_in,self.base_points[k,1]]])
+            Wm[0,k] = self.base_points[k,0] - x_in
+            Wm[1,k] = self.base_points[k,1] - y_in
+
+            #print('self.base_points',self.base_points[k,:])
+
+            #input('stop and check')
+
+            #Wm[0,k] = W[0,k]*((norm(W[:,k]))**(-1))
+            #Wm[1,k] = W[1,k]*((norm(W[:,k]))**(-1))
+
+            Wm[:,k] = V_unit(Wm[:,k])
+            #plt.plot(cable_plt[0,:],cable_plt[1,:],color = color_arr[k])
+            #plt.pause(0.01)
+            #print('cable number is:',k)
+        #print('Wrench matrix is is',W)
+        
+        #W = W
+        
+        #print('Wrench matrix is here', W)
+        #input('wait here')
+
+        
+        #input('stop here')
+        #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+        #Wm = array([[-0.7071,-0.7071,-0.7071,-0.7071],[0.7071,0.7071,0.7071,0.7071]])
+        
+        #print('Wrench matrix is is',Wm)
+        W = Wm
+        
+        
+        #W = W_n
+        #JE = W
+        #print('JE is',JE)
+        #print('H is',H)
+        #print('Wrench matrix is', J)
+
+
+
+
+        h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = \
+            get_polytope_hyperplane(W,self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.sigmoid_slope)
+            
+        
+        Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = \
+        get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                self.active_joints,self.cartesian_dof_input,self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
+        
+        Wu,Wn,Hess= get_wrench_matrix(q,self.length_params,self.height_params)
+        #z0 = Gamma_min_softmax
+
+        #z0_plot[i,lm] = z0
+        
+
+        dn_dq = normal_gradient(Hess)            
+        #ax.scatter(x0,y0,z0,c=color_arr[k],s=4)   
+        #plt.pause(0.001)
+        #plt.show()
+        '''
+        d_h_plus_dq, d_h_minus_dq = hyperplane_gradient_2D(Wn,Hess,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+                    p_minus_hat,self.qdot_min,self.qdot_max,\
+                        test_joint,self.sigmoid_slope)
+        '''
+        
+        d_gamma_hat,d_LSE_dq ,d_LSE_dq_arr,d_gamma_max_dq,dn_dq = Gamma_hat_gradient_2D(Wn,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+                p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
+                self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
+        print('jac_output',d_gamma_hat)
 
         #jac_output = sum(jac_output)
-        return jac_output
+        return d_gamma_hat

@@ -93,8 +93,8 @@ CDPR_optimizer.height_params = base_points[2,1] - base_points[0,1]
 print('Length is ', CDPR_optimizer.length_params )
 print('Height is ', CDPR_optimizer.height_params )
 #sigmoid_slope_array = array([10.0,50.0,100.0,150.0,400.0])
-#sigmoid_slope_array = array([10.0,20.0,30.0,50]) ### Paper value here
-sigmoid_slope_array = array([100.0,200.0,300.0,500]) ### Paper value here
+sigmoid_slope_array = array([10.0,20.0,30.0,50]) ### Paper value here
+#sigmoid_slope_array = array([50.0,50.0,50.0,50.0]) ### Paper value here
 #CDPR_optimizer.sigmoid_slope = 100
 
 CDPR_optimizer.cartesian_dof_input = array([True,True,False,False,False,False])
@@ -112,8 +112,9 @@ CDPR_optimizer.lower_bound = -1e-3
 
 ef_estimated_array = {}
 CM_estimated = {}
-test_number = 101
+test_number = 111
 
+'''
 for k in range(len(sigmoid_slope_array)):
 
 #for k in range(3,4):
@@ -130,7 +131,7 @@ for k in range(len(sigmoid_slope_array)):
                         cartesian_dof_input = CDPR_optimizer.cartesian_dof_input, height_params = CDPR_optimizer.height_params , \
                             length_params = CDPR_optimizer.length_params, qdot_min  = CDPR_optimizer.qdot_min, qdot_max = CDPR_optimizer.qdot_max)
 
-
+'''
 for k in range(len(sigmoid_slope_array)):
     CDPR_optimizer.sigmoid_slope = sigmoid_slope_array[k]
     BASE_PATH = "/home/imr/catkin_ws_build/src/rospygradientpolytope/CDPR_test_results/"
@@ -147,6 +148,8 @@ for k in range(len(sigmoid_slope_array)):
     ef_infeasible = data['ef_infeasible']
     CM_total = data['cm_total_actual']
     CM_estimated[k] = data['cm_total_est']
+
+
 
 
 print('ef_actual',ef_actual)
@@ -185,7 +188,7 @@ pos_CM_est = cm_est[cm_est>-CDPR_optimizer.lower_bound]
 
 pos_CM_est = sort(pos_CM_est)
 print('pos_CM_est 2',pos_CM_est)
-input('test here')
+
 print('ef_actual',ef_actual)
 
 q_actual = ef_actual[ef_actual[:,:,0] >= 0]
@@ -193,8 +196,10 @@ q_feasible  = ef_feasible[ef_feasible[:,:,0] >= 0]
 #q_feasible = ef_feasible
 q_infeasible  = ef_infeasible[ef_infeasible[:,:,0] >= 0]
 
-
+print('ef_actual',ef_actual)
 print('q_actual',q_actual)
+print('len(q-actual',len(q_actual))
+input('test q aactual here')
 #MaskedArray()
 #print('q_actual is',q_actual)
 print('q_feasible is',q_feasible)
@@ -302,6 +307,112 @@ plt.scatter(ef[0], ef[1],marker='o',color='k')
 plt.xlabel('x (m)')
 plt.ylabel('y (m)')
 plt.show()
+
+
+
+
+
+
+
+
+
+''' Paper Plot here'''
+
+
+fig_3 = plt.figure()
+
+ef = array([0.25,0.75])
+
+
+for i in range(len(base_points)):
+    x_plt = array([ef[0],base_points[i,0]])
+    y_plt = array([ef[1],base_points[i,1]])
+    plt.plot(x_plt,y_plt,color='cyan')
+
+plt_feasible = plt.scatter(q_feasible[:,0], q_feasible[:,1],color = 'g',s=0.0005)
+plt_infeasible = plt.scatter(q_infeasible[:,0], q_infeasible[:,1],color = 'r',s=0.0005)
+
+
+color_array = ['darkorange','magenta','blue','white','magenta','blue']
+
+plt_estimate = {}
+plt_actual = plt.scatter(q_actual[:,0], q_actual[:,1],facecolors='none', edgecolors='k',marker = 'D',alpha=0.75,s=0.150)
+
+
+## For ratio plot here
+size_q_estimated = zeros(shape=(len(sigmoid_slope_array)))
+size_actual_boundary = len(q_actual) 
+for k in range(len(sigmoid_slope_array)):
+
+    if (k<5.0):
+
+        ef_estimated = ef_estimated_array[k]
+        q_estimated = ef_estimated[ef_estimated[:,:,0] >= 0]
+
+        size_q_estimated[k] = len(q_estimated)
+        print('q_estimated',q_estimated)
+
+        #q_actual_sort = argsort(q_actual,axis=0)
+        #q_estimated_sort = argsort(q_estimated,axis=0)
+        #plt_actual = plt.plot(q_actual[:,0], q_actual[:,1],color = 'k')
+        
+        #plt_actual = plt.scatter(q_actual[:,0], q_actual[:,1],color = 'k',s=2.0)
+        #plt_estimate = plt.plot(q_estimated[:,0], q_estimated[:,1],color = 'cyan')
+        #plt_estimate = plt.plot(q_estimated[:,0], q_estimated[:,1],color = 'cyan')
+        plt_estimate[k] = plt.scatter(q_estimated[:,0], q_estimated[:,1],edgecolors='none',facecolors = color_array[k],marker = 'o',alpha=0.75,s=0.5)
+        
+    else:
+
+        q_estimated = ef_estimated_array[k]  
+
+        #q_actual_sort = argsort(q_actual,axis=0)
+        #q_estimated_sort = argsort(q_estimated,axis=0)
+        #plt_actual = plt.plot(q_actual[:,0], q_actual[:,1],color = 'k')
+        
+        #plt_actual = plt.scatter(q_actual[:,0], q_actual[:,1],color = 'k',s=2.0)
+        #plt_estimate = plt.plot(q_estimated[:,0], q_estimated[:,1],color = 'cyan')
+        #plt_estimate = plt.plot(q_estimated[:,0], q_estimated[:,1],color = 'cyan')
+        plt_estimate[k] = plt.scatter(q_estimated[:,0], q_estimated[:,1],facecolor = color_array[k],s=0.1)
+
+
+        #plt_estimate = plt_actual
+
+
+
+
+
+
+
+plt.scatter(base_points [:,0], base_points [:,1],marker='s',facecolors='none', edgecolors='k')
+plt.scatter(ef[0], ef[1],marker='o',color='k')
+plt.xlabel('x (m)')
+plt.ylabel('y (m)')
+plt.show()
+
+### ''' Paperplot code ends here######'
+
+### Paper Ratio plot here ################
+
+fig_4 = plt.figure()
+ax4 = fig_4.add_axes()
+slopes = [str(sigmoid_slope_array[0]), str(sigmoid_slope_array[1]), str(sigmoid_slope_array[2]), str(sigmoid_slope_array[3])]
+estimated = [(size_q_estimated[0])/(1.0*size_actual_boundary),(size_q_estimated[1])/(1.0*size_actual_boundary),(size_q_estimated[2])/(1.0*size_actual_boundary),(size_q_estimated[3])/(1.0*size_actual_boundary)]
+print('estimated is',estimated)
+plt.barh(slopes,estimated,facecolor=None,ec='k',height=0.3)
+plt.ylabel('Sigmoid slope',fontsize=18)
+plt.xlabel('$\hat{\kappa}$',fontsize=18)
+plt.xticks(fontsize=14)
+plt.yticks(fontsize=14)
+plt.savefig('Boundary_estimation_ratio_CDPR'+('.png'),dpi=600)
+plt.show()
+
+
+
+
+input('stop and exit')
+
+#### Paper 
+
 
 x0 = array([0.24,0.42])
 step_size = 0.0001
@@ -421,6 +532,11 @@ for i in range(number_iterations):
 
 
 print('test_normal_gradient')
+
+
+
+
+
 
 '''
 def gradient_descent(ax, x0, learning_rate, num_iterations):

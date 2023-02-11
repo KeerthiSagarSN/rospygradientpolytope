@@ -1,6 +1,8 @@
 import numpy as np
 from rospygradientpolytope.robot_functions import screw_transform
+########## DO NOT CHANGE/ ALTER THIS FILE - Analytical Version of Forward Kinematics, Jacobian is generated for Sawyer Robot ########
 
+########## DO NOT TOUCH THIS FILE ###################################################################################################
 
 def transform_70(q):
     # pos70 Compute sigmoid functoon

@@ -378,6 +378,9 @@ def get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
         #print 'vertex'
         #print vertex
         #print('vertex is',vertex)
+
+        #print('v_k_d',v_k_d)
+        #print('array([v_k_d[vertex,:]])',array([v_k_d[vertex,:]]))
         #self.Gamma_plus[facets,vertex] = abs(matmul(transpose(self.n_k[facets,:]),self.p_plus[facets,:]) - matmul(transpose(self.n_k[facets,:]),self.v_k_d[vertex,:]))
         
         '''
@@ -391,7 +394,7 @@ def get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
         ## Estimated parameters are here
         #self.Gamma_plus_hat[facets,vertex] = abs(matmul(transpose(self.n_k[facets,:]),self.p_plus_hat[facets,:]) - matmul(transpose(self.n_k[facets,:]),self.v_k_d[vertex,:]))
         
-        Gamma_minus[:,vertex] = transpose(Gamma_minus_LHS  + matmul(n_k, transpose((array([v_k_d[vertex,:]])))))
+        Gamma_minus[:,vertex] = transpose(Gamma_minus_LHS  - matmul(n_k, transpose((array([v_k_d[vertex,:]])))))
         #self.Gamma_plus[facets,vertex]= hstack((self.Gamma_plus,transpose(array([h_plus]))+ matmul(matmul(n, transpose(JE)), qmin) - matmul(n, transpose(desired_vertices[vertex, :]))))
         #self.Gamma_minus[facets,vertex]= hstack((Gamma_minus,transpose(array([h_minus]))+ matmul(matmul(-n, transpose(JE)), qmin) - matmul(-n, transpose(desired_vertices[vertex, :]))))
         #self.Gamma_minus[facets,vertex] = abs(matmul(transpose(self.n_k[facets,:]),self.p_minus[facets,:]) - matmul(-1*transpose(self.n_k[facets,:]),self.v_k_d[vertex,:]))
@@ -399,7 +402,7 @@ def get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
         Gamma_plus_hat[:,vertex] =  transpose(Gamma_plus_hat_LHS  - matmul(n_k, transpose((array([v_k_d[vertex,:]])))))
         
         ### estimated parameteres are here
-        Gamma_minus_hat[:,vertex] = transpose(Gamma_minus_hat_LHS  + matmul(n_k, transpose((array([v_k_d[vertex,:]])))))
+        Gamma_minus_hat[:,vertex] = transpose(Gamma_minus_hat_LHS  - matmul(n_k, transpose((array([v_k_d[vertex,:]])))))
       
    
       
@@ -510,7 +513,7 @@ def get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
     #input('wait here')
 
     # eq.33 is here - Continuous analytical gamma_minimum
-    Gamma_min_softmax = -1*robot_functions.smooth_max(-1*Gamma_total_hat*1000)/1000.0  # Previsois value was 10000
+    Gamma_min_softmax = -1*robot_functions.smooth_max(-1*Gamma_total_hat*1000.0)/1000.0  # Previsois value was 1000
     
     
     
