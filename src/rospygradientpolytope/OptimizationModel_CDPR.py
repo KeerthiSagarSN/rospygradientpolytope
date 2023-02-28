@@ -1029,7 +1029,7 @@ class OptimizationModel:
                 {'type': 'ineq', 'fun': self.constraint_func_obstacles_2_c2},\
                 {'type': 'ineq', 'fun': self.constraint_func_obstacles_2_c3},\
                 {'type': 'ineq', 'fun': self.constraint_func_obstacles_2_c4},\
-                {'type': 'ineq', 'fun': self.constr_function})
+                {'type': 'ineq', 'fun': self.constr_function,'tol':1e-3})
         
         print('self.pos_bounds',self.pos_bounds[0,0])
         input('wait here')
@@ -1203,12 +1203,16 @@ class OptimizationModel:
         ef = q_des
         
         cable_color = 'g'
+        plt.xlabel('x[m]')
+        plt.ylabel('y[m]')
         for c in range(len(self.base_points)):
             x = [ef[0],self.base_points[c,0]]
             y = [ef[1],self.base_points[c,1]]
             plt.plot(x,y,color = cable_color)
 
         roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.xlabel('x[m]')
+        plt.ylabel('y[m]')
         plt.gca().add_patch(roi_circle)
         plt.pause(0.0001)
         plt.cla()
@@ -1216,7 +1220,7 @@ class OptimizationModel:
         plt.gca().add_patch(roi_circle) 
         
 
-        return norm(self.roi_center - q_des) - 0.2
+        return norm(self.roi_center - q_des) 
         
 
             #plt.cla()
@@ -1260,7 +1264,8 @@ class OptimizationModel:
             
             min_dist_obstacles = 0
             #return min_dist_obstacles 
-        
+        plt.xlabel('x[m]')
+        plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
         obstacle_polytope_2 = self.obstacle_set[1]
         x = [obstacle_polytope_1[0,0],obstacle_polytope_1[1,0],obstacle_polytope_1[2,0],obstacle_polytope_1[3,0],obstacle_polytope_1[0,0]]
@@ -1278,7 +1283,7 @@ class OptimizationModel:
             x = [ef[0],self.base_points[c,0]]
             y = [ef[1],self.base_points[c,1]]
             plt.plot(x,y,color = cable_color)
-
+        
         plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)  
         plt.pause(0.0001)
         plt.cla()
@@ -1327,7 +1332,8 @@ class OptimizationModel:
             
             min_dist_obstacles = 0
             #return min_dist_obstacles
-        
+        plt.xlabel('x[m]')
+        plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
         obstacle_polytope_2 = self.obstacle_set[1]
         x = [obstacle_polytope_1[0,0],obstacle_polytope_1[1,0],obstacle_polytope_1[2,0],obstacle_polytope_1[3,0],obstacle_polytope_1[0,0]]
@@ -1398,7 +1404,8 @@ class OptimizationModel:
             
             min_dist_obstacles = 0
             #return min_dist_obstacles 
-        
+        plt.xlabel('x[m]')
+        plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
         obstacle_polytope_2 = self.obstacle_set[1]
         x = [obstacle_polytope_1[0,0],obstacle_polytope_1[1,0],obstacle_polytope_1[2,0],obstacle_polytope_1[3,0],obstacle_polytope_1[0,0]]
@@ -1468,7 +1475,8 @@ class OptimizationModel:
             
             min_dist_obstacles = 0
             #return min_dist_obstacles 
-            
+        plt.xlabel('x[m]')
+        plt.ylabel('y[m]') 
         obstacle_polytope_1 = self.obstacle_set[0]
         obstacle_polytope_2 = self.obstacle_set[1]
         x = [obstacle_polytope_1[0,0],obstacle_polytope_1[1,0],obstacle_polytope_1[2,0],obstacle_polytope_1[3,0],obstacle_polytope_1[0,0]]
@@ -1535,7 +1543,8 @@ class OptimizationModel:
             
             min_dist_obstacles = 0
             #return min_dist_obstacles
-            
+        plt.xlabel('x[m]')
+        plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
         obstacle_polytope_2 = self.obstacle_set[1]
         x = [obstacle_polytope_1[0,0],obstacle_polytope_1[1,0],obstacle_polytope_1[2,0],obstacle_polytope_1[3,0],obstacle_polytope_1[0,0]]
@@ -1604,7 +1613,8 @@ class OptimizationModel:
             
             min_dist_obstacles = 0
             #return min_dist_obstacles 
-            
+        plt.xlabel('x[m]')
+        plt.ylabel('y[m]')  
         obstacle_polytope_1 = self.obstacle_set[0]
         obstacle_polytope_2 = self.obstacle_set[1]
         x = [obstacle_polytope_1[0,0],obstacle_polytope_1[1,0],obstacle_polytope_1[2,0],obstacle_polytope_1[3,0],obstacle_polytope_1[0,0]]
@@ -1674,6 +1684,9 @@ class OptimizationModel:
         if isclose(dist_cable_obs,0.0,1e-4):
             
             min_dist_obstacles = 0
+        
+        plt.xlabel('x[m]')
+        plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
         obstacle_polytope_2 = self.obstacle_set[1]
         x = [obstacle_polytope_1[0,0],obstacle_polytope_1[1,0],obstacle_polytope_1[2,0],obstacle_polytope_1[3,0],obstacle_polytope_1[0,0]]
@@ -1740,6 +1753,9 @@ class OptimizationModel:
         if isclose(dist_cable_obs,0.0,1e-4):
             
             min_dist_obstacles = 0  
+
+        plt.xlabel('x[m]')
+        plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
         obstacle_polytope_2 = self.obstacle_set[1]
         x = [obstacle_polytope_1[0,0],obstacle_polytope_1[1,0],obstacle_polytope_1[2,0],obstacle_polytope_1[3,0],obstacle_polytope_1[0,0]]
@@ -1808,6 +1824,9 @@ class OptimizationModel:
                 #print('min_dist_obstacles',dist_cable_obs)
                 min_dist_obstacles = dist_cable_obs
             
+        
+        plt.xlabel('x[m]')
+        plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
         obstacle_polytope_2 = self.obstacle_set[1]
         x = [obstacle_polytope_1[0,0],obstacle_polytope_1[1,0],obstacle_polytope_1[2,0],obstacle_polytope_1[3,0],obstacle_polytope_1[0,0]]

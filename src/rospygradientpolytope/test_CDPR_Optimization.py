@@ -87,11 +87,11 @@ CDPR_optimizer.lower_bound = -1e-3
 
 
 obstacle_polytope_1 = array([[0.3,0.3],[0.3,0.5],[0.42,0.5],[0.42,0.3]])
-obstacle_polytope_2 = array([[0.71,0.71],[0.71,0.81],[0.81,0.81],[0.81,0.71]])
+obstacle_polytope_2 = array([[0.41,0.41],[0.41,0.61],[0.61,0.61],[0.61,0.41]])
 
 CDPR_optimizer.obstacle_set = array([obstacle_polytope_1,obstacle_polytope_2])
 
-CDPR_optimizer.roi_center = array([0.5,0.5])
+CDPR_optimizer.roi_center = array([0.85,0.75])
 
 #CDPR_optimizer.pos_bounds = array([[0,1],[0,1]])
 

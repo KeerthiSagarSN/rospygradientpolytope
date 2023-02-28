@@ -255,6 +255,7 @@ class LaunchRobot():
         
         #file_name = 'ef_IK_UR_'+str(test_case)
         '''
+        file_name = 'ef_IK_UR_'+str(test_case)
         ## First generate a list of random end-effector points in numpy and save in numpy savez array - First generation
         self.ef_IK_array = zeros(shape = (100,3))
         for i in range(100):
@@ -321,7 +322,8 @@ class LaunchRobot():
         #input('pos-desired')
         input('stop and exit dont test further')
         ### Save ik optimizaiton results
-        for iii in range(60,65):
+        '''
+        for iii in range(72,73):
             for jjj in range(len(self.sigmoid_slope_array)):
 
                 q_0 = self.q_in_array[iii,:]
@@ -350,10 +352,12 @@ class LaunchRobot():
         '''
         # Number of success 
         #input('stop and exit dont test further')
-        num_of_succ = zeros(shape=(50,len(self.sigmoid_slope_array)))
+        
+        num_of_succ = zeros(shape=(100,len(self.sigmoid_slope_array)))
+        obj_fun_analysis = zeros(shape=(100,len(self.sigmoid_slope_array)))
         # Number of iterations
-        num_of_iteration = zeros(shape=(50,len(self.sigmoid_slope_array)))
-        for iii in range(60,70):
+        num_of_iteration = zeros(shape=(100,len(self.sigmoid_slope_array)))
+        for iii in range(0,100):
             for jjj in range(len(self.sigmoid_slope_array)):
 
                 q_0 = self.q_in_array[iii,:]
@@ -380,7 +384,11 @@ class LaunchRobot():
                 num_of_succ[iii,jjj] = data_load['opt_success']
                 if num_of_succ[iii,jjj]:
                     num_of_iteration[iii,jjj] = data_load['opt_iterations']
+                    obj_fun_analysis[iii,jjj] = data_load['opt_gamma']
+
             
+            #print('Function analysis',obj_fun_analysis[iii,:])
+            #input('stop and test')
 
         print('Number of success - 50',count_nonzero(num_of_succ[:,0]))
         print('Number of success - 100',count_nonzero(num_of_succ[:,1]))
@@ -397,8 +405,22 @@ class LaunchRobot():
         print('Number of iters - 150',sum(num_of_iteration[:,2])/count_nonzero(num_of_iteration[:,2]))
         print('Number of iters - 200',sum(num_of_iteration[:,3])/count_nonzero(num_of_iteration[:,3]))
         print('Number of iters - 400',sum(num_of_iteration[:,4])/count_nonzero(num_of_iteration[:,4]))
-        '''
+
+
+        print('Average of gamma - 50',sum(obj_fun_analysis[:,0])/count_nonzero(num_of_iteration[:,0]))
+        print('Average of gamma - 100',sum(obj_fun_analysis[:,1])/count_nonzero(num_of_iteration[:,1]))
+        print('Average of gamma - 150',sum(obj_fun_analysis[:,2])/count_nonzero(num_of_iteration[:,2]))
+        print('Average of gamma - 200',sum(obj_fun_analysis[:,3])/count_nonzero(num_of_iteration[:,3]))
+        print('Average of gamma - 400',sum(obj_fun_analysis[:,4])/count_nonzero(num_of_iteration[:,4]))
+
+        print('maximum of iterations are-50',max(obj_fun_analysis[:,0]))
+        print('maximum of iterations are-100',max(obj_fun_analysis[:,1]))
+        print('maximum of iterations are-150',max(obj_fun_analysis[:,2]))
+        print('maximum of iterations are-200',max(obj_fun_analysis[:,3]))
+        print('maximum of iterations are-400',max(obj_fun_analysis[:,4]))
+        
         ### Other testing here
+
         '''
         for i in range(5):
             self.test_Gamma_vs_Gamma_hat(sigmoid_slope_test[i])
@@ -923,7 +945,7 @@ class LaunchRobot():
         #q_in[6] = -0.76
         step_size = 0.0050
 
-        num_iterations = 1000
+        num_iterations = 600
         #sigmoid_slope_inp = 150
 
         i0_plot = zeros(shape=(num_iterations))
@@ -936,21 +958,30 @@ class LaunchRobot():
         y0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
 
         color_arr = ['magenta','k','green','r','cyan']
-        for lm in range(len(sigmoid_slope_arr )):
+        for lm in range(0,1):
+        #for lm in range(len(sigmoid_slope_arr )):
             sigmoid_slope_inp = sigmoid_slope_arr[lm]
 
-            test_joint = 1
+            test_joint = 3
             q_in = zeros(6)
             #q_add[test_joint] = 1
             
             q_in[0] = 0.98
-            q_in[1] = -0.70
+            q_in[1] = -0.95
             q_in[2] = 0.85
             q_in[3] = -0.10
             q_in[4] = -1.41
             q_in[5] = -1.12
             #q_in[6] = -0.76
-            step_size = 0.0050
+            step_size = 0.0010
+
+            ax2 = plt.axes()
+            ax2.set_xlabel('Joint q' + str(test_joint))
+            ax2.set_ylabel('Capacity Margin Gradient' + str(' [N]'),fontsize=13)
+            ax2.plot([],[],color='r',linestyle='solid',label='Numerical Gradient: ' + r"$\frac{\partial {\gamma}}{\partial{q_2}}$")
+            ax2.plot([],[],color='k',linestyle='dashed',label='Analytical Gradient- Slope 100')
+            #plt.show()
+            ax2.legend()
 
             for i in range(num_iterations):
                 
@@ -958,7 +989,7 @@ class LaunchRobot():
 
                 self.q_in = q_in
 
-                q_in[1] += step_size
+                q_in[test_joint] += step_size
                 #q_in[2] += step_size
 
                 i0_plot[i] = q_in[test_joint]
@@ -1017,6 +1048,11 @@ class LaunchRobot():
 
                     error_plot_a[i,lm] = analytical_gradient
                     print('analytical_gradient',analytical_gradient)
+                    
+                    ax2.scatter(q_in[test_joint],numerical_gradient,color='r',s=2.5)
+                    ax2.scatter(q_in[test_joint],analytical_gradient,color='k',s=2.5)
+                    
+                    plt.pause(0.00001)
 
                     #error_grad = ((numerical_gradient - analytical_gradient)) /(numerical_gradient*1.0)*100.0
                     #print('self.q_in',q_in)
@@ -1069,7 +1105,7 @@ class LaunchRobot():
                 
                 
                 ### Desired polytope set - Publish
-                '''
+                
                 DesiredpolyArray_message = self.publish_desired_polytope.publish(create_polytopes_msg(desired_polytope_verts, desired_polytope_faces, \
                                                                                                     ef_pose,"base_link", scaling_factor))
 
@@ -1116,7 +1152,7 @@ class LaunchRobot():
 
                 EstcapacityArray_message = self.publish_capacity_margin_polytope_est.publish(create_polytopes_msg(polytope_verts_est, capacity_faces_est, \
                                                                                                     ef_pose,"base_link", scaling_factor))
-                '''
+                
                 
                 ### Vertex 
                 

@@ -13,7 +13,7 @@ Created on Mon Jul  4 11:50:56 2022
 """
 from numpy import empty,shape,cross,zeros,dot,transpose,matmul
 from numpy.linalg import norm
-
+import time
 
 
 from numpy import empty,shape,cross,zeros,dot,transpose,matmul,array
@@ -67,7 +67,7 @@ def hyperplane_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat
     
     h_minus_gradient = zeros(shape = (len(h_plus)))
     
-    
+    ## This function below is the bottleneck - Need to rewrite in a manner where it is not in a for-loop and complete matrix format is followed for dh/dq
     for normal_index in range(len(Nmatrix)):
         
         
@@ -75,6 +75,7 @@ def hyperplane_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat
         twist_index_1 = Nmatrix[normal_index, 0]
         twist_index_2 = Nmatrix[normal_index, 1]
         # Normals based on the screw vectors 
+        
         dn_dq[normal_index,:] = normal_gradient(twist_index_1, twist_index_2,JE,H, test_joint)
         
         for index_projected_screw in range(len(Nnot[normal_index])):
@@ -131,7 +132,7 @@ def hyperplane_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat
             
             h_minus_gradient[normal_index] += dh_minus_dq
             
-
+        
     
 
       
@@ -181,7 +182,8 @@ def Gamma_hat_gradient_joint(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plu
     d_h_plus_dq, d_h_minus_dq, dn_dq = hyperplane_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
                 p_minus_hat,qdot_min,qdot_max,\
                     test_joint,sigmoid_slope_joint)
-        
+    
+    
     ## Get Capacity Margin parameters for the desired polytope
     
     # Cycling through all the noramls of the hyper plane here:
@@ -369,13 +371,12 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
     
     for test_joint in range(0,shape(JE)[1]):
         
-            
-        
+
             
         d_Gamma_all = Gamma_hat_gradient_joint(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
                         p_minus_hat,qdot_min,qdot_max,cartesian_desired_vertices,test_joint,sigmoid_slope_joint)    
             
-            
+        
         #print('d_Gamma_all',d_Gamma_all)
         #Gamma_gradient(test_joint,sigmoid_slope)
         
@@ -392,7 +393,11 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
         #print('d_gamma_max_dq',d_gamma_max_dq)
         Gamma_all_array = -1.0*Gamma_total_hat
         
-        d_LSE_dq_arr = exp_normalize(10000000.0*Gamma_all_array)
+        ### This was the parameter for the smooth gradient for the robot
+        #d_LSE_dq_arr = exp_normalize(100.0*Gamma_all_array)
+
+        ### This is the parameter for the UR5 tests- running it again for Sawyer to see the convergence
+        d_LSE_dq_arr = exp_normalize(10000000.0**Gamma_all_array)
 
         #print('d_LSE_dq_arr',d_LSE_dq_arr)
         #input('stop to test here')
@@ -402,7 +407,7 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
         d_LSE_dq = d_LSE_dq_arr[Gamma_min_index_hat]
 
 
-        
+
         #d_LSE_dq_min = d_LSE_dq_arr[Gamma_min_index_hat]
 
         #print('d_LSE_dq',d_LSE_dq_arr)
