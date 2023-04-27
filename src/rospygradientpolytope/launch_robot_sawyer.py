@@ -304,8 +304,8 @@ class LaunchSawyerRobot():
         #input('pos-desired')
         input('stop and exit dont test further')
         ### Save ik optimizaiton results
-        
-        for iii in range(6,50):
+        '''
+        for iii in range(50,100):
             for jjj in range(len(self.sigmoid_slope_array)):
 
                 q_0 = self.q_in_array[iii,:]
@@ -358,7 +358,7 @@ class LaunchSawyerRobot():
                 #opt_result = self.fmin_opt(q_0, pos_des,True)
 
                 BASE_PATH = "/home/imr/catkin_ws_build/src/rospygradientpolytope/test_results/"
-                file_name = 'ik_opt_gamma_obj_sawyer_'+str(iii) + str('_') + str(self.sigmoid_slope_input) + str('_') + str(self.test_case)
+                file_name = 'ik_opt_gamma_obj_sawyer_steep_'+str(iii) + str('_') + str(self.sigmoid_slope_input) + str('_') + str(self.test_case)
 
                 # Load random joint configurations within the limit
                 data_load = load(os.path.join(BASE_PATH, file_name)+str('.npz'))
@@ -395,7 +395,7 @@ class LaunchSawyerRobot():
         print('Average of gamma - 150',sum(obj_fun_analysis[:,2])/count_nonzero(num_of_iteration[:,2]))
         print('Average of gamma - 200',sum(obj_fun_analysis[:,3])/count_nonzero(num_of_iteration[:,3]))
         print('Average of gamma - 400',sum(obj_fun_analysis[:,4])/count_nonzero(num_of_iteration[:,4]))
-        '''
+        
         # print nothing
 
         '''
@@ -1241,15 +1241,16 @@ class LaunchSawyerRobot():
 
         i0_plot = zeros(shape=(num_iterations))
         #len(x0_start)
-        sigmoid_slope_arr = [100.0,150.0,200.0,400.0]
+        sigmoid_slope_arr = [50,100.0,150.0,200.0,400.0]
         error_plot_a = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
         error_plot_n = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
         z0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
         x0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
         y0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
 
-        color_arr = ['magenta','k','green','r','cyan']
-        for lm in range(0,1):
+        color_arr = ['magenta','k','green','cyan','r']
+        #for lm in range(0,1):
+        for lm in range(len(sigmoid_slope_arr)):
             sigmoid_slope_inp = sigmoid_slope_arr[lm]
 
             test_joint = 3
@@ -1268,8 +1269,8 @@ class LaunchSawyerRobot():
             ax2 = plt.axes()
             ax2.set_xlabel('Joint q' + str(test_joint))
             ax2.set_ylabel('Capacity Margin Gradient' + str(' [N]'),fontsize=13)
-            ax2.plot([],[],color='r',linestyle='solid',label='Numerical Gradient: ' + r"$\frac{\partial {\gamma}}{\partial{q_3}}$")
-            ax2.plot([],[],color='k',linestyle='dashed',label='Analytical Gradient- Slope 100')
+            #ax2.plot([],[],color='r',linestyle='solid',label='Numerical Gradient: ' + r"$\frac{\partial {\gamma}}{\partial{q_3}}$")
+            #ax2.plot([],[],color='k',linestyle='dashed',label='Analytical Gradient- Slope 100')
             #plt.show()
             ax2.legend()
             #plt.legend(loc="lower right")
@@ -1357,10 +1358,10 @@ class LaunchSawyerRobot():
             
 
 
-
+                
                 
             
-                scaling_factor = 5.0
+                scaling_factor = 10.0
                 #mutex.acquire()
                 ### Polytope plot with estimation
                 
@@ -1447,14 +1448,14 @@ class LaunchSawyerRobot():
                 
                 ### Vertex 
                 
-
+                
                 ##############################################################################################################
                 
                 
                 #print('facet_vertex_idx',facet_vertex_idx)
             
             #mutex.release()
-        '''
+        
         ax2 = plt.axes()
         ax2.set_xlabel('Joint q' + str(test_joint))
         #ax2.set_ylabel(r"$\partial \hat{\gamma}$" + str(' [N]'),fontsize=13)
@@ -1483,9 +1484,9 @@ class LaunchSawyerRobot():
         #plt.legend((handle_1,handle_2,handle_3,handle_4,handle_5,handle_6,label_numerical),(handle_str_1,'Analytical Slope: 100','Analytical Slope: 150','Analytical Slope: 200','Analytical Slope: 400',handle_str_2,'Numerical Gradient'),loc="upper left")
         
         plt.legend(loc="lower right")
-        plt.savefig('UR_gradient_comparison_' + str(101)+('.png'))
+        plt.savefig('Sawyer_gradient_comparison_' + str(101)+('.png'))
         plt.show()
-        '''
+        
     def test_Gamma_vs_Gamma_hat_gradient_old(self,sigmoid_slope_test):
         
         import time

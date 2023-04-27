@@ -452,6 +452,7 @@ def Gamma_hat_gradient_2D(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_h
         #Gamma_all_array = -1*Gamma_total_hat
         Gamma_all_array = -1.0*Gamma_total_hat
         
+        #d_LSE_dq_arr = exp_normalize(100*Gamma_all_array) # Previous paper value is 100 - 
         d_LSE_dq_arr = exp_normalize(100*Gamma_all_array)
 
         #print('d_LSE_dq_arr',d_LSE_dq_arr)

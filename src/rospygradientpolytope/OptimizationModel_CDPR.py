@@ -404,11 +404,11 @@ class OptimizationModel:
                 Wu,Wn,Hess= get_wrench_matrix(q,self.length_params,self.height_params)
 
                 #print('HEssian before gradient is',Hess)
-
+                '''
                 d_gamma_hat = Gamma_hat_gradient_2D(Wn,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
                         p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
                         self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
-
+                '''
                 CM_array_total_actual[i,j] = Gamma_min
 
 
@@ -433,7 +433,7 @@ class OptimizationModel:
                 #print('Hess',Hess)
                 #dnk_dq_a = dnk_dq_a[:,:,1]
 
-                d_gamma_hat_a = d_gamma_hat[0]
+                #d_gamma_hat_a = d_gamma_hat[0]
 
                 #print('Analytical gradient',d_gamma_hat_a)
                 #print('Gamma_min',Gamma_min)
@@ -446,7 +446,7 @@ class OptimizationModel:
 
                     
 
-                    d_gamma_hat_n = (Gamma_min_softmax - prev_gamma_min)/step_iter
+                    #d_gamma_hat_n = (Gamma_min_softmax - prev_gamma_min)/step_iter
 
                     #print('NUmerical gradient is',d_gamma_hat_n)
                     #print('Analytical gradient is',d_gamma_hat_a)
@@ -468,22 +468,33 @@ class OptimizationModel:
                     prev_gamma_min = Gamma_min_softmax
                     first_iteration = False
                 
-                if (Gamma_min_softmax < self.tol_value) and (Gamma_min_softmax) > -self.lower_bound:
+                #if ((Gamma_min_softmax < self.tol_value)) and ((Gamma_min_softmax) > -self.lower_bound): Paper method
+                if ((Gamma_min_softmax < self.tol_value)) and ((Gamma_min_softmax) > -self.lower_bound):
                     #print('inside WFW - estimated')
-                    #input('stop here')
-                    print('estimated infeasible point')
-                    #q_boundary_estimated = vstack((q_boundary_estimated,q))
+                    
+                    print('Estimated boundary point')
+                    
                     q_boundary_estimated[i,j,:] = q
                     #CM_array_est = vstack((CM_array_est,Gamma_min_softmax))
                     CM_array_est[i,j] = Gamma_min_softmax
+                    #q_boundary_estimated = vstack((q_boundary_estimated,q))
+                    #q_boundary_estimated[i,j,:] = q
+                    #CM_array_est = vstack((CM_array_est,Gamma_min_softmax))
+                    #CM_array_est[i,j] = Gamma_min_softmax
+                    #print('Gamma_min_softmax')
+                    #input('stop here')
                 #print('Gamma_min is',Gamma_min)
 
 
 
-                
-                if (Gamma_min < self.tol_value) and (Gamma_min > self.lower_bound):
+                if ((Gamma_min < self.tol_value)) and ((Gamma_min > -self.lower_bound)): #Paper method
+                #if ((Gamma_min < self.tol_value)) and ((Gamma_min > -self.lower_bound*1e-3)):
                     
-                    print('boundary pointtttttttttttttttttttttttttttttttttttttttttttttttt')
+                    print('Actual boundary pointttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt')
+                    #print('Gamma_min',Gamma_min)
+                    #print('The estimated CM at here is',Gamma_min_softmax)
+
+                    #input('stop to thest')
                     '''
                     polytope_vertices, polytope_faces, facet_pair_idx, capacity_margin_faces, \
                         capacity_proj_vertex, polytope_vertices_est, polytope_faces_est, capacity_margin_faces_est, capacity_proj_vertex_est = \
@@ -532,6 +543,8 @@ class OptimizationModel:
                     #CM_array_actual = vstack((CM_array_actual,Gamma_min))
                     CM_array_actual[i,j] = Gamma_min
                     #input('testing here')
+
+
 
                     
                     
@@ -592,6 +605,7 @@ class OptimizationModel:
         #print('shape of ef_total',shape(ef_total[:,:,0]))
 
         #X_dens,Y_dens = meshgrid(ef_total[:,:,0],ef_total[:,:,1])
+        ''' 
         w = ax.plot_surface(ef_total[:,:,0], ef_total[:,:,1], CM_estimated_density,cmap='spring',alpha=0.4)
         # change the fontsize
 
@@ -741,11 +755,7 @@ class OptimizationModel:
                 ax.scatter(x0,y0,z0,c=color_arr[k],s=4)   
                 plt.pause(0.001)
                 #plt.show()
-                '''
-                d_h_plus_dq, d_h_minus_dq = hyperplane_gradient_2D(Wn,Hess,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
-                            p_minus_hat,self.qdot_min,self.qdot_max,\
-                                test_joint,self.sigmoid_slope)
-                '''
+
                 
                 d_gamma_hat,d_LSE_dq ,d_LSE_dq_arr,d_gamma_max_dq,dn_dq = Gamma_hat_gradient_2D(Wn,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
                         p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
@@ -802,67 +812,7 @@ class OptimizationModel:
                     #print('NUmerical gradient of gamma',(Gamma_min_softmax-prev_Gamma_min_softmax)/(1.0*learning_rate))
                     #print('ANalytical gradient',-d_gamma_hat)
                     prev_Gamma_min_softmax = Gamma_min_softmax
-                    #input('test gradient')
-
-                    '''
-                    dn_dq_n = (n_k - prev_n_k)/(1.0*learning_rate)
-
-                    d_h_plus_dq_n = (h_plus_hat - prev_h_plus)/(1.0*learning_rate)
-                    d_h_minus_dq_n = (h_minus_hat - prev_h_minus)/(1.0*learning_rate)
-
-                    print('NUmerical gradient- h -plus',d_h_plus_dq_n)
-                    print('Analytical gradient - h-plus',d_h_plus_dq_a)
-
-
-
-                    print('NUmerical gradient- h -minus',d_h_minus_dq_n)
-                    print('Analytical gradient - h-minus',d_h_minus_dq_a)
-
-                    
-                    print('NUmerical gradient normal n',dn_dq_n)
-                    dn_dq_a = dn_dq
-                    print('Analytical gradient normal n',dn_dq_a[test_joint,:,:])
-                    print('Analytical gradient slice normal n',dn_dq_a[test_joint,0,:])
-
-                    
-
-                    dsig_dq_n = (dsig_dq-dsig_dq_prev)/(1.0*learning_rate)
-
-                    print('dx_dq_a is',dx_dq_a)
-                    print('Numerical sigmoid_term gradient is',dsig_dq_n)
-                    print('Analytical sigmoid gradient is',dsig_dq_a)
-
-
-
-                    dvk_dq_n = (dvk_dq - dvk_dq_prev)/(1.0*learning_rate)
-
-
-                    print('Numerical twist gradient is',dvk_dq_n)
-                    print('Analytical twist gradient is',dvk_dq_a)
-                    dvk_dq_prev = dvk_dq
-
-                    dx_dq_n = (x_term - x_term_prev)/(1.0*learning_rate)
-
-                    print('Numerical dx_dq gradient is',dx_dq_n)
-                    print('Analytical dx_dq gradient is',dx_dq_a)
-                    x_term_prev = x_term
-
-
-                    #input('test')
-                    dsig_dq_prev = dsig_dq
-
-                    #print('')
-                    #input('stop here')
-                    #print('Hessian is',Hess)
-
-                    #print('d_gamma_hat[0]',d_gamma_hat[0])
-                    #print('d_gamma_hat[1]',d_gamma_hat[1])
-                    ax.set_xlabel('x [m]',fontsize=13)
-                    ax.set_ylabel('y [m]',fontsize=13)
-                    ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
-                    ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
-                    ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
-                    '''
+                    #input('test gradient')                    
                     #plt.pause(0.0001)
                     
                     #prev_n_k = n_k
@@ -878,8 +828,8 @@ class OptimizationModel:
                     #x_term_prev = x_term
                     first_iteration = False
                 #input('test error here')
-            
-        
+        '''   
+        ##########3
         '''
         ax.plot(x0_plot[:,0],y0_plot[:,0],z0_plot[:,0],color=color_arr[0],marker='+', linestyle='dashed',label='x0:0.005, y0:0.1 ')
         ax.plot(x0_plot[:,1],y0_plot[:,1],z0_plot[:,1],color=color_arr[1],marker='+', linestyle='dashed',label='x0:0.5, y0:0.1 ')
@@ -903,7 +853,8 @@ class OptimizationModel:
         #ax2.plot(y0_plot[1:,0],error_plot_a[1:,2],color=color_arr[2],linestyle='dashed',label='Analytical Slope: 30')
         #ax2.plot(y0_plot[1:,0],error_plot_a[1:,3],color=color_arr[3],linestyle='dashed',label='Analytical Slope: 50')
 
-        input('second plot')
+        #input('second plot')
+        '''
         ax2.plot(y0_plot[1:,0],error_plot_n[1:,0],color=color_arr[0],linestyle='solid',label='Numerical Slope: 10')
         ax2.plot(y0_plot[1:,0],error_plot_n[1:,1],color=color_arr[1],linestyle='solid',label='Numerical Slope: 20')
         ax2.plot(y0_plot[1:,0],error_plot_n[1:,2],color=color_arr[2],linestyle='solid',label='Numerical Slope: 30')
@@ -915,7 +866,7 @@ class OptimizationModel:
         plt.legend(loc="lower left")
         plt.tight_layout()
         plt.show()
-            
+        ''' 
 
             
 

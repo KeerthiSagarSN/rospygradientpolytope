@@ -283,7 +283,8 @@ def sigmoid_gradient(normal_index,twist_index,dn_dq,n,JE,H,test_joint,sigmoid_sl
     sigmoid_x = sigmoid(x,sigmoid_slope)
     
         
-    sigmoid_term = sigmoid_x*(1.0-sigmoid_x)
+    #sigmoid_term = sigmoid_x*(1.0-sigmoid_x) # paper method- Correct with results
+    sigmoid_term = sigmoid_slope*sigmoid_x*(1.0-sigmoid_x)
     #print('sigmoid_term', sigmoid_term)
     
     return sigmoid_term*dx_dq

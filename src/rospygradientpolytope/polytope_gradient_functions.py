@@ -68,6 +68,9 @@ def hyperplane_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat
     h_minus_gradient = zeros(shape = (len(h_plus)))
     
     ## This function below is the bottleneck - Need to rewrite in a manner where it is not in a for-loop and complete matrix format is followed for dh/dq
+
+
+
     for normal_index in range(len(Nmatrix)):
         
         
@@ -339,6 +342,7 @@ def Gamma_hat_gradient_joint(self,test_joint,sigmoid_slope):
     
     # Second derivative with respect to itself dsoftmax_i_di
 '''
+
 def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
                         p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
                         qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope):
@@ -394,10 +398,10 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
         Gamma_all_array = -1.0*Gamma_total_hat
         
         ### This was the parameter for the smooth gradient for the robot
-        #d_LSE_dq_arr = exp_normalize(100.0*Gamma_all_array)
+        d_LSE_dq_arr = exp_normalize(100.0*Gamma_all_array)
 
         ### This is the parameter for the UR5 tests- running it again for Sawyer to see the convergence
-        d_LSE_dq_arr = exp_normalize(10000000.0**Gamma_all_array)
+        #d_LSE_dq_arr = exp_normalize(10000000.0**Gamma_all_array)
 
         #print('d_LSE_dq_arr',d_LSE_dq_arr)
         #input('stop to test here')
