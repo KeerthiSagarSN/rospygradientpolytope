@@ -335,7 +335,10 @@ class LaunchRobot():
         #print('pos_des',float64(self.ef_IK_array[1,:]))
         #input('pos-desired')
         input('stop and exit dont test further')
-        self.test_trajectory(pos_start=array([0.50,0.01,0.5]),pos_end=array([0.99,0.01,0.4]),step_size=100) # Picture - FEasible pose - 1
+        #self.test_trajectory(pos_start=array([0.50,0.01,0.5]),pos_end=array([0.99,0.01,0.4]),step_size=100) # Picture - FEasible pose - 1
+        #self.test_feasible_pose(q_test=array([0.0,0.95,0,0.3,0.0,0.0]),step_size=100) # Picture - FEasible pose - 1
+        #self.plot_feasible_infeasible(sigmoid_slope_test)
+        self.test_gamma_gradient(sigmoid_slope_test)
         #self.test_trajectory(pos_start=array([0.90,0.01,0.5]),pos_end=array([0.99,0.01,0.4]),step_size=100) # Picture - FEasible pose - 1 - Good
         #self.test_trajectory(pos_start=array([0.89,0.01,0.5]),pos_end=array([0.99,0.01,0.4]),step_size=100) # Picture - FEasible pose - 1
 
@@ -968,6 +971,9 @@ class LaunchRobot():
 
 
 
+
+
+
     def plot_feasible_infeasible(self,sigmoid_slope_test):
         import time
         from numpy.linalg import det
@@ -979,17 +985,19 @@ class LaunchRobot():
 
         Gamma_min_prev = None
 
-        test_joint = 3
+        test_joint = 1
+        '''
         q_in = zeros(6)
         #q_add[test_joint] = 1
         
-        q_in[0] = 0.54
-        q_in[1] = -0.97
-        q_in[2] = 0.54
-        q_in[3] = 0.32
-        q_in[4] = 0.15
+        q_in[0] = 0.98
+        q_in[1] = -0.95
+        q_in[2] = 0.85
+        q_in[3] = -0.10
+        q_in[4] = -0.01
         q_in[5] = -0.12
         #q_in[6] = -0.76
+        '''
         step_size = 0.0050
 
         num_iterations = 600
@@ -1006,19 +1014,21 @@ class LaunchRobot():
 
         color_arr = ['magenta','k','green','cyan','r']
         #for lm in range(0,1):
-        for lm in range(len(sigmoid_slope_arr)):
+        #for lm in range(len(sigmoid_slope_arr)):
+        for lm in range(2,3):
+
             sigmoid_slope_inp = sigmoid_slope_arr[lm]
 
-            test_joint = 3
+            test_joint = 1
             q_in = zeros(6)
             #q_add[test_joint] = 1
             
-            q_in[0] = 0.98
-            q_in[1] = -0.95
-            q_in[2] = 0.85
-            q_in[3] = -0.10
-            q_in[4] = -1.41
-            q_in[5] = -1.12
+            q_in[0] = 0.0
+            q_in[1] = -1.0
+            q_in[2] = 0.0 # 0.50 # 1.2
+            q_in[3] = -1.57 # 0.57 # 2.2 --> infeasible
+            q_in[4] = 0.0 # 1.57
+            q_in[5] = 0.0
             #q_in[6] = -0.76
             step_size = 0.0010
 
@@ -1042,7 +1052,7 @@ class LaunchRobot():
                 i0_plot[i] = q_in[test_joint]
                 #print('self.q_in',q_in)
 
-                #self.joint_state_publisher_robot(q_in)
+                self.joint_state_publisher_robot(q_in)
                 #time.sleep(0.005)
 
                 # Publish joint sates to Rviz for the robot
@@ -1081,7 +1091,7 @@ class LaunchRobot():
                 #print('Nnot is',Nnot)
                 #input('test size of n_k')
                 #print('Gamma_min is',Gamma_min)
-                #print('Gamma_min softmax is',Gamma_min_softmax)
+                print('Gamma_min softmax is',Gamma_min_softmax)
 
                 if Gamma_min_prev != None:
 
@@ -1113,7 +1123,7 @@ class LaunchRobot():
             
 
 
-                '''
+                
                 
             
                 scaling_factor = 10.0
@@ -1202,7 +1212,7 @@ class LaunchRobot():
                 
                 
                 ### Vertex 
-                '''
+                
                 ##############################################################################################################
                 
                 
@@ -1238,7 +1248,7 @@ class LaunchRobot():
         #plt.legend((handle_1,handle_2,handle_3,handle_4,handle_5,handle_6,label_numerical),(handle_str_1,'Analytical Slope: 100','Analytical Slope: 150','Analytical Slope: 200','Analytical Slope: 400',handle_str_2,'Numerical Gradient'),loc="upper left")
         
         plt.legend(loc="lower left")
-        plt.savefig('UR_gradient_comparison_' + str(101)+('.png'))
+        #plt.savefig('UR_gradient_comparison_' + str(101)+('.png'))
         plt.show()
 
 
@@ -1267,7 +1277,7 @@ class LaunchRobot():
         q_in[1] = -0.97
         q_in[2] = 0.54
         q_in[3] = 0.32
-        q_in[4] = 0.15
+        q_in[4] = -0.15 #
         q_in[5] = -0.12
         #q_in[6] = -0.76
         step_size = 0.0050
@@ -1277,7 +1287,7 @@ class LaunchRobot():
 
         i0_plot = zeros(shape=(num_iterations))
         #len(x0_start)
-        sigmoid_slope_arr = [50,100.0,150.0,200.0,400.0]
+        sigmoid_slope_arr = [50.0,100.0,150.0,200.0,400.0]
         error_plot_a = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
         error_plot_n = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
         z0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
@@ -1393,8 +1403,8 @@ class LaunchRobot():
             
 
 
-                '''
                 
+                '''
             
                 scaling_factor = 10.0
                 #mutex.acquire()
@@ -1494,14 +1504,17 @@ class LaunchRobot():
         ax2.set_xlabel('Joint q' + str(test_joint))
         #ax2.set_ylabel(r"$\partial \hat{\gamma}$" + str(' [N]'),fontsize=13)
         ax2.set_ylabel('Capacity Margin Gradient' + str(' [N]'),fontsize=13)
+        ax2.set_ylim([-0.3,1.2])
 
 
         #handle_1 = ax2.scatter(i0_plot[1],error_plot_a[1,1],color='k',s=0.0000001,label='Estimated:'+ r"$\frac{\partial \hat{\gamma}}{\partial{q_3}}$")
 
-        handle_2 = ax2.plot(i0_plot[1:],error_plot_a[1:,0],color=color_arr[0],linestyle='dashed',label='Analytical Slope: 100')
-        handle_3 = ax2.plot(i0_plot[1:],error_plot_a[1:,1],color=color_arr[1],linestyle='dashed',label='Analytical Slope: 150')
-        handle_4 = ax2.plot(i0_plot[1:],error_plot_a[1:,2],color=color_arr[2],linestyle='dashed',label='Analytical Slope: 200')
-        handle_5 = ax2.plot(i0_plot[1:],error_plot_a[1:,3],color=color_arr[3],linestyle='dashed',label='Analytical Slope: 400')
+        handle_2 = ax2.plot(i0_plot[1:],error_plot_a[1:,0],color=color_arr[0],linestyle='dashed',label='Analytical Slope: 50')
+        handle_3 = ax2.plot(i0_plot[1:],error_plot_a[1:,1],color=color_arr[1],linestyle='dashed',label='Analytical Slope: 100')
+        handle_4 = ax2.plot(i0_plot[1:],error_plot_a[1:,2],color=color_arr[2],linestyle='dashed',label='Analytical Slope: 150')
+        handle_5 = ax2.plot(i0_plot[1:],error_plot_a[1:,3],color=color_arr[3],linestyle='dashed',label='Analytical Slope: 200')
+        handle_5 = ax2.plot(i0_plot[1:],error_plot_a[1:,4],color=color_arr[4],linestyle='dashed',label='Analytical Slope: 400')
+
 
         #handle_6 = ax2.scatter(i0_plot[1],error_plot_a[1,1],color='k',s=0.0000001,label='Actual' + r"$\frac{\partial {\gamma}}{\partial{q_3}}$")
         #input('second plot')
