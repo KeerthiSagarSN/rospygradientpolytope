@@ -96,7 +96,7 @@ $ source devel/setup.bash
 
 ## IF you encounter CMAKE Error : Install all ROS- Dependencies - May take some time to install !! (Only when CMAKE Error !!)
 ```
-$ rosdep install --from-paths src --ignore-src -r -y
+$ sudo apt install ros-noetic-jsk_footstep_msgs
 
 ```
 
