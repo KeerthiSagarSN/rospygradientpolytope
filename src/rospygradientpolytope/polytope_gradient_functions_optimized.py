@@ -22,7 +22,7 @@ from rospygradientpolytope.linearalgebra import V_unit, check_ndarray
 from rospygradientpolytope.robot_functions import exp_sum,exp_normalize,smooth_max_gradient,sigmoid
 from math import isnan
 from rospygradientpolytope.gradient_functions import normal_gradient, normal_twist_projected_gradient, sigmoid_gradient
-import threading
+
     
 
 ## Eq.42 is here
@@ -165,7 +165,7 @@ def Gamma_hat_gradient_joint(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plu
     from rospygradientpolytope.linearalgebra import V_unit, check_ndarray
     from rospygradientpolytope.robot_functions import exp_normalize
     
-    from rospygradientpolytope.polytope_gradient_functions import hyperplane_gradient
+    from rospygradientpolytope.polytope_gradient_functions_optimized import hyperplane_gradient
     # Eq. 42 here Testing dh_plus_dq here 
     h_plus = h_plus_hat
     h_minus = h_minus_hat
@@ -372,6 +372,22 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
     
     #print('Jacobian inside Gamma_hat_gradient',JE)
     #input('Jacobian inside Gamma_hat_gradient')
+
+
+    Gamma_all_array = -1.0*Gamma_total_hat
+    
+    ### This was the parameter for the smooth gradient for the robot
+    d_LSE_dq_arr = exp_normalize(100.0*Gamma_all_array)
+
+    ### This is the parameter for the UR5 tests- running it again for Sawyer to see the convergence
+    #d_LSE_dq_arr = exp_normalize(10000000.0**Gamma_all_array)
+
+    #print('d_LSE_dq_arr',d_LSE_dq_arr)
+    #input('stop to test here')
+    #d_LSE_dq = max(d_LSE_dq_arr)
+    #d_LSE_dq = max(d_LSE_dq_arr)
+
+    d_LSE_dq = d_LSE_dq_arr[Gamma_min_index_hat]
     
     for test_joint in range(0,shape(JE)[1]):
         
@@ -395,20 +411,7 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
         #Gamma_all_array = -1*Gamma_total_hat
 
         #print('d_gamma_max_dq',d_gamma_max_dq)
-        Gamma_all_array = -1.0*Gamma_total_hat
-        
-        ### This was the parameter for the smooth gradient for the robot
-        d_LSE_dq_arr = exp_normalize(100.0*Gamma_all_array)
 
-        ### This is the parameter for the UR5 tests- running it again for Sawyer to see the convergence
-        #d_LSE_dq_arr = exp_normalize(10000000.0**Gamma_all_array)
-
-        #print('d_LSE_dq_arr',d_LSE_dq_arr)
-        #input('stop to test here')
-        #d_LSE_dq = max(d_LSE_dq_arr)
-        #d_LSE_dq = max(d_LSE_dq_arr)
-
-        d_LSE_dq = d_LSE_dq_arr[Gamma_min_index_hat]
 
 
 
@@ -457,123 +460,8 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
     #print('d_gamma_hat',d_gamma_hat)
     return d_gamma_hat
             
-
-def Gamma_hat_gradient_dq(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
-                        p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
-                        qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope,test_joint,jac_output):
     
-    
-    
-    h_plus = h_plus_hat
-    h_minus = h_minus_hat
-    J_Hessian = JE
-    n = n_k
-    
-    
-    
-    
-    deltaqq = qdot_max - qdot_min
-    deltaqq = transpose(array([deltaqq]))
-    
-    
-    ## Number of joints - dq
-    #d_gamma_hat = zeros(shape(JE)[1])
-    #d_softmax_dq = zeros(shape(JE)[1])
-    
-    ## Get all hyperplane parameters
-    
-    sigmoid_slope_joint = sigmoid_slope
-    
-    #print('Jacobian inside Gamma_hat_gradient',JE)
-    #input('Jacobian inside Gamma_hat_gradient')
-    
-    #for test_joint in range(0,shape(JE)[1]):
-        
-
-            
-    d_Gamma_all = Gamma_hat_gradient_joint(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
-                    p_minus_hat,qdot_min,qdot_max,cartesian_desired_vertices,test_joint,sigmoid_slope_joint)    
-        
-    
-    #print('d_Gamma_all',d_Gamma_all)
-    #Gamma_gradient(test_joint,sigmoid_slope)
-    
-    ### Analytical gradient of gamma is here: 
-        
-    
-    
-    d_gamma_max_dq = -1.0*d_Gamma_all[Gamma_min_index_hat]
-    
-    #print('Gamma_hat--> check if positive',self.polytope_model.Gamma_total_hat)
-    #input('wait here 1')
-    #Gamma_all_array = -1*Gamma_total_hat
-
-    #print('d_gamma_max_dq',d_gamma_max_dq)
-    Gamma_all_array = -1.0*Gamma_total_hat
-    
-    ### This was the parameter for the smooth gradient for the robot
-    d_LSE_dq_arr = exp_normalize(100.0*Gamma_all_array)
-
-    ### This is the parameter for the UR5 tests- running it again for Sawyer to see the convergence
-    #d_LSE_dq_arr = exp_normalize(10000000.0**Gamma_all_array)
-
-    #print('d_LSE_dq_arr',d_LSE_dq_arr)
-    #input('stop to test here')
-    #d_LSE_dq = max(d_LSE_dq_arr)
-    #d_LSE_dq = max(d_LSE_dq_arr)
-
-    d_LSE_dq = d_LSE_dq_arr[Gamma_min_index_hat]
-
-
-
-    #d_LSE_dq_min = d_LSE_dq_arr[Gamma_min_index_hat]
-
-    #print('d_LSE_dq',d_LSE_dq_arr)
-    #print('test_joint',test_joint)
-    #print('d_gamma_max_dq',d_gamma_max_dq)
-    #print('d_LSE_dq_min',d_LSE_dq_min)
-
-    
-    
-
-    d_gamma_hat = 1.0*d_LSE_dq*d_gamma_max_dq
-
-    #d_gamma_hat[test_joint] = 1.0*d_gamma_max_dq
-
-    #print('d_gamma_hat[test_joint]',d_gamma_hat[test_joint] )
-    #print('d_LSE_dq',d_LSE_dq)
-
-    #print('d_gamma_max_dq',d_gamma_max_dq)
-    #input('stop here')
-    
-    #d_softmax_dq[test_joint] = d_gamma_hat[test_joint]*(1-d_gamma_hat[test_joint])
-    
-    #print('self.d_softmax_dq',self.d_softmax_dq)
-    
-    #input('stpo')
-    if isnan(d_gamma_hat):
-        print('self.d_gamma_hat[test_joint]',d_gamma_hat[test_joint])
-        print('self.d_LSE_dq',d_LSE_dq)
-        print('self.d_gamma_max_dq',d_gamma_max_dq)
-        print('self.d_Gamma_all',d_Gamma_all)
-        print('self.polytope_model.Gamma_min_index_hat',Gamma_min_index_hat)
-        print('self.d_Gamma_all[self.polytope_model.Gamma_min_index_hat]',d_Gamma_all[Gamma_min_index_hat])
-        input('stp')
-    '''
-    if (self.d_softmax_dq > 0) and (self.polytope_model.Gamma_min_index_hat[0] > (len(self.polytope_model.Gamma_total_hat)/2.0)):
-        #input('stpo')
-        self.d_gamma_hat[test_joint] = 1.0*self.d_gamma_hat[test_joint]
-    
-    if (self.d_softmax_dq > 0) and (self.polytope_model.Gamma_min_index_hat[0] < (len(self.polytope_model.Gamma_total_hat)/2.0)):
-        #input('stpo')
-        self.d_gamma_hat[test_joint] = 1.0*self.d_gamma_hat[test_joint]
-    '''
-    #print('d_gamma_hat',d_gamma_hat)
-    #input('stoi ')
-    jac_output[test_joint] = d_gamma_hat
-    #d_gamma_hat_dq
     # Second derivative with respect to itself dsoftmax_i_di
-
 
     
 '''

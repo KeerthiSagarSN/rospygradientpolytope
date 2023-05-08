@@ -30,6 +30,22 @@ from shapely.ops import nearest_points
 ## Declare mounting parameters
 
 
+import scipy.optimize as sco
+
+from numpy import array,pi,vstack,linspace,shape,zeros,hstack,transpose,matmul
+from numpy.linalg import norm
+from numpy.random import randn
+
+from shapely.geometry import Polygon,LineString
+from linearalgebra import isclose,V_unit
+import matplotlib.pyplot as plt
+from polytope_functions_2D import get_capacity_margin, get_polytope_hyperplane
+from polytope_gradient_functions_2D import Gamma_hat_gradient_2D,hyperplane_gradient_2D
+from gradient_functions_2D import normal_gradient,sigmoid_gradient
+from WrenchMatrix import get_wrench_matrix
+from robot_functions import sigmoid
+
+
 from scipy.spatial.distance import directed_hausdorff
 
 ### Optimization Model
@@ -95,6 +111,8 @@ CDPR_optimizer.cartesian_dof_input = array([True,True,False,False,False,False])
 CDPR_optimizer.step_size = 1000
 CDPR_optimizer.tol_value = 5e-2
 CDPR_optimizer.lower_bound = 1e-3 #Paper value
+
+CDPR_optimizer.active_joints = 4
 
 #q = array([-3,-3.5])
 #CDPR_optimizer.analytical_solver = True
@@ -269,7 +287,7 @@ print('shape(CM_estimated density)',shape(CM_estimated_density))
 print('shape of ef_total',shape(ef_total[:,:,0]))
 
 #X_dens,Y_dens = meshgrid(ef_total[:,:,0],ef_total[:,:,1])
-w = ax.plot_surface(ef_total[:,:,0], ef_total[:,:,1], CM_estimated_density,cmap='spring')
+w = ax.plot_surface(ef_total[:,:,0], ef_total[:,:,1], CM_estimated_density,cmap='spring',alpha=0.4)
 # change the fontsize
 
 ax.set_xlabel('x [m]',fontsize=13)
@@ -285,7 +303,271 @@ ax.set_zlabel(r"$\hat{\gamma}$" + str(' [N]'),rotation=90,fontsize=16)
 
 
 
+
+#w = ax.plot_surface(ef_total[:,:,0], ef_total[:,:,1], CM_estimated_density,cmap='spring',alpha=0.4)
+        # change the fontsize
+
+
+ax.set_xlabel('x [m]',fontsize=13)
+ax.set_ylabel('y [m]',fontsize=13)
+ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+#ax.set_zlabel('$\hat{\gamma}$',fontsize=20)
+#ax.set_zlabel('$\hat{\gamma}$',rotation=145)
+ax.set_zlabel(r"$\hat{\gamma}$" + str(' [N]'),rotation=90,fontsize=16)
+
+### Test gradient descent here
+fig_2 = plt.figure()
+
+ax2 = plt.axes()
+num_iterations = 1000
+learning_rate = 0.0001
+### Good starting point x0 = 0.65, y0 = 0.72
+#x0 = 0.65
+#y0 = 0.72
+
+x0 = 0.005
+
+#x0 = 0.48
+y0 = 0.005
+y0 = 0.29
+#q = array([x_0,y_0])
+first_iteration = True
+
+x0_start = array([0.005,0.5,0.9])
+y0_start = array([0.1,0.1,0.9])
+
+color_arr = ['cyan','k','green',]
+color_arr = ['magenta','k','green','orange']
+color_arr = ['magenta','k','green','orange']
+
+color_arr = ['magenta','k','green','k']
+color_arr = ['cyan','k','green',]
+
+x_in = x0
+y_in = y0
+
+
+
+i0_plot = zeros(shape=(num_iterations))
+#len(x0_start)
+sigmoid_slope_arr = [2.0,5.0,10.0,20.0,30.0,50.0]
+error_plot_a = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
+error_plot_n = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
+z0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
+x0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
+y0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
+
+
+for lm in range(len(x0_start)):
+#for lm in range(1,2):
+
+#for lm in range(3,len(sigmoid_slope_arr)):
+    CDPR_optimizer.sigmoid_slope = 50.0
+    x0 = x0_start[lm]
+    #x0 = 0.45 Good configuration to show
+    y0 = y0_start[lm]
+
+    #y0 = 0.30 Good configuration to show
+    #x0 = 0.5
+    #y0 = 0.1
+
+    x_in = x0
+    y_in = y0
+    for i in range(num_iterations):
+        
+        print('number of iterations',i)
+        i0_plot[i] = i
+        
+        q = array([x0,y0])
+        #q = array([x_in,y_in])
+
+        x_in = x0
+        y_in = y0
+        #y_in += learning_rate
+
+        test_joint = 1
+
+        x0_plot[i,lm] = x_in
+        y0_plot[i,lm] = y_in
+        #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+        
+        Wm = zeros(shape=(2,CDPR_optimizer.active_joints))
+        for k in range(len(CDPR_optimizer.base_points)):
+            cable_plt = array([[x_in,CDPR_optimizer.base_points[k,0]],[y_in,CDPR_optimizer.base_points[k,1]]])
+            Wm[0,k] = CDPR_optimizer.base_points[k,0] - x_in
+            Wm[1,k] = CDPR_optimizer.base_points[k,1] - y_in
+
+            #print('self.base_points',self.base_points[k,:])
+
+            #input('stop and check')
+
+            #Wm[0,k] = W[0,k]*((norm(W[:,k]))**(-1))
+            #Wm[1,k] = W[1,k]*((norm(W[:,k]))**(-1))
+
+            Wm[:,k] = V_unit(Wm[:,k])
+            #plt.plot(cable_plt[0,:],cable_plt[1,:],color = color_arr[k])
+            #plt.pause(0.01)
+            #print('cable number is:',k)
+        #print('Wrench matrix is is',W)
+        
+        #W = W
+        
+        #print('Wrench matrix is here', W)
+        #input('wait here')
+
+        
+        #input('stop here')
+        #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
+        #Wm = array([[-0.7071,-0.7071,-0.7071,-0.7071],[0.7071,0.7071,0.7071,0.7071]])
+        
+        #print('Wrench matrix is is',Wm)
+        W = Wm
+        
+        
+        #W = W_n
+        #JE = W
+        #print('JE is',JE)
+        #print('H is',H)
+        #print('Wrench matrix is', J)
+
+
+
+
+        h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = \
+            get_polytope_hyperplane(W,CDPR_optimizer.active_joints,CDPR_optimizer.cartesian_dof_input,CDPR_optimizer.qdot_min,CDPR_optimizer.qdot_max,CDPR_optimizer.sigmoid_slope)
+            
+        
+        Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = \
+        get_capacity_margin(W,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                CDPR_optimizer.active_joints,CDPR_optimizer.cartesian_dof_input,CDPR_optimizer.qdot_min,CDPR_optimizer.qdot_max,CDPR_optimizer.cartesian_desired_vertices,CDPR_optimizer.sigmoid_slope)
+        
+        Wu,Wn,Hess= get_wrench_matrix(q,CDPR_optimizer.length_params,CDPR_optimizer.height_params)
+        z0 = Gamma_min_softmax
+
+        z0_plot[i,lm] = z0
+
+        print('capacity margin is',z0)
+
+        print('x position now is',x0)
+        print('y position now is',y0)
+
+        dn_dq = normal_gradient(Hess)            
+        #ax.scatter(x0,y0,z0,c=color_arr[k],s=4)   
+        #plt.pause(0.001)
+        #plt.show()
+
+        
+        d_gamma_hat,d_LSE_dq ,d_LSE_dq_arr,d_gamma_max_dq,dn_dq = Gamma_hat_gradient_2D(Wn,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+                p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
+                CDPR_optimizer.qdot_min,CDPR_optimizer.qdot_max,CDPR_optimizer.cartesian_desired_vertices,CDPR_optimizer.sigmoid_slope)
+
+        #print('Gamma min is',Gamma_min)
+        ##print('Gammaa_min softmax is',Gamma_min_softmax)
+        #print('d_LSE_dq',d_LSE_dq)
+        ##print('d_LSE_dq_arr',d_LSE_dq_arr)
+        #print('d_gamma_max_dq',d_gamma_max_dq)
+        x0 = x0 - learning_rate*d_gamma_hat[0]
+        y0 = y0 - learning_rate*d_gamma_hat[1]
+        #y0 += learning_rate
+        #z0 = Gamma_min_softmax
+        
+        d_G_dq_a = -d_gamma_hat[test_joint]
+        
+        #dvk_dq_a = Hess[test_joint,2,:]
+
+        #dvk_dq = Wn[:,2]
+        #dn_dq_a = normal_gradient(Hess)
+
+        #d_h_plus_dq_a = d_h_plus_dq
+        #d_h_minus_dq_a = d_h_minus_dq
+        
+        #x_term = matmul(transpose(n_k[2,:]),Wn[:,0])
+
+        #print('x_term is',x_term)
+
+        #dx_dq_a = matmul(dn_dq[test_joint,2,:],Wn[:,0]) + matmul(transpose(n_k[2,:]),Hess[test_joint,0,:])
+
+        
+
+        #dsig_dq_a = sigmoid_gradient(2,0,dn_dq,n_k,Wn,Hess,test_joint,self.sigmoid_slope)
+        #dsig_dq = sigmoid(x_term,self.sigmoid_slope)
+
+        #dsig_dq_a = (dsig_dq*(1.0-dsig_dq))*dx_dq_a
+        
+            
+        if not first_iteration:
+            #ax2.scatter(i,z0,c='k',s=10)
+            #ax.scatter(x0,y0,z0,c='k',s=20)
+            d_G_dq_n = (Gamma_min_softmax-prev_Gamma_min_softmax)/(1.0*learning_rate)
+
+            #error_plot[i,lm] = ((d_G_dq_n - d_G_dq_a)/(d_G_dq_n))*100.0
+
+            #error_plot[i,lm] = ((d_G_dq_n - d_G_dq_a))
+
+            #error_plot_a[i,lm] = d_G_dq_a
+
+            #error_plot_n[i,lm] = d_G_dq_n
+
+            error_plot_n[i,lm] = ((d_G_dq_n - d_G_dq_a)/(d_G_dq_n))*100.0
+            #print('NUmerical gradient of gamma',(Gamma_min_softmax-prev_Gamma_min_softmax)/(1.0*learning_rate))
+            #print('ANalytical gradient',-d_gamma_hat)
+            prev_Gamma_min_softmax = Gamma_min_softmax
+            #input('test gradient')                    
+            #plt.pause(0.0001)
+            
+            #prev_n_k = n_k
+            #prev_h_plus = h_plus_hat
+            #prev_h_minus = h_minus_hat
+        if first_iteration:
+            prev_Gamma_min_softmax = Gamma_min_softmax
+            #prev_n_k = n_k
+            #prev_h_plus = h_plus_hat
+            #prev_h_minus = h_minus_hat
+            #dsig_dq_prev = dsig_dq
+            #dvk_dq_prev = dvk_dq
+            #x_term_prev = x_term
+            first_iteration = False
+        #input('test error here')
+
+
+ax.plot(x0_plot[:,0],y0_plot[:,0],z0_plot[:,0],color=color_arr[0],marker='+', linestyle='dashed',label='x0:0.005, y0:0.1 ')
+ax.plot(x0_plot[:,1],y0_plot[:,1],z0_plot[:,1],color=color_arr[1],marker='+', linestyle='dashed',label='x0:0.5, y0:0.1 ')
+ax.plot(x0_plot[:,2],y0_plot[:,2],z0_plot[:,2],color=color_arr[2],marker='+', linestyle='dashed',label='x0:0.9, y0:0.9 ')
+#ax.plot(x0_plot[:,3],y0_plot[:,3],z0_plot[:,3],color=color_arr[3],marker='+', linestyle='dashed')
+ax.legend(loc="upper right",fontsize=25)
+ax2.plot(i0_plot,z0_plot[:,0],color=color_arr[0],linestyle='dashed',label='x0:0.005, y0:0.1 ')
+ax2.plot(i0_plot,z0_plot[:,1],color=color_arr[1],linestyle='dashed',label='x0:0.5, y0:0.1 ')
+ax2.plot(i0_plot,z0_plot[:,2],color=color_arr[2],linestyle='dashed',label='x0:0.9, y0:0.9 ')
+
+
+#ax2.plot(i0_plot,z0_plot[:,3],color=color_arr[3],linestyle='dashed')
+ax2.set_xlabel('Number of Iterations',fontsize=25)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+plt.tight_layout()
+#ax2.set_xlabel('Number of Iterations',prop={'size': 20})
+ax2.set_ylabel(r"$\hat{\gamma}$" + str(' [N]'),fontsize=25)
+ax2.legend(loc="lower right",fontsize=25)
+
+'''
+
+ax2.plot(y0_plot[1:,0],error_plot_n[1:,0],color=color_arr[0],linestyle='solid',label='Numerical Slope: 10')
+ax2.plot(y0_plot[1:,0],error_plot_n[1:,1],color=color_arr[1],linestyle='solid',label='Numerical Slope: 20')
+ax2.plot(y0_plot[1:,0],error_plot_n[1:,2],color=color_arr[2],linestyle='solid',label='Numerical Slope: 30')
+ax2.plot(y0_plot[1:,0],error_plot_n[1:,3],color=color_arr[3],linestyle='solid',label='Numerical Slope: 50')
+ax2.set_xlabel('Y (m)')
+#ax2.set_ylabel(r"$\partial \hat{\gamma}$",fontsize=15)
+ax2.set_ylabel('Error $(\%)$',fontsize=15)
+'''
+#plt.legend(loc="lower left")
+#plt.tight_layout()
 plt.show()
+
+
+
+
 
 ## Stopping here
 
@@ -481,10 +763,10 @@ plt.scatter(ef[0], ef[1],marker='o',color='k')
 
 
 #plt_actual = plt.scatter(q_actual[:,0], q_actual[:,1],facecolors='none', edgecolors='k',marker = 'D',alpha=0.75,s=0.150)
-plt_actual = plt.scatter(q_actual[:,0], q_actual[:,1],facecolors='none', edgecolors='k',marker = 'D',alpha=0.5,s=30)
+plt_actual = plt.scatter(q_actual[:,0], q_actual[:,1],facecolors='none', edgecolors='k',marker = 'D',alpha=0.75,s=18)
 
-plt.legend((plt_feasible,plt_infeasible,plt_actual,plt_empty ,plt_estimate[0],plt_estimate[1],plt_estimate[2],plt_estimate[3],plt_estimate[4],plt_estimate[5]),\
-    ('WFW','Wrench Infeasbible', 'Actual Boundary','Estimated Boundary','Slope-' + str(sigmoid_slope_array[0]),\
+plt.legend((plt_feasible,plt_infeasible,plt_empty,plt_actual,plt_empty,plt_empty ,plt_estimate[0],plt_estimate[1],plt_estimate[2],plt_estimate[3],plt_estimate[4],plt_estimate[5]),\
+    ('WFW','Wrench Infeasbible', '','Actual Boundary','','Estimated Boundary','Slope-' + str(sigmoid_slope_array[0]),\
         'Slope-' + str(sigmoid_slope_array[1]),'Slope-' + str(sigmoid_slope_array[2]),\
            'Slope-' + str(sigmoid_slope_array[3]),'Slope-' + str(sigmoid_slope_array[4]),
            'Slope-' + str(sigmoid_slope_array[5]))\
@@ -492,3 +774,11 @@ plt.legend((plt_feasible,plt_infeasible,plt_actual,plt_empty ,plt_estimate[0],pl
 
 plt.savefig('Wrench Feasible Workspace full_' + str(CDPR_optimizer.sigmoid_slope)+('_')+str(test_number)+('.png'),dpi=600)
 plt.show()
+
+
+
+
+### Gradient plot 
+
+
+

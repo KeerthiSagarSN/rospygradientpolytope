@@ -296,7 +296,9 @@ class LaunchSawyerRobot():
 
         #self.test_Gamma_vs_Gamma_hat(self.sigmoid_slope_test)
 
-        #self.test_gamma_gradient(sigmoid_slope_test=150)
+        self.test_gamma_gradient(sigmoid_slope_test=sigmoid_slope_test)
+
+        input('Ctrl+C and exit ')
         #q_0 = zeros(6)
         #q_0 = float64(q_0)
         ##print('pos_des',float64(self.ef_IK_array[0,:]))
@@ -1248,7 +1250,7 @@ class LaunchSawyerRobot():
         x0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
         y0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
 
-        color_arr = ['magenta','k','green','cyan','r']
+        color_arr = ['magenta','k','green','cyan','blue','r']
         #for lm in range(0,1):
         for lm in range(len(sigmoid_slope_arr)):
             sigmoid_slope_inp = sigmoid_slope_arr[lm]
@@ -1257,6 +1259,7 @@ class LaunchSawyerRobot():
             q_in = zeros(7)
             #q_add[test_joint] = 1
             
+            ## Paper values
             q_in[0] = 0.0
             q_in[1] = 0.0
             q_in[2] = -1.625
@@ -1264,8 +1267,19 @@ class LaunchSawyerRobot():
             q_in[4] = 0.10
             q_in[5] = -0.12
             q_in[6] = -0.05
+            '''
+
+            q_in[0] = 0.0
+            q_in[1] = -0.0
+            q_in[2] = -1.0
+            q_in[3] = 0.57
+            q_in[4] = 1.0
+            q_in[5] = -1.0
+            q_in[6] = 0.57
+            '''
             step_size = 0.002
 
+            '''
             ax2 = plt.axes()
             ax2.set_xlabel('Joint q' + str(test_joint))
             ax2.set_ylabel('Capacity Margin Gradient' + str(' [N]'),fontsize=13)
@@ -1273,6 +1287,7 @@ class LaunchSawyerRobot():
             #ax2.plot([],[],color='k',linestyle='dashed',label='Analytical Gradient- Slope 100')
             #plt.show()
             ax2.legend()
+            '''
             #plt.legend(loc="lower right")
             for i in range(num_iterations):
                 
@@ -1340,8 +1355,8 @@ class LaunchSawyerRobot():
                     error_plot_a[i,lm] = analytical_gradient
                     print('analytical_gradient',analytical_gradient)
                     #plt.cla()
-                    ax2.scatter(q_in[test_joint],numerical_gradient,color='r',s=2.5)
-                    ax2.scatter(q_in[test_joint],analytical_gradient,color='k',s=2.5)
+                    #ax2.scatter(q_in[test_joint],numerical_gradient,color='r',s=2.5)
+                    #ax2.scatter(q_in[test_joint],analytical_gradient,color='k',s=2.5)
                     
                     plt.pause(0.00001)
                     
@@ -1357,7 +1372,7 @@ class LaunchSawyerRobot():
                 Gamma_min_prev = Gamma_min
             
 
-
+                
                 
                 
             
@@ -1457,21 +1472,23 @@ class LaunchSawyerRobot():
             #mutex.release()
         
         ax2 = plt.axes()
-        ax2.set_xlabel('Joint q' + str(test_joint))
+        ax2.set_xlabel('Joint q' + str(test_joint),fontsize=13)
         #ax2.set_ylabel(r"$\partial \hat{\gamma}$" + str(' [N]'),fontsize=13)
         ax2.set_ylabel('Capacity Margin Gradient' + str(' [N]'),fontsize=13)
 
 
         #handle_1 = ax2.scatter(i0_plot[1],error_plot_a[1,1],color='k',s=0.0000001,label='Estimated:'+ r"$\frac{\partial \hat{\gamma}}{\partial{q_3}}$")
 
-        handle_2 = ax2.plot(i0_plot[1:],error_plot_a[1:,0],color=color_arr[0],linestyle='dashed',label='Analytical Slope: 100')
-        handle_3 = ax2.plot(i0_plot[1:],error_plot_a[1:,1],color=color_arr[1],linestyle='dashed',label='Analytical Slope: 150')
-        handle_4 = ax2.plot(i0_plot[1:],error_plot_a[1:,2],color=color_arr[2],linestyle='dashed',label='Analytical Slope: 200')
-        handle_5 = ax2.plot(i0_plot[1:],error_plot_a[1:,3],color=color_arr[3],linestyle='dashed',label='Analytical Slope: 400')
+        handle_2 = ax2.plot(i0_plot[1:],error_plot_a[1:,0],color=color_arr[0],linestyle='dashed',label='Analytical Slope: 50')
+        handle_3 = ax2.plot(i0_plot[1:],error_plot_a[1:,1],color=color_arr[1],linestyle='dashed',label='Analytical Slope: 100')
+        handle_4 = ax2.plot(i0_plot[1:],error_plot_a[1:,2],color=color_arr[2],linestyle='dashed',label='Analytical Slope: 150')
+        handle_5 = ax2.plot(i0_plot[1:],error_plot_a[1:,3],color=color_arr[3],linestyle='dashed',label='Analytical Slope: 200')
+        handle_6 = ax2.plot(i0_plot[1:],error_plot_a[1:,4],color=color_arr[4],linestyle='dashed',label='Analytical Slope: 400')
+
 
         #handle_6 = ax2.scatter(i0_plot[1],error_plot_a[1,1],color='k',s=0.0000001,label='Actual' + r"$\frac{\partial {\gamma}}{\partial{q_3}}$")
         #input('second plot')
-        label_numerical = ax2.plot(i0_plot[1:],error_plot_n[1:,0],color=color_arr[4],linestyle='solid',label='Numerical Gradient: ' + r"$\frac{\partial {\gamma}}{\partial{q_3}}$")
+        label_numerical = ax2.plot(i0_plot[1:],error_plot_n[1:,0],color=color_arr[5],linestyle='solid',label='Numerical Gradient: ' + r"$\frac{\partial {\gamma}}{\partial{q_3}}$")
         #ax2.plot(i0_plot[1:],error_plot_n[1:,1],color=color_arr[1],linestyle='solid',label='Numerical Slope: 150')
         #ax2.plot(i0_plot[1:],error_plot_n[1:,2],color=color_arr[2],linestyle='solid',label='Numerical Slope: 200')
         #ax2.plot(i0_plot[1:],error_plot_n[1:,3],color=color_arr[3],linestyle='solid',label='Numerical Slope: 400')
@@ -1479,12 +1496,14 @@ class LaunchSawyerRobot():
 
         
         # pass handle & labels lists along with order as below
-        handle_str_1 = 'Estimated:' + r"$\frac{\partial \hat{\gamma}}{\partial{q_3}}$"
-        handle_str_2 = 'Actual' + r"$\frac{\partial {\gamma}}{\partial{q_3}}$"
+        #handle_str_1 = 'Estimated:' + r"$\frac{\partial \hat{\gamma}}{\partial{q_3}}$"
+        #handle_str_2 = 'Actual' + r"$\frac{\partial {\gamma}}{\partial{q_3}}$"
         #plt.legend((handle_1,handle_2,handle_3,handle_4,handle_5,handle_6,label_numerical),(handle_str_1,'Analytical Slope: 100','Analytical Slope: 150','Analytical Slope: 200','Analytical Slope: 400',handle_str_2,'Numerical Gradient'),loc="upper left")
         
-        plt.legend(loc="lower right")
-        plt.savefig('Sawyer_gradient_comparison_' + str(101)+('.png'))
+        plt.legend(loc="lower right",fontsize='large')
+        #plt.savefig('Sawyer_gradient_comparison_' + str(101)+('.png'))
+        plt.savefig("Sawyer_gradient_comparison_111",format='png', dpi=600)
+
         plt.show()
         
     def test_Gamma_vs_Gamma_hat_gradient_old(self,sigmoid_slope_test):
