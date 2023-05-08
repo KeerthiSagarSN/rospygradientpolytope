@@ -84,7 +84,7 @@ $ sudo apt-get install ros-noetic-urdfdom-py
 ```
 ## Clone Visualization Package Library - Rviz
 ```
-$ git clone https://github.com/jsk-ros-pkg/jsk_recognition
+$ git clone https://github.com/jsk-ros-pkg/jsk_visualization.git
 ```
 
 ## Catkin Build/ Catkin Make - Build & Source all repositories in Catkin Workspace
