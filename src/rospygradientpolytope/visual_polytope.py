@@ -392,7 +392,7 @@ def velocity_polytope_with_estimation(JE, qdot_max, qdot_min,cartesian_desired_v
     Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx,hyper_plane_sign = \
         get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
                         active_joints,cartesian_dof_input,qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope)
-    
+    #print('Gamma_min_softmax',Gamma_min_softmax)
     
     ################## Actual - Polytope #########################################################################
     
@@ -555,7 +555,7 @@ def velocity_polytope_with_estimation(JE, qdot_max, qdot_min,cartesian_desired_v
 
     
     return polytope_vertices, polytope_faces, facet_pair_idx, capacity_margin_faces, \
-            capacity_proj_vertex, polytope_vertices_est, polytope_faces_est, capacity_margin_faces_est, capacity_proj_vertex_est
+            capacity_proj_vertex, polytope_vertices_est, polytope_faces_est, capacity_margin_faces_est, capacity_proj_vertex_est,Gamma_min_softmax
             
 def pycapacity_polytope(JE, qdot_max, qdot_min):
     '''

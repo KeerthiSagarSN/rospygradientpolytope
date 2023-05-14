@@ -25,57 +25,45 @@ https://github.com/askuric/polytope_vertex_search/blob/master/ROS_nodes/panda_ca
 #!/usr/bin/env python3
 ## Library import
 ############# ROS Dependencies #####################################
-import rospy
 import os
+import rospy
 from geometry_msgs import msg
-from geometry_msgs.msg import Pose, Twist, PoseStamped, TwistStamped, WrenchStamped, PointStamped
-from std_msgs.msg import Bool, Float32,Int16,String
-
-from sensor_msgs.msg import Joy, JointState, PointCloud
+from geometry_msgs.msg import Pose, Twist, PoseStamped, TwistStamped,WrenchStamped, PointStamped
+from std_msgs.msg import Bool, Float32
+from sensor_msgs.msg import Joy, JointState, PointCloud 
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from scipy.spatial import distance as dist_scipy
-from numpy import sum
-
 
 import tf_conversions as tf_c
 from tf2_ros import TransformBroadcaster
-from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, Marker
-from interactive_markers.interactive_marker_server import *
-from geometry_msgs.msg import Pose, Point
+
 #### Polytope Plot - Dependency #####################################
 
-# Polygon plot for ROS - Geometry message
+## Polygon plot for ROS - Geometry message
 from jsk_recognition_msgs.msg import PolygonArray, SegmentArray
-import matplotlib.pyplot as plt
-
 from geometry_msgs.msg import Polygon, PolygonStamped, Point32, Pose
-import time
-import threading
 
 
 from rospygradientpolytope.visual_polytope import velocity_polytope,desired_polytope,velocity_polytope_with_estimation
 from rospygradientpolytope.polytope_ros_message import create_polytopes_msg, create_polygon_msg,create_capacity_vertex_msg, create_segment_msg
 from rospygradientpolytope.polytope_functions import get_polytope_hyperplane, get_capacity_margin
-from rospygradientpolytope.polytope_gradient_functions import Gamma_hat_gradient_dq, Gamma_hat_gradient_joint
+from rospygradientpolytope.polytope_gradient_functions import Gamma_hat_gradient, Gamma_hat_gradient_joint
 from rospygradientpolytope.sawyer_functions import jacobianE0, position_70, jacobian70
 from rospygradientpolytope.robot_functions import getHessian, exp_normalize
 
 #################### Linear Algebra ####################################################
 
 from numpy.core.numeric import cross
-from numpy import matrix, matmul, transpose, isclose, array, rad2deg, abs, vstack, hstack, shape, eye, zeros, random, savez, load
-from numpy import polyfit, poly1d, count_nonzero
+from numpy import matrix,matmul,transpose,isclose,array,rad2deg,abs,vstack,hstack,shape,eye,zeros,ones , random, savez, load
+from numpy import polyfit,poly1d
+from numpy import float64,average,count_nonzero
+import time
 
-from numpy import float64, average,matmul,dot
-
-from numpy.linalg import norm, det,pinv
-import multiprocessing as mp
-from math import atan2, pi, asin, acos
-from geometry_msgs.msg import Pose, Point, Quaternion
-
-from numpy import sum,matmul
+from numpy.linalg import norm,det
+from math import atan2, pi,asin,acos
+from rospygradientpolytope.linearalgebra import check_ndarray
 
 
+from scipy.optimize import check_grad
 
 from re import T
 
@@ -91,11 +79,6 @@ from pykdl_utils.joint_kinematics import JointKinematics
 import scipy.optimize as sco
 ## Mutex operator
 from threading import Lock
-import time
-import threading
-## Multiprocessing toolbox for Jacobian function
-
-from multiprocessing import Process
 
 # getting the node namespace
 #namespace = rospy.get_namespace()
@@ -196,8 +179,6 @@ class LaunchSawyerRobot():
         
         
         self.desired_vertices = self.cartesian_desired_vertices
-        self.sigmoid_slope_input = 150
-
         
         self.pub_rate = 500 #Hz
 
@@ -225,35 +206,7 @@ class LaunchSawyerRobot():
 
         #print('self.qdot_max',self.qdot_max)
         #print('self.qdot_min',self.qdot_min)
-
-
-        self.fun_iter = Int16()
-        self.fun_iter.data = 0
-        self.start_optimization_bool = False
-
-        self.msg_status_ik = String()
-
         self.q_in = zeros(7)
-
-
-        jac_output = mp.Array("f",[0,0,0,0,0,0,0])
-
-        self.plot_polytope_thread = None
-        self.thread_is_running = False
-
-
-        ### All interactive IK attributes here
-
-        self.msg_status_ik = String()
-        # Create an interactive marker server        
-        self.desired_pose = Pose()
-        self.polytope_display = False
-        
-        self.polytope_display_on_sub = rospy.Subscriber("polytope_show",Bool,self.polytope_show_on_callback)
-        self.start_interactive_ik_sub = rospy.Subscriber("run_ik",Bool,self.start_interactive_ik)
-        self.pub_end_ik = rospy.Publisher("ik_progress",Int16,queue_size=1)
-        self.pub_status_ik = rospy.Publisher("status_ik",String,queue_size=1)
-        self.sub_ik_pos = rospy.Subscriber("interactive_sphere",Pose,self.ik_pose_callback)
 
 
 
@@ -343,25 +296,7 @@ class LaunchSawyerRobot():
 
         #self.test_Gamma_vs_Gamma_hat(self.sigmoid_slope_test)
 
-
-
-        self.cm_est = None
-
-        self.time_counter = 0
-        self.fun_counter = 0
-
-        self.color_array_cm = ['g','r']
-        self.cm_est_arr = zeros(shape=(2))
-        self.cm_est_arr[:] = -10000
-        self.time_arr = zeros(shape=(2))
-        self.fig_cm, self.ax_cm = plt.subplots()
-
-        self.ax_cm.set_xlabel('Iterations',fontsize=13)
-        self.ax_cm.set_ylabel('Estimated Capacity Margin'+  r"($\hat{\gamma}$)",fontsize=13)
-        self.plt_obj = None
-        plt.show()  
-
-        #self.test_gamma_gradient(sigmoid_slope_test=sigmoid_slope_test)
+        self.test_gamma_gradient(sigmoid_slope_test=sigmoid_slope_test)
 
         input('Ctrl+C and exit ')
         #q_0 = zeros(6)
@@ -369,7 +304,6 @@ class LaunchSawyerRobot():
         ##print('pos_des',float64(self.ef_IK_array[0,:]))
         #print('pos_des',float64(self.ef_IK_array[1,:]))
         #input('pos-desired')
-        
         input('stop and exit dont test further')
         ### Save ik optimizaiton results
         '''
@@ -401,7 +335,7 @@ class LaunchSawyerRobot():
         
         # Test success rate here
         
-        
+        '''
         # Number of success 
         #input('stop and exit dont test further')
         num_of_succ = zeros(shape=(100,len(self.sigmoid_slope_array)))
@@ -463,7 +397,7 @@ class LaunchSawyerRobot():
         print('Average of gamma - 150',sum(obj_fun_analysis[:,2])/count_nonzero(num_of_iteration[:,2]))
         print('Average of gamma - 200',sum(obj_fun_analysis[:,3])/count_nonzero(num_of_iteration[:,3]))
         print('Average of gamma - 400',sum(obj_fun_analysis[:,4])/count_nonzero(num_of_iteration[:,4]))
-        '''
+        
         # print nothing
 
         '''
@@ -516,283 +450,6 @@ class LaunchSawyerRobot():
             mutex.release()
         '''
     
-
-
-
-    def ik_pose_callback(self,desired_ik_pose):
-        self.desired_ik_pose = desired_ik_pose.position
-    def start_interactive_ik(self,start_optimization):
-        print('start_IK',start_optimization.data)
-        self.start_optimization_bool = start_optimization.data
-        if self.start_optimization_bool:
-            print('Start IK')            
-            self.fun_iter.data = 0
-            self.fun_counter = 0
-            self.compute_pose_ik(pos_ik=array([self.desired_ik_pose.x,self.desired_ik_pose.y,self.desired_ik_pose.z]))  # Picture - FEasible pose - 1 - Good
-    def start_plot_thread(self):
-        if self.thread_is_running:
-            print("Thread already running!")
-            return
-        self.plot_polytope_thread = threading.Thread(target=self.plot_polytope)
-        self.thread_is_running = True
-        self.plot_polytope_thread.start()
-
-        #input('I have started thread')
-    def stop_thread(self):
-        self.thread_is_running = False
-        print('Stopping thread')
-    '''
-    def start_cm_plot_thread(self):
-        if self.thread_cm_is_running:
-            print("Capacity PLotting Thread already running!")
-            return
-        self.plot_cm_thread = threading.Thread(target=self.plot_capacity_margin_est)
-        self.thread_cm_is_running = True
-        self.plot_cm_thread.start()
-
-        #input('I have started thread')
-    def stop_cm_thread(self):
-        self.thread_cm_is_running = False
-        print('Stopping CM Plot thread')
-    '''
-    def processfeedback(self, feedback):
-        self.desired_pose.position.x = feedback.pose.position.x
-        self.desired_pose.position.y = feedback.pose.position.y
-        self.desired_pose.position.z = feedback.pose.position.z
-
-    def polytope_show_on_callback(self,show_bool):
-        self.polytope_display = show_bool.data
-
-        if self.polytope_display:
-            self.start_plot_thread()
-            #self.start_cm_plot_thread()
-        else:
-            self.stop_thread()
-            #self.stop_cm_thread()
-
-    def plot_capacity_margin_est(self,cm_est):
-
-        '''
-        while self.thread_cm_is_running:
-            if self.polytope_display:
-
-                #print('plotting here')
-        '''
-        self.cm_est = cm_est
-        if self.cm_est != None:
-            
-            if self.cm_est > 0:
-                color_arr_cm = 'g'
-            else:
-                color_arr_cm = 'r'                
-        
-
-            if self.cm_est_arr[0] != -10000 and self.cm_est_arr[1] == -10000:
-
-                self.cm_est_arr[1] = self.cm_est
-                self.ax_cm.scatter(self.time_counter,self.cm_est,color=color_arr_cm)
-                
-            if self.cm_est_arr[0] == -10000:
-                self.cm_est_arr[0] = self.cm_est     
-            
-                self.ax_cm.scatter(self.time_counter,self.cm_est,color=color_arr_cm)
-
-            else:
-                x = [self.time_counter-1,self.time_counter]
-                
-                self.cm_est_arr[0] =  self.cm_est_arr[1]
-                self.cm_est_arr[1] =  self.cm_est
-                self.ax_cm.plot(x,self.cm_est_arr,color=color_arr_cm)
-                #self.cm_est_arr
-
-
-
-            
-
-
-            #self.fig_cm.canvas.flush_events()
-            self.time_counter += 1
-
-            # drawing updated values
-            if self.polytope_display:
-                self.fig_cm.canvas.draw()
-            else:
-                for artist in plt.gca().lines + plt.gca().collections:
-                    artist.remove()
-                    self.time_counter = 0
-
-
-
-
-        
-        #print('self.polytope_display',self.polytope_display)
-
-    def plot_polytope(self):
-        
-        while self.thread_is_running:
-            if self.polytope_display:
-
-                
-                print('polytope plotting')
-
-
-                mutex.acquire()
-                pos_act = array(self.pykdl_util_kin.forward(self.q_in)[0:3, 3])
-
-                #pos_act = array(self.pykdl_util_kin._do_kdl_fk(q_in,5)[0:3,3])
-
-                J_Hess = array(self.pykdl_util_kin.jacobian(self.q_in))
-
-                # print('pos_act_mat',pos_act_mat)
-
-                #pos_act = position_70(q_in)
-                # print('self.pos_reference',self.pos_reference)
-                #print('Current position in optimization is', pos_act)
-                #input('Wait here ')
-                # print('norm,',norm(pos_act-self.pos_reference))
-                # print('self.pos_reference',self.pos_reference)
-                #print('pos_act', pos_act)
-
-                #print('distance error norm',distance_error)
-                
-
-                scaling_factor = 10.0
-                
-                ### Polytope plot with estimation
-                
-                #pykdl_kin_jac = pykdl_util_kin.jacobian(self.q_in_numpy)
-                polytope_verts, polytope_faces, facet_vertex_idx, capacity_faces, capacity_margin_proj_vertex, \
-                    polytope_verts_est, polytope_faces_est, capacity_faces_est, capacity_margin_proj_vertex_est,cm_index = \
-                                                velocity_polytope_with_estimation(J_Hess,self.qdot_max,self.qdot_min,self.desired_vertices,self.sigmoid_slope_input)
-                desired_polytope_verts, desired_polytope_faces = desired_polytope(self.desired_vertices)
-
-
-                self.cm_est = cm_index
-                #print('self.cm_est',self.cm_est)
-                #print('facet_vertex_idx',facet_vertex_idx)
-                #print('capacity_margin_proj_vertex',capacity_margin_proj_vertex)
-                #print('capacity_margin_proj_vertex_est',capacity_margin_proj_vertex_est)
-                
-
-                # Only for visualization - Polytope at end-effector - No physical significance
-                #ef_pose = pykdl_util_kin.forward(self.q_in_numpy)[:3,3]
-
-                
-                
-
-                # Get end-effector of the robot here for the polytope offset
-
-                #ef_pose = position_70(q_in)
-
-                ef_pose = pos_act
-                ef_pose = ef_pose[:,0]
-                #print('ef_pose is',ef_pose)
-                #input('stop to test ef_pose')
-
-                ########### Actual POlytope plot ###########################################################################
-                # Publish polytope faces
-                polyArray_message = self.publish_velocity_polytope.publish(create_polytopes_msg(polytope_verts, polytope_faces, \
-                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
-                
-                
-                ### Desired polytope set - Publish
-
-                DesiredpolyArray_message = self.publish_desired_polytope.publish(create_polytopes_msg(desired_polytope_verts, desired_polytope_faces, \
-                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
-
-
-                ### Vertex for capacity margin on the Desired Polytope
-                #print('facet_vertex_idx',facet_vertex_idx)
-                closest_vertex = self.cartesian_desired_vertices[facet_vertex_idx[0,1]]
-                #print('closest_vertex',closest_vertex)
-
-                CapacityvertexArray_message = self.publish_vertex_capacity.publish(create_capacity_vertex_msg(closest_vertex, \
-                                                                                            ef_pose, "right_arm_base_link", scaling_factor))
-                
-                ### Vertex for capacity margin on the Available Polytope
-                CapacityprojvertexArray_message = self.publish_vertex_proj_capacity.publish(create_capacity_vertex_msg(capacity_margin_proj_vertex, \
-                                                                                            ef_pose, "right_arm_base_link", scaling_factor))
-
-
-                ### Vertex for capacity margin on the Available Polytope
-                ActualposevertexArray_message = self.publish_vertex_pose.publish(create_capacity_vertex_msg(ef_pose, \
-                                                                                            array([0,0,0]), "right_arm_base_link", 1))
-                
-                ### Vertex for capacity margin on the Available Polytope
-                '''
-                DesiredposevertexArray_message = self.publish_vertex_desired_pose.publish(create_capacity_vertex_msg(self.pos_reference, \
-                                                                                        array([0,0,0]), "base_link", 1))
-                '''
-                ### Plane for capacity margin 
-                #print('capacity_faces',capacity_faces)
-
-                ### Vertex for capacity margin on the Available Polytope
-                CapacitymarginactualArray_message = self.publish_capacity_margin_actual.publish(create_segment_msg(closest_vertex, \
-                                                    capacity_margin_proj_vertex,ef_pose, "right_arm_base_link", scaling_factor))
-                
-                capacityArray_message = self.publish_capacity_margin_polytope.publish(create_polytopes_msg(polytope_verts, capacity_faces, \
-                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
-
-
-                ########### Estimated Polytope plot ###########################################################################
-                
-                # Publish polytope faces
-                EstpolyArray_message = self.publish_velocity_polytope_est.publish(create_polytopes_msg(polytope_verts_est, polytope_faces_est, \
-                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
-                
-                
-
-                ### Vertex for capacity margin on the Available Polytope
-                EstCapacityprojvertexArray_message = self.publish_vertex_proj_capacity_est.publish(create_capacity_vertex_msg(capacity_margin_proj_vertex_est, \
-                                                                                            ef_pose, "right_arm_base_link", scaling_factor))
-
-
-                ### Vertex for capacity margin on the Available Polytope
-                EstCapacitymarginactualArray_message = self.publish_capacity_margin_actual_est.publish(create_segment_msg(closest_vertex, \
-                                                    capacity_margin_proj_vertex_est,ef_pose, "right_arm_base_link", scaling_factor))
-                
-
-                EstcapacityArray_message = self.publish_capacity_margin_polytope_est.publish(create_polytopes_msg(polytope_verts_est, capacity_faces_est, \
-                                                                                                    ef_pose,"right_arm_base_link", scaling_factor))
-
-                
-
-
-                ### Vertex 
-                
-                ##############################################################################################################
-                
-                
-                #print('facet_vertex_idx',facet_vertex_idx)
-                
-                mutex.release()
-
-
-
-    def compute_pose_ik(self, pos_ik):
-        import time
-        from numpy.linalg import det
-        from numpy import sum, mean, average, linspace
-        import matplotlib.pyplot as plt
-
-        
-        q0 = zeros(shape=(7))
-        for j in range(7):
-            q0[j] = random.uniform(
-                self.q_lower_limit[j, 0], self.q_upper_limit[j, 0])
-        
-
-        #for i in range(0, 1000):
-
-        st = time.time()
-        q_opt = self.fmin_opt(q0, pos_ik, True)
-        # To publish the joint states to Robot
-        self.joint_state_publisher_robot(q_opt.x)
-
-        ex_time = time.time() - st
-        print('execution time is',ex_time)
-        q0 = q_opt.x
-
 
 
     def test_Gamma_vs_Gamma_hat(self,sigmoid_slope_test):
@@ -1996,30 +1653,38 @@ class LaunchSawyerRobot():
         
         
     
-    def fmin_opt(self, x0_start, pose_desired, analytical_solver: bool):
+    
+
+    def fmin_opt(self,x0_start,pose_desired,analytical_solver:bool):
         ### Function - func
-        # Initial point - x0
-        # args -
+        ## Initial point - x0
+        ## args -
         ## method - SLQSQ
-        # jac = Jacobian - gradient of the
+        ## jac = Jacobian - gradient of the
+
 
         #self.opt_polytope_model = polytope_model
         #self.opt_polytope_gradient_model = polytope_gradient_model
 
         #self.q_joints_input = robot_model.q_joints
 
+
+
+
         #self.obj_function = polytope_model.Gamma_total
-        # print('self.obj_function',self.obj_function)
+        #print('self.obj_function',self.obj_function)
 
         self.initial_x0 = float64(x0_start)
 
+
         #self.initial_x0 = randn(6)
         #print('self.initial_x0 ',self.initial_x0 )
-        # print('self.obj_function(robot_model.q_joints)',self.obj_function(robot_model.q_joints))
+        #print('self.obj_function(robot_model.q_joints)',self.obj_function(robot_model.q_joints))
         #self.func_deriv = polytope_gradient_model.d_gamma_hat
 
-        # self.opt_polytope_gradient_model.compute_polytope_gradient_parameters(self.opt_robot_model,self.opt_polytope_model)
-        # self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=self.sigmoid_slope)
+
+        #self.opt_polytope_gradient_model.compute_polytope_gradient_parameters(self.opt_robot_model,self.opt_polytope_model)
+        #self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=self.sigmoid_slope)
         #methods = trust-constr
 
         #x0 = self.initial_x0
@@ -2027,26 +1692,27 @@ class LaunchSawyerRobot():
         #numerical_err = (self.obj_function(x0_d) - self.obj_function(x0))
         #grad_err = (self.jac_func(x0_d) - self.jac_func(x0))
 
+
         #print('numerical is:',numerical_err)
         #print('analytical error is',grad_err)
         #assert sco.check_grad(func = self.obj_function, grad = self.jac_func, x0 = self.initial_x0,espilon = 1e-5, direction = 'all',seed = None)
-        # Get the end-effector posision
+        ### Get the end-effector posision
         #self.pos_reference = self.opt_robot_model.end_effector_position
 
         self.pos_reference = float64(pose_desired)
-        print('Reference position is', self.pos_reference)
+        print('Reference position is',self.pos_reference)
 
-        # input('self.pos_reference')
+        
+        
 
-        # Desired vertex set
+        #input('self.pos_reference')
 
-        # + self.pos_reference[0,0]
-        self.desired_vertices[:, 0] = self.cartesian_desired_vertices[:, 0]
-        # + self.pos_reference[0,1]
-        self.desired_vertices[:, 1] = self.cartesian_desired_vertices[:, 1]
-        # + self.pos_reference[0,2]
-        self.desired_vertices[:, 2] = self.cartesian_desired_vertices[:, 2]
-        # print('self.opt_polytope_gradient_model.d_gamma_hat',self.opt_polytope_gradient_model.d_gamma_hat)
+        ### Desired vertex set
+
+        self.desired_vertices[:,0] = self.cartesian_desired_vertices[:,0] # + self.pos_reference[0,0]
+        self.desired_vertices[:,1] = self.cartesian_desired_vertices[:,1] #+ self.pos_reference[0,1]
+        self.desired_vertices[:,2] = self.cartesian_desired_vertices[:,2] #+ self.pos_reference[0,2]
+        #print('self.opt_polytope_gradient_model.d_gamma_hat',self.opt_polytope_gradient_model.d_gamma_hat)
 
         # Bounds created from the robot angles
 
@@ -2054,21 +1720,17 @@ class LaunchSawyerRobot():
 
         #print('self.opt_bounds is',self.opt_bounds)
 
-        # Constraints
+        ### Constraints
 
         '''
         cons = ({'type': 'ineq', 'fun': self.constraint_func},\
                 {'type': 'ineq', 'fun': self.constraint_func_Gamma})
         '''
         #cons = ({'type': 'ineq', 'fun': self.constraint_function,'jac': self.jac_func})
-
-        cons = ({'type': 'ineq', 'fun': self.constraint_function, 'tol': 1e-5} )
-               
-                 
-
-        #cons = ({'type': 'eq', 'fun': self.constraint_function,'tol':1e-5,},
-        #        {'type': 'ineq', 'fun': self.constraint_function_Gamma, 'jac': self.jac_func})
-
+        
+        
+        cons = ({'type': 'eq', 'fun': self.constraint_function,'tol':1e-5},\
+             {'type': 'ineq', 'fun': self.constraint_function_Gamma})
         '''
 
 
@@ -2076,18 +1738,20 @@ class LaunchSawyerRobot():
           
         print('bounds are',self.opt_bounds)
         input('boundsa rea')
-        '''
+        '''  
+        
+
 
         '''
         cons = ({'type': 'ineq', 'fun': lambda x:  self.q_joints_input[0] - 2 * x[1] + 2},
         {'type': 'ineq', 'fun': lambda x: -x[0] - 2 * x[1] + 6},
         {'type': 'ineq', 'fun': lambda x: -x[0] + 2 * x[1] + 2})
         '''
-        # jACOBIAN MATRIX OF THE OBJECTIVE FUNCTION
+        ## jACOBIAN MATRIX OF THE OBJECTIVE FUNCTION
 
         # jac = self.opt_polytope_gradient_model.d_gamma_hat,
 
-        # WIth analytical gradient
+        ### WIth analytical gradient
 
         '''
         
@@ -2098,90 +1762,89 @@ class LaunchSawyerRobot():
         '''
 
         if analytical_solver:
-            q_joints_opt = sco.minimize(fun=self.obj_function_gamma,  x0=self.initial_x0, bounds=self.opt_bounds,
-                                        jac=self.jac_func, constraints=cons, method='SLSQP',
-                                        options={'disp': True, 'maxiter': 200})  # Paper maximum iterations is 3000
+            q_joints_opt = sco.minimize(fun = self.obj_function_gamma,  x0 = self.initial_x0,bounds = self.opt_bounds,\
+                                        jac=self.jac_func,constraints = cons,method='SLSQP',\
+                                             options={'disp': True,'maxiter':3000})
         else:
 
-            q_joints_opt = sco.minimize(fun=self.obj_function_IK,  x0=self.initial_x0, bounds=self.opt_bounds,
-                                        constraints=cons, tol=1e-6, method='COBYLA',
-                                        options={'disp': True})
+            q_joints_opt = sco.minimize(fun = self.obj_function_gamma,  x0 = self.initial_x0,bounds = self.opt_bounds,\
+                                             constraints = cons,tol=1e-6,method='COBYLA', \
+                                                 options={'disp': True})
 
-        self.fun_iter.data = 100
 
-        self.pub_end_ik.publish(self.fun_iter)
-        if q_joints_opt.success:
 
-            self.msg_status_ik.data = 'Success'
-            
-        else:
-            self.msg_status_ik.data = 'Time limit'            
-            
-        self.pub_status_ik.publish(self.msg_status_ik)
-        print('q_joints_opt', q_joints_opt.x)
-        self.polytope_display = False
+
+        print('q_joints_opt',q_joints_opt.x)
 
 
         return q_joints_opt
         #hess = self.hess_func,
-        # sco.check_grad(func = self.obj_function, grad =self.opt_polytope_gradient_model.d_gamma_hat \                                  , x0 = self.initial_x0, epsilon=1.4901161193847656e-08, direction='all', seed=None)
-        # def constraint2(self):
-    # Obj
+        #sco.check_grad(func = self.obj_function, grad =self.opt_polytope_gradient_model.d_gamma_hat \                                  , x0 = self.initial_x0, epsilon=1.4901161193847656e-08, direction='all', seed=None)
+        #def constraint2(self):
+    ## Obj
+    
+    
+    def obj_function_gamma(self,q_in):
 
-    def obj_function_gamma(self, q_in):
 
+        
         from numpy.linalg import det
         from numpy import sum
+
 
         #print('q_in is',q_in)
 
         #self.q_in = q_in
 
-        # print('self.q_in',q_in)
+        #print('self.q_in',q_in)
 
         # To publish the joint states to Robot
-        self.joint_state_publisher_robot(q_in)
-        self.q_in = q_in
+        #self.joint_state_publisher_robot(q_in)
+
+
+
+
         #input('wait here in the objective function')
         #pos_act_mat = self.pykdl_util_kin.forward(q0,tip_link,base_link)
         #pos_act = pos_act_mat[0:3,3]
-        # print('self.pos_reference',self.pos_reference)
+        #print('self.pos_reference',self.pos_reference)
         #print('Current position in optimization is',pos_act)
         #print('pos_act is this in the objective function',pos_act)
         #input('inside obj func')
-        # self.canvas_input_opt.generate_axis()
-        # self.opt_robot_model.urdf_transform(q_joints=q_des)
-        # canvas_input.generate_axis()
+        #self.canvas_input_opt.generate_axis()
+        #self.opt_robot_model.urdf_transform(q_joints=q_des)
+        #canvas_input.generate_axis()
         #J_Hess = jacobianE0(q_in)
         #J_Hess_pykdl = array(self.pykdl_util_kin.jacobian(q_in))
 
-        # print('self.opt_bounds',self.opt_bounds)
-
-        J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
-
+        #print('self.opt_bounds',self.opt_bounds)
+        
+        J_Hess = array(self.pykdl_util_kin.jacobian(q_in,pos=None))
+        
+        
         #J_Hess = J_Hess[0:3,:]
-        # print('J_Hess',J_Hess)
-        # print('J_Hess_pykdl',J_Hess_pykdl)
+        ##print('J_Hess',J_Hess)
+        #print('J_Hess_pykdl',J_Hess_pykdl)
         #input('wait here')
-        h_plus, h_plus_hat, h_minus, h_minus_hat, p_plus, p_minus, p_plus_hat, p_minus_hat, n_k, Nmatrix, Nnot = get_polytope_hyperplane(
-            J_Hess, active_joints=7, cartesian_dof_input=array([True, True, True, False, False, False]), qdot_min=self.qdot_min,
-            qdot_max=self.qdot_max, cartesian_desired_vertices=self.desired_vertices, sigmoid_slope=self.sigmoid_slope_input)
+        h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(
+            J_Hess,active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+            qdot_max=self.qdot_max,cartesian_desired_vertices= self.desired_vertices,sigmoid_slope=self.sigmoid_slope_input)
 
-        Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = get_capacity_margin(
-            J_Hess, n_k, h_plus, h_plus_hat, h_minus, h_minus_hat,
-            active_joints=7, cartesian_dof_input=array([True, True, True, False, False, False]), qdot_min=self.qdot_min,
-            qdot_max=self.qdot_max, cartesian_desired_vertices=self.desired_vertices, sigmoid_slope=self.sigmoid_slope_input)
 
+        Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = get_capacity_margin(\
+            J_Hess, n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                        active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+            qdot_max=self.qdot_max,cartesian_desired_vertices= self.desired_vertices,sigmoid_slope=self.sigmoid_slope_input)
+        
         self.Gamma_min_softmax = Gamma_min_softmax
-        #print('Current objective function in optimization is',-self.opt_polytope_model.Gamma_min_softmax)
-        #print('Current objective function in optimization is',1.0*Gamma_min_softmax)
+        
+        print('Current objective function in optimization is',1.0*Gamma_min_softmax)
+        
 
         #err_pos = abs((norm(pos_act-self.pos_reference) - 1e-6))
-        # print('error',err_pos)
-        # return err_pos
-        #self.plot_capacity_margin_est(Gamma_min_softmax)
-
-
+        #print('error',err_pos)
+        #return err_pos
+        
         return -1.0*self.Gamma_min_softmax
 
     def obj_function_IK(self,q_in):
@@ -2330,139 +1993,149 @@ class LaunchSawyerRobot():
         #print('distance error',return_dist_error)
 
         return  float64(return_dist_error)
-    
-    def constraint_function(self, q_in):
+    def constraint_function(self,q_in):
 
         #st = time.time()
-        # print('q_in',q_in)
-        # self.joint_state_publisher_robot(q_in)
-        pos_act = array(self.pykdl_util_kin.forward(q_in)[0:3, 3])
+        #print('q_in',q_in)
+        #self.joint_state_publisher_robot(q_in)
+        pos_act = array(self.pykdl_util_kin.forward(q_in)[0:3,3])
 
-        J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
-
-        # print('pos_act_mat',pos_act_mat)
         
+        J_Hess = array(self.pykdl_util_kin.jacobian(q_in,pos=None))
+
+        
+        
+        #print('pos_act_mat',pos_act_mat)
+        
+
         #pos_act = position_70(q_in)
-        # print('self.pos_reference',self.pos_reference)
+        #print('self.pos_reference',self.pos_reference)
         #print('Current position in optimization is',pos_act)
         #input('Wait here ')
-        # print('norm,',norm(pos_act-self.pos_reference))
-        # print('self.pos_reference',self.pos_reference)
-        # print('pos_act',pos_act)
-        ef_pose = pos_act
-        ef_pose = ef_pose[:, 0]
-        # Vertex for capacity margin on the Available Polytope
-        #print('PLoting point')
-        ActualposevertexArray_message = self.publish_vertex_pose.publish(create_capacity_vertex_msg(ef_pose,
-                                                                                                    array([0, 0, 0]), "right_arm_base_link", 1))
+        #print('norm,',norm(pos_act-self.pos_reference))
+        #print('self.pos_reference',self.pos_reference)
+        #print('pos_act',pos_act)
+        
 
-        # Vertex for capacity margin on the Available Polytope
-        DesiredposevertexArray_message = self.publish_vertex_desired_pose.publish(create_capacity_vertex_msg(self.pos_reference,
-                                                                                                            array([0, 0, 0]), "right_arm_base_link", 1))
+    
+
         #print('distance error norm',distance_error)
+
         '''
-        if self.polytope_display:
-            scaling_factor = 10.0
-            
-            mutex.acquire()
+        scaling_factor = 10.0
 
-            # Polytope plot with estimation
+        mutex.acquire()
+        
+        ### Polytope plot with estimation
+        
+        #pykdl_kin_jac = pykdl_util_kin.jacobian(self.q_in_numpy)
+        polytope_verts, polytope_faces, facet_vertex_idx, capacity_faces, capacity_margin_proj_vertex, \
+            polytope_verts_est, polytope_faces_est, capacity_faces_est, capacity_margin_proj_vertex_est = \
+                                        velocity_polytope_with_estimation(J_Hess,self.qdot_max,self.qdot_min,self.desired_vertices,self.sigmoid_slope_input)
+        desired_polytope_verts, desired_polytope_faces = desired_polytope(self.desired_vertices)
 
-            #pykdl_kin_jac = pykdl_util_kin.jacobian(self.q_in_numpy)
-            polytope_verts, polytope_faces, facet_vertex_idx, capacity_faces, capacity_margin_proj_vertex, \
-                polytope_verts_est, polytope_faces_est, capacity_faces_est, capacity_margin_proj_vertex_est = \
-                velocity_polytope_with_estimation(
-                    J_Hess, self.qdot_max, self.qdot_min, self.desired_vertices, self.sigmoid_slope_input)
-            desired_polytope_verts, desired_polytope_faces = desired_polytope(
-                self.desired_vertices)
 
-            # print('facet_vertex_idx',facet_vertex_idx)
-            # print('capacity_margin_proj_vertex',capacity_margin_proj_vertex)
-            # print('capacity_margin_proj_vertex_est',capacity_margin_proj_vertex_est)
 
-            # Only for visualization - Polytope at end-effector - No physical significance
-            #ef_pose = pykdl_util_kin.forward(self.q_in_numpy)[:3,3]
+        #print('facet_vertex_idx',facet_vertex_idx)
+        #print('capacity_margin_proj_vertex',capacity_margin_proj_vertex)
+        #print('capacity_margin_proj_vertex_est',capacity_margin_proj_vertex_est)
+        
 
-            # Get end-effector of the robot here for the polytope offset
+        # Only for visualization - Polytope at end-effector - No physical significance
+        #ef_pose = pykdl_util_kin.forward(self.q_in_numpy)[:3,3]
 
-            #ef_pose = position_70(q_in)
+        
+        
 
-            ef_pose = pos_act
-            ef_pose = ef_pose[:, 0]
-            #print('ef_pose is',ef_pose)
-            #input('stop to test ef_pose')
+        # Get end-effector of the robot here for the polytope offset
 
-            ########### Actual POlytope plot ###########################################################################
-            # Publish polytope faces
-            polyArray_message = self.publish_velocity_polytope.publish(create_polytopes_msg(polytope_verts, polytope_faces,
-                                                                                            ef_pose, "base_link", scaling_factor))
+        #ef_pose = position_70(q_in)
 
-            # Desired polytope set - Publish
+        ef_pose = pos_act
+        #ef_pose = ef_pose[:,0]
+        #print('ef_pose is',ef_pose)
+        #input('stop to test ef_pose')
 
-            DesiredpolyArray_message = self.publish_desired_polytope.publish(create_polytopes_msg(desired_polytope_verts, desired_polytope_faces,
-                                                                                                ef_pose, "base_link", scaling_factor))
+        ########### Actual POlytope plot ###########################################################################
+        # Publish polytope faces
+        polyArray_message = self.publish_velocity_polytope.publish(create_polytopes_msg(polytope_verts, polytope_faces, \
+                                                                                            ef_pose,"right_arm_base_link", scaling_factor))
+        
+        
+        ### Desired polytope set - Publish
 
-            # Vertex for capacity margin on the Desired Polytope
-            # print('facet_vertex_idx',facet_vertex_idx)
-            closest_vertex = self.cartesian_desired_vertices[facet_vertex_idx[0, 1]]
-            # print('closest_vertex',closest_vertex)
+        DesiredpolyArray_message = self.publish_desired_polytope.publish(create_polytopes_msg(desired_polytope_verts, desired_polytope_faces, \
+                                                                                            ef_pose,"right_arm_base_link", scaling_factor))
 
-            CapacityvertexArray_message = self.publish_vertex_capacity.publish(create_capacity_vertex_msg(closest_vertex,
-                                                                                                        ef_pose, "base_link", scaling_factor))
 
-            # Vertex for capacity margin on the Available Polytope
-            CapacityprojvertexArray_message = self.publish_vertex_proj_capacity.publish(create_capacity_vertex_msg(capacity_margin_proj_vertex,
-                                                                                        ef_pose, "base_link", scaling_factor))
+        ### Vertex for capacity margin on the Desired Polytope
+        #print('facet_vertex_idx',facet_vertex_idx)
+        closest_vertex = self.cartesian_desired_vertices[facet_vertex_idx[0,1]]
+        #print('closest_vertex',closest_vertex)
 
-            # Vertex for capacity margin on the Available Polytope
-            ActualposevertexArray_message = self.publish_vertex_pose.publish(create_capacity_vertex_msg(ef_pose,
-                                                                                                        array([0, 0, 0]), "base_link", 1))
+        CapacityvertexArray_message = self.publish_vertex_capacity.publish(create_capacity_vertex_msg(closest_vertex, \
+                                                                                    ef_pose, "right_arm_base_link", scaling_factor))
+        
+        ### Vertex for capacity margin on the Available Polytope
+        CapacityprojvertexArray_message = self.publish_vertex_proj_capacity.publish(create_capacity_vertex_msg(capacity_margin_proj_vertex, \
+                                                                                    ef_pose, "right_arm_base_link", scaling_factor))
 
-            # Vertex for capacity margin on the Available Polytope
-            DesiredposevertexArray_message = self.publish_vertex_desired_pose.publish(create_capacity_vertex_msg(self.pos_reference,
-                                                                                                                array([0, 0, 0]), "base_link", 1))
-            # Plane for capacity margin
-            # print('capacity_faces',capacity_faces)
 
-            # Vertex for capacity margin on the Available Polytope
-            CapacitymarginactualArray_message = self.publish_capacity_margin_actual.publish(create_segment_msg(closest_vertex,
-                                                                                                            capacity_margin_proj_vertex, ef_pose, "base_link", scaling_factor))
+        ### Vertex for capacity margin on the Available Polytope
+        ActualposevertexArray_message = self.publish_vertex_pose.publish(create_capacity_vertex_msg(ef_pose, \
+                                                                                    array([0,0,0]), "right_arm_base_link", 1))
+        
+        ### Vertex for capacity margin on the Available Polytope
+        DesiredposevertexArray_message = self.publish_vertex_desired_pose.publish(create_capacity_vertex_msg(self.pos_reference, \
+                                                                                    array([0,0,0]), "right_arm_base_link", 1))
+        ### Plane for capacity margin 
+        #print('capacity_faces',capacity_faces)
 
-            capacityArray_message = self.publish_capacity_margin_polytope.publish(create_polytopes_msg(polytope_verts, capacity_faces,
-                                                                                                    ef_pose, "base_link", scaling_factor))
+        ### Vertex for capacity margin on the Available Polytope
+        CapacitymarginactualArray_message = self.publish_capacity_margin_actual.publish(create_segment_msg(closest_vertex, \
+                                            capacity_margin_proj_vertex,ef_pose, "right_arm_base_link", scaling_factor))
+        
+        capacityArray_message = self.publish_capacity_margin_polytope.publish(create_polytopes_msg(polytope_verts, capacity_faces, \
+                                                                                            ef_pose,"right_arm_base_link", scaling_factor))
 
-            ########### Estimated Polytope plot ###########################################################################
 
-            # Publish polytope faces
-            EstpolyArray_message = self.publish_velocity_polytope_est.publish(create_polytopes_msg(polytope_verts_est, polytope_faces_est,
-                                                                                                ef_pose, "base_link", scaling_factor))
+        ########### Estimated Polytope plot ###########################################################################
+        
+        # Publish polytope faces
+        EstpolyArray_message = self.publish_velocity_polytope_est.publish(create_polytopes_msg(polytope_verts_est, polytope_faces_est, \
+                                                                                            ef_pose,"right_arm_base_link", scaling_factor))
+        
+        
 
-            # Vertex for capacity margin on the Available Polytope
-            EstCapacityprojvertexArray_message = self.publish_vertex_proj_capacity_est.publish(create_capacity_vertex_msg(capacity_margin_proj_vertex_est,
-                                                                                                                        ef_pose, "base_link", scaling_factor))
+        ### Vertex for capacity margin on the Available Polytope
+        EstCapacityprojvertexArray_message = self.publish_vertex_proj_capacity_est.publish(create_capacity_vertex_msg(capacity_margin_proj_vertex_est, \
+                                                                                    ef_pose, "right_arm_base_link", scaling_factor))
 
-            # Vertex for capacity margin on the Available Polytope
-            EstCapacitymarginactualArray_message = self.publish_capacity_margin_actual_est.publish(create_segment_msg(closest_vertex,
-                                                                                                                    capacity_margin_proj_vertex_est, ef_pose, "base_link", scaling_factor))
 
-            EstcapacityArray_message = self.publish_capacity_margin_polytope_est.publish(create_polytopes_msg(polytope_verts_est, capacity_faces_est,
-                                                                                                            ef_pose, "base_link", scaling_factor))
+        ### Vertex for capacity margin on the Available Polytope
+        EstCapacitymarginactualArray_message = self.publish_capacity_margin_actual_est.publish(create_segment_msg(closest_vertex, \
+                                            capacity_margin_proj_vertex_est,ef_pose, "right_arm_base_link", scaling_factor))
+        
 
-            # Vertex
+        EstcapacityArray_message = self.publish_capacity_margin_polytope_est.publish(create_polytopes_msg(polytope_verts_est, capacity_faces_est, \
+                                                                                            ef_pose,"right_arm_base_link", scaling_factor))
 
-            ##############################################################################################################
+        
 
-            # print('facet_vertex_idx',facet_vertex_idx)
 
-            mutex.release()
+        ### Vertex 
+        
+        ##############################################################################################################
+        
+        
+        #print('facet_vertex_idx',facet_vertex_idx)
+        
+        mutex.release()
+        '''
         
         #ex_time = time.time() - st
-        '''
         #print('execution time is',ex_time)
-        #return norm(self.pos_reference-pos_act.flatten())
-        
-        #print('norm is',-float64(norm(self.pos_reference-pos_act.flatten())))
-        return -float64(norm(self.pos_reference-pos_act.flatten()))
+        return  norm(self.pos_reference-pos_act.flatten())
 
 
 
@@ -2494,65 +2167,43 @@ class LaunchSawyerRobot():
         #print('Current objective in optimization Gamma is',self.opt_polytope_model.Gamma_min_softmax)
         return float64(1.0*Gamma_min_softmax)
 
-    def jac_func(self, q_in):
+    def jac_func(self,q_in):
+        from numpy import sum
 
-        self.fun_counter += 0.5
-        self.fun_iter.data = int(self.fun_counter)
-        
         J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
         #J_Hess = jacobianE0(q_in)
         #J_Hess = J_Hess[0:3,:]
-        # print('J_Hess',J_Hess)
+        #print('J_Hess',J_Hess)
         Hess = getHessian(J_Hess)
-        jac_output = mp.Array('f',zeros(shape=(7)))
 
-        # print('Hessian',Hess)
+        
 
         #input('wait here for hessian')
         #J_Hess = J_Hess[0:3,:]
 
-        # print('self.qdot_min',-1*self.qdot_max)
-        # print('self.qdot_max',self.qdot_max)
-        h_plus, h_plus_hat, h_minus, h_minus_hat, p_plus, p_minus, p_plus_hat, p_minus_hat, n_k, Nmatrix, Nnot = get_polytope_hyperplane(
-            J_Hess, active_joints=7, cartesian_dof_input=array([True, True, True, False, False, False]), qdot_min=self.qdot_min,
-            qdot_max=self.qdot_max, cartesian_desired_vertices=self.desired_vertices, sigmoid_slope=self.sigmoid_slope_input)
+        #print('self.qdot_min',-1*self.qdot_max)
+        #print('self.qdot_max',self.qdot_max)
+        h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(\
+            J_Hess,active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+            qdot_max=self.qdot_max,cartesian_desired_vertices= self.desired_vertices,sigmoid_slope=self.sigmoid_slope_input)
 
-        Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = get_capacity_margin(
-            J_Hess, n_k, h_plus, h_plus_hat, h_minus, h_minus_hat,
-            active_joints=7, cartesian_dof_input=array([True, True, True, False, False, False]), qdot_min=self.qdot_min,
-            qdot_max=self.qdot_max, cartesian_desired_vertices=self.desired_vertices, sigmoid_slope=self.sigmoid_slope_input)
 
-        # self.opt_polytope_gradient_model.compute_polytope_gradient_parameters(self.opt_robot_model,self.opt_polytope_model)
-        # self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=1000)
-        #st = time.time()
-        #jac_output[:] = -10000
+        Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = get_capacity_margin(\
+            J_Hess, n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,\
+                        active_joints=7,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
+            qdot_max=self.qdot_max,cartesian_desired_vertices= self.desired_vertices,sigmoid_slope=self.sigmoid_slope_input)
 
-        # Create a new thread and start it
-        threads = []
-        for i_thread in range(7):
-            thread = mp.Process(target=Gamma_hat_gradient_dq,args=(J_Hess, Hess, n_k, Nmatrix, Nnot, h_plus_hat, h_minus_hat, p_plus_hat,\
-                                        p_minus_hat, Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
-                                        self.qdot_min, self.qdot_max, self.desired_vertices,self.sigmoid_slope_input,i_thread,jac_output))
-            thread.start()
-            threads.append(thread)
+
+        #self.opt_polytope_gradient_model.compute_polytope_gradient_parameters(self.opt_robot_model,self.opt_polytope_model)
+        #self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=1000)
         
-        # now wait for them all to finish
-        for thread in threads:
-            thread.join()
-
-        '''
-        jac_output[0] = Gamma_hat_gradient_dq(J_Hess, Hess, n_k, Nmatrix, Nnot, h_plus_hat, h_minus_hat, p_plus_hat,
-                                        p_minus_hat, Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,
-                                        self.qdot_min, self.qdot_max, self.desired_vertices, sigmoid_slope=self.sigmoid_slope_input,test_joint=0)
-        '''
-        #print('execution time in jac is', time.time() - st)
-        #print('iterations',self.fun_iter)
-        # print('jac_output',jac_output)
+        jac_output = Gamma_hat_gradient(J_Hess,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+                        p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
+                        self.qdot_min,self.qdot_max,self.desired_vertices,sigmoid_slope=self.sigmoid_slope_input)
+        
+        #print('jac_output',jac_output)
 
         #jac_output = sum(jac_output)
-        #print('jac_output',jac_output)
-        #input('stp[ ]')
-        self.pub_end_ik.publish(self.fun_iter)
         return float64(jac_output)
 
 

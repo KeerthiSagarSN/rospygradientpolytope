@@ -24,7 +24,7 @@ from math import isnan
 from rospygradientpolytope.gradient_functions import normal_gradient, normal_twist_projected_gradient, sigmoid_gradient
 import threading
     
-
+from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 ## Eq.42 is here
 ## All values here are with respect the estimated parameters in the polytope
 

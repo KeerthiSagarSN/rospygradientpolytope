@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+
+<node name="interactive_ik_panel" pkg="rospygradientpolytope" type="interactive_ik_panel.py" output="screen">
+</node>
+</launch>

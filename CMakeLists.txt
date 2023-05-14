@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   message_generation
+  
 )
 
 ## System dependencies are found with CMake's conventions
@@ -165,7 +166,8 @@ include_directories(
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 catkin_install_python(PROGRAMS src/rospygradientpolytope/launch_robot_ur.py
-  src/rospygradientpolytope/launch_robot_sawyer.py  
+  src/rospygradientpolytope/launch_robot_sawyer.py 
+  src/rospygradientpolytope/interactive_ik_panel.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 ## Mark executables for installation
