@@ -8,19 +8,18 @@ This repository was tested on KUKA KR4 R600 Sixx robot with [KUKA RSI](https://d
 ### Hardware requirements
 * External PC. Our specifications were;
 ```
-ntel® Core™ i7-10700K CPU @ 3.80GHz × 16
+Intel® Core™ i7-10700K CPU @ 3.80GHz × 16
+Intel® Core™ i9-10700K CPU @ 3.80GHz × 16
 RAM: 16 GB
 Graphics: NVIDIA Corporation GP106GL [Quadro P2200]
 ```
-* KUKA Robot. We used KUKA KR6 R700 Sixx.
-* Gripper. 
+
 
 ### Software and Library Requirements 
 
 * Ubuntu 20.04 LTS
 * ROS Noetic
 If you are new to ROS, go [here](http://wiki.ros.org/catkin/Tutorials/create_a_workspace) to learn how to create a catkin workspace. 
-* KUKA RSI package installed in the KUKA robot.
 * Polytope. This is the source repository for polytope, a toolbox for geometric operations on polytopes in any dimension.
 [Polytope](https://pypi.org/project/polytope/).
 * [pykdl_utils](http://wiki.ros.org/pykdl_utils) Higher Level Python wrapper for PyKDL in ROS for Kinematic Solver
