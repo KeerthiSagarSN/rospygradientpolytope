@@ -129,11 +129,6 @@ $ roslaunch rospygradientpolytope launch_robot_ur.launch
 
 ```
 
-
-
-
-
-
 ## To test capacity margin gradient (Sawyer Robot)
 ### Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
 ```
