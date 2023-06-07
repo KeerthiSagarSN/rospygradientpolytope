@@ -107,6 +107,32 @@ $ roslaunch sawyer_description test_sawyer_description.launch
 ![Sawyer Robot - 7 DOF](./Images_Readme/sawyer_robot_rviz.png)
 
 
+## Steps to start Interactive Inverse Kinematics
+### Clone the interactive PyQT GUI repository and launch the QT panel
+```
+$ git clone https://gitlab.com/KeerthiSagarSN/inverse_kinematics_interactive_rviz.git
+$ cd ..
+$ catkin build
+$ source devel/setup.bash
+$ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_rviz.launch
+```
+### Launch the IK Controller
+#### Sawyer Robot
+```
+$ roslaunch rospygradientpolytope launch_robot_sawyer.launch
+
+```
+
+#### UR Robot
+```
+$ roslaunch rospygradientpolytope launch_robot_ur.launch
+
+```
+
+
+
+
+
 
 ## To test capacity margin gradient (Sawyer Robot)
 ### Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
