@@ -4,12 +4,12 @@ This repository includes nodes for generating and visualizing Cartesian Availabl
 (4) Performance Index - Capacity Margin in [Rviz](http://wiki.ros.org/rviz).
 
 ## Installation
-This repository was tested on KUKA KR4 R600 Sixx robot with [KUKA RSI](https://docs.quanser.com/quarc/documentation/kuka_rsi_block.html) package installed in it. The robot is controllled through an external PC with [ROS Noetic](http://wiki.ros.org/noetic) and Ubuntu 20.04 LTS. 
+This repository was tested on Universal Robot [UR5](https://www.universal-robots.com/products/ur5-robot/). The robot is controllled through an external PC with [ROS Noetic](http://wiki.ros.org/noetic) and Ubuntu 20.04 LTS. 
 ### Hardware requirements
 * External PC. Our specifications were;
 ```
 Intel® Core™ i7-10700K CPU @ 3.80GHz × 16
-Intel® Core™ i9-10700K CPU @ 3.80GHz × 16
+Intel® Core™ i9-10700K CPU @ 3.80GHz × 16 (Video experiments for the paper)
 RAM: 16 GB
 Graphics: NVIDIA Corporation GP106GL [Quadro P2200]
 ```
