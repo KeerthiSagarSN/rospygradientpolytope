@@ -122,7 +122,7 @@ $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_r
 $ roslaunch rospygradientpolytope launch_robot_sawyer.launch
 
 ```
-
+#### or
 #### UR Robot
 ```
 $ roslaunch rospygradientpolytope launch_robot_ur.launch
