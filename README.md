@@ -117,7 +117,7 @@ $ source devel/setup.bash
 $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_rviz.launch
 ```
 ### Launch the IK Controller
-#### Sawyer Robot or
+#### Sawyer Robot
 ```
 $ roslaunch rospygradientpolytope launch_robot_sawyer.launch
 
