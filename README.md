@@ -69,10 +69,6 @@ $ git clone https://github.com/ros-industrial/universal_robot.git
 $ git clone https://github.com/orocos/orocos_kinematics_dynamics.git
 ```
 
-## Clone Pykdl - Kinematics Wrapper Repository - (Python 3 Incompatible  !!)
-```
-$ git clone https://github.com/gt-ros-pkg/hrl-kdl
-```
 ## Clone Pykdl - Kinematics Wrapper Repository - Edited for Python 3 and ROS Noetic Compatible
 ```
 $ git clone https://github.com/KeerthiSagarSN/hrl-kdl.git
