@@ -9,7 +9,7 @@ This repository was tested on Universal Robot [UR5](https://www.universal-robots
 * External PC. Our specifications were;
 ```
 Intel® Core™ i7-10700K CPU @ 3.80GHz × 16
-Intel® Core™ i9-10700K CPU @ 3.80GHz × 16 (Video experiments for the paper)
+Intel® Core™ i9-10700K CPU @ 3.80GHz × 16 (Interactive Inverse Kinematics for the Serial Arm-  video for the paper)
 RAM: 16 GB
 Graphics: NVIDIA Corporation GP106GL [Quadro P2200]
 ```
@@ -44,22 +44,15 @@ In a terminal
 $ pip install sympy
 $ pip install polytope
 ```
-## Clone Sawyer Robot
+## Clone Sawyer Robot- Different from the Original Repo due to the offset in the tool center point to avoid Null in Jacobian
 ```
-$ git clone https://github.com/RethinkRobotics/sawyer_robot
-```
-## Edit Sawyer Robot Launch File
-```
-Go to Folder: ~/catkin_ws/src/sawyer_robot/sawyer_description/launch/
-Rename test_sawyer_description.launch.test ---> test_sawyer_description.launch
-Open File: test_sawyer_description.launch
-Set electric_gripper:=true --> electric_gripper:=false
+$ git clone https://github.com/KeerthiSagarSN/sawyer_robot
 ```
 
-## Clone UR5 Robot Repository - For ROS Noetic - /tree/melodic-devel-staging/ 
+## Clone UR5 Robot Repository - Different from the Original Repo due to the offset in the tool center point to avoid Null in Jacobian
 
 ```
-$ git clone https://github.com/ros-industrial/universal_robot.git
+$ git clone https://github.com/KeerthiSagarSN/universal_robot
 ```
 
 
