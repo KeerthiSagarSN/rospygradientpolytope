@@ -106,17 +106,17 @@ $ roslaunch sawyer_description test_sawyer_description.launch
 ```
 
 ### Launch the IK Controller
-#### Sawyer Robot
+#### UR Robot
 ```
-$ roslaunch rospygradientpolytope launch_robot_sawyer.launch
+$ roslaunch rospygradientpolytope launch_robot_ur.launch
 
 ```
 ![UR5 - 6 DOF](./Images_Readme/ur5_rviz_readme.png)
 
 #### or
-#### UR Robot
+#### Sawyer Robot
 ```
-$ roslaunch rospygradientpolytope launch_robot_ur.launch
+$ roslaunch rospygradientpolytope launch_robot_sawyer.launch
 ```
 ![Sawyer Robot - 7 DOF](./Images_Readme/sawyer_rviz_readme.png)
 
