@@ -135,8 +135,14 @@ $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_r
 ##### 1. Click and drag the interactive sphere with axes in the Rviz window 
 ##### 2. Select Run IK button from the Interactive panel
 ##### 3. Click on Polytope:ON for visualizing the estimated capacity margin during optimization
+##### 4. Polytope:Off To stop updating the polytope (Faster execution option)
+##### 5. Click on Reset Button : After optimization termination for consecutive IK optimization
+
+##### Interactive panel is in experimental phase and may lead to occasional crash. Please restart the node, when GUI crashes.
+
 
 ![UR5 - 6 DOF](./Images_Readme/UR5_IK.gif)
+![Sawyer - 7 DOF](./Images_Readme/Sawyer_IK.gif)
 
 
 ## To test capacity margin gradient (Sawyer Robot)
