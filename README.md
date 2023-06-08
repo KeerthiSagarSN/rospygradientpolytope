@@ -275,10 +275,36 @@ rospygradientpolytope.polytope_gradient_functions.hyperplane_gradient
 ###### Return: 
 <b> d_h_plus_dq </b>- Gradient of the h_plus_hat vector with respect to the corresponding joint <b> q </b> <br>
 <b> d_h_minus_dq </b>- Gradient of the h_minus_hat vector with respect to the corresponding joint <b> q </b> <br>
-<b> dn_dq </b>- Gradient of n_k vector with respect to the corresponding joint <b> q </b> <br>
+<b> dn_dq </b>- Gradient of n_k vector with respect to the corresponding joint <b> q </b> <br><hr>
 
+##### Compute estimated capacity margin (performance index) gradient using the proposed method
+##### Using multi-processing toolbox with global variable jac_output- representing the analytical gradient of the estimated capacity margin with respect to all active joints in the serial manipulator
+```
+rospygradientpolytope.polytope_gradient_functions.Gamma_hat_gradient_dq
 
-
+[jac_output] = Gamma_hat_gradient_dq(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+                        p_minus_hat, Gamma_total_hat, Gamma_min_index_hat,\
+                        qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope,test_joint,jac_output)
+```
+###### Parameters: 
+<b> JE </b>- Jacobian of the serial manipulator using PyKDL<br>
+<b> H </b>- Hessian of the serial manipulator<br>
+<b> n_k </b>- Normal vector corresponding to the cross product between two joint twist<br>
+<b> Nmatrix </b>- Combinations of twists to define <b>n_k</b><br>
+<b> Nnot </b>- Combinations of twists to define <b>h_plus</b>, <b>h_minus</b> using <b>Nmatrix</b> and <b>n_k</b><br>
+<b> h_plus_hat </b>- Maximum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
+<b> h_minus_hat </b>- Minimum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
+<b> p_plus_hat </b>- Points on the hyperplane defined by <b>h_plus_hat</b><br>
+<b> p_minus_hat </b>- Points on the hyperplane defined by <b>h_minus_hat</b><br>
+<b> Gamma_total_hat </b>- Total distance vector contributing to estimated capacity margin   <br>
+<b> qdot_min </b> - minimum joint velocity vector<br>
+<b> qdot_max </b> - maximum joint velocity vector- minimum joint velocity vector<br>
+<b> cartesian_desired_vertices </b> - Desired velocities at the end-effector<br>
+<b> sigmoid_slope </b> - Slope parameter for sigmoid activation<br>
+<b> test_joint </b> - Gradient with respect to the corresponding joint<br>
+<b> jac_output </b> - Global multiprocessing array for storing analytical gradient of the estimated capacity margin <br>
+###### Return: 
+<b> jac_output</b>- Analytical gradient of the estimated capacity margin with respect to the corresponding test joint <b> test_joint </b> <br><hr>
 
 ### Custom ROS Message to plot polytope,vertices and facets in Rviz
 ```
