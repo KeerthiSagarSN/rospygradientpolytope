@@ -210,13 +210,13 @@ rospygradientpolytope.polytope_functions.get_polytope_hyperplane
 <b> h_plus_hat </b>- Maximum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
 <b> h_minus </b>- Minimum distance vector contributing to defining available velocities hyperplane   <br>
 <b> h_minus_hat </b>- Minimum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
-<b> p_plus </b>- Points on the hyperplane defined by h_plus<br>
-<b> p_minus </b>- Points on the hyperplane defined by h_minus<br>
-<b> p_plus_hat </b>- Points on the hyperplane defined by h_plus_hat<br>
-<b> p_minus_hat </b>- Points on the hyperplane defined by h_minus_hat<br>
+<b> p_plus </b>- Points on the hyperplane defined by <b>h_plus</b><br>
+<b> p_minus </b>- Points on the hyperplane defined by <b>h_minus</b><br>
+<b> p_plus_hat </b>- Points on the hyperplane defined by <b>h_plus_hat</b><br>
+<b> p_minus_hat </b>- Points on the hyperplane defined by <b>h_minus_hat</b><br>
 <b> n_k </b>- Normal vector corresponding to the cross product between two joint twist<br>
-<b> Nmatrix </b>- Combinations of twists to define n_k<br>
-<b> Nnot </b>- Combinations of twists to define h_plus, h_minus using Nmatrix and n_k<br><hr>
+<b> Nmatrix </b>- Combinations of twists to define <b>n_k</b><br>
+<b> Nnot </b>- Combinations of twists to define <b>h_plus</b>, <b>h_minus</b> using <b>Nmatrix</b> and <b>n_k</b><br><hr>
 
 ##### Compute classical and estimated capacity margin (performance measure)
 ```
