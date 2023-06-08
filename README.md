@@ -25,7 +25,6 @@ If you are new to ROS, go [here](http://wiki.ros.org/catkin/Tutorials/create_a_w
 * [pykdl_utils](http://wiki.ros.org/pykdl_utils) Higher Level Python wrapper for PyKDL in ROS for Kinematic Solver
 * Python native libraries [Scipy](https://scipy.org/), [Numpy](https://numpy.org/)
 * Polygon ROS geometry messages for plotting in Rviz [jsk-ros-pkg](https://github.com/jsk-ros-pkg/jsk_recognition)
-* [KUKA experimental](https://gitlab.com/imr-robotics/kuka_experimental) Digital output interface is included in this repository. Official repository [here](https://github.com/ros-industrial/kuka_experimental). Instructions for KR C4 robot controller [here](https://github.com/ros-industrial/kuka_experimental/tree/indigo-devel/kuka_rsi_hw_interface/krl/KR_C4). 
 * Polytope ros message publisher forked and modified from Pycapacity Library [capacity_visual_utils](https://github.com/askuric/polytope_vertex_search/blob/master/ROS_nodes/panda_capacity/scripts/capacity/capacity_visual_utils.py)
 
 
