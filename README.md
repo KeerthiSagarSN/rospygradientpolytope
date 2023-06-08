@@ -98,6 +98,8 @@ $ sudo apt-get install ros-$ROS_DISTRO-joint-state-publisher-gui
 ```
 $ roslaunch ur_description view_ur5.launch 
 ```
+![UR5 - 6 DOF](./Images_Readme/ur5_rviz_readme.png)
+
 ## To Visualize Sawyer Robot in Rviz
 ```
 $ roslaunch sawyer_description test_sawyer_description.launch
