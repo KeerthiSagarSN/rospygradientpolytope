@@ -149,15 +149,21 @@ $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_r
 ## Module functions
 ### Python3 library functions independent of ROS
 #### For plotting desired or available/feasible velocity polytope
-#### * from rospygradientpolytope.visual_polytope import *
+```
+from rospygradientpolytope.visual_polytope import *
+```
 #### For computing all hyperplane parameters and estimated capacity margin
-#### * from rospygradientpolytope.polytope_functions import *
+```
+from rospygradientpolytope.polytope_functions import *
+```
 #### For computing analytical gradient of hyperplane parameters and estimated capacity margin for serial robot
-#### * from rospygradientpolytope.polytope_gradient_functions import *
-
+```
+from rospygradientpolytope.polytope_gradient_functions import *
+```
 ### ROS Message to plot in Rviz
-#### * from rospygradientpolytope.polytope_ros_message import *
-
+```
+from rospygradientpolytope.polytope_ros_message import *
+```
 
 ## To test capacity margin gradient (Sawyer Robot)
 ### Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
