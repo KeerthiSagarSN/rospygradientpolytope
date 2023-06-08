@@ -159,8 +159,8 @@ rospygradientpolytope.visual_polytope.desired_polytope
 ###### Parameters: 
 <b> cartesian_desired_vertices </b> - Desired velocities at the end-effector
 ###### Return: 
-<b> polytope_vertices </b>- Convex hull of the desired cartesian vertices 
-<b> polytope_faces </b>- Simplices of the convex hull mapped to polytope facets
+<b> polytope_vertices </b>- Convex hull of the desired cartesian vertices<br> 
+<b> polytope_faces </b>- Simplices of the convex hull mapped to polytope facets<br> <hr>
 
 
 ##### Compute polytope facets and vertices of available/feasible polytope, with the closest (vertex,facet) pair
@@ -186,7 +186,7 @@ rospygradientpolytope.visual_polytope.velocity_polytope_with_estimation
 <b> polytope_faces_est </b>- Facets of the available cartesian velocities with estimated hyperplane parameters<br>
 <b> capacity_margin_faces_est </b>- Closest facet in the available cartesian velocities contributing to estimated capacity margin<br>
 <b> capacity_proj_vertex_est </b>- Closest vertex in the desired cartesian velocities contributing to estimated capacity margin<br>
-<b> Gamma_min_softmax </b>- Estimated capacity margin (Performance measure)<br>
+<b> Gamma_min_softmax </b>- Estimated capacity margin (Performance measure)<br><hr>
 #### For computing all hyperplane parameters and estimated capacity margin
 ```
 from rospygradientpolytope.polytope_functions import *
