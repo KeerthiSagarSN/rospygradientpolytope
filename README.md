@@ -217,6 +217,36 @@ rospygradientpolytope.polytope_functions.get_polytope_hyperplane
 <b> n_k </b>- Normal vector corresponding to the cross product between two joint twist<br>
 <b> Nmatrix </b>- Combinations of twists to define n_k<br>
 <b> Nnot </b>- Combinations of twists to define h_plus, h_minus using Nmatrix and n_k<br><hr>
+
+##### Compute classical and estimated capacity margin (performance measure)
+```
+rospygradientpolytope.polytope_functions.get_capacity_margin
+
+[Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign] = get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,active_joints,cartesian_dof_input,qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope)
+```
+###### Parameters: 
+<b> JE </b> - Jacobian<br>
+<b> n_k </b>- Normal vector corresponding to the cross product between two joint twist<br>
+<b> h_plus </b>- Maximum distance vector contributing to defining available velocities hyperplane   <br>
+<b> h_plus_hat </b>- Maximum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
+<b> h_minus </b>- Minimum distance vector contributing to defining available velocities hyperplane   <br>
+<b> h_minus_hat </b>- Minimum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
+<b> active_joints </b> - Number of joints in the serial manipulator (Eg, for Sawyer,active_joints = 7) <br>
+<b> cartesian_dof_input </b> - Cartesian DOF (Eg, Cartesian DOF = 3), if only translational velocities are considered<br>
+<b> qdot_min </b> - minimum joint velocity vector<br>
+<b> qdot_max </b> - maximum joint velocity vector- minimum joint velocity vector<br>
+<b> cartesian_desired_vertices </b> - Desired velocities at the end-effector<br>
+<b> sigmoid_slope </b> - Slope parameter for sigmoid activation<br>
+###### Return: 
+<b> Gamma_minus </b>- Maximum distance vector contributing to defining available velocities hyperplane   <br>
+<b> Gamma_plus </b>- Maximum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
+<b> Gamma_total_hat </b>- Minimum distance vector contributing to defining available velocities hyperplane   <br>
+<b> Gamma_min </b>- Minimum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
+<b> Gamma_min_softmax </b>- Points on the hyperplane defined by h_plus<br>
+<b> Gamma_min_index_hat </b>- Points on the hyperplane defined by h_minus<br>
+<b> facet_pair_idx </b>- Points on the hyperplane defined by h_plus_hat<br>
+<b> hyper_plane_sign </b>- Points on the hyperplane defined by h_minus_hat<br><hr>
+
 #### For computing analytical gradient of hyperplane parameters and estimated capacity margin for serial robot
 ```
 from rospygradientpolytope.polytope_gradient_functions import *
