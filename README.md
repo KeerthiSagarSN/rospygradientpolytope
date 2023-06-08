@@ -105,7 +105,7 @@ $ roslaunch ur_description view_ur5.launch
 $ roslaunch sawyer_description test_sawyer_description.launch
 ```
 
-![Sawyer Robot - 7 DOF](./Images_Readme/sawyer_robot_rviz.png)
+![Sawyer Robot - 7 DOF](./Images_Readme/sawyer_rviz_readme.png)
 
 
 ## Steps to start Interactive Inverse Kinematics
