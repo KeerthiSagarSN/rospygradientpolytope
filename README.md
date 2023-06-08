@@ -144,8 +144,7 @@ $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_r
 ![UR5 - 6 DOF](./Images_Readme/UR5_IK.gif)
 
 #### Sawyer Robot
-
-![Sawyer - 7 DOF](./Images_Readme/Sawyer_IK.gif)
+![Sawyer- 7 DOF](./Images_Readme/UR5_IK.gif)
 
 
 ## To test capacity margin gradient (Sawyer Robot)
