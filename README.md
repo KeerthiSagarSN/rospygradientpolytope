@@ -159,6 +159,8 @@ rospygradientpolytope.visual_polytope.desired_polytope
 ##### Compute polytope facets and vertices of available/feasible polytope, with the closest (vertex,facet) pair
 ```
 rospygradientpolytope.visual_polytope.velocity_polytope_with_estimation 
+polytope_vertices, polytope_faces, facet_pair_idx, capacity_margin_faces, \
+            capacity_proj_vertex, polytope_vertices_est, polytope_faces_est, capacity_margin_faces_est, capacity_proj_vertex_est,Gamma_min_softmax = velocity_polytope_with_estimation(JE, qdot_max, qdot_min,cartesian_desired_vertices, sigmoid_slope)
 ```
 ##### For computing all hyperplane parameters and estimated capacity margin
 ```
