@@ -238,14 +238,14 @@ rospygradientpolytope.polytope_functions.get_capacity_margin
 <b> cartesian_desired_vertices </b> - Desired velocities at the end-effector<br>
 <b> sigmoid_slope </b> - Slope parameter for sigmoid activation<br>
 ###### Return: 
-<b> Gamma_minus </b>- Maximum distance vector contributing to defining available velocities hyperplane   <br>
-<b> Gamma_plus </b>- Maximum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
-<b> Gamma_total_hat </b>- Minimum distance vector contributing to defining available velocities hyperplane   <br>
-<b> Gamma_min </b>- Minimum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
-<b> Gamma_min_softmax </b>- Points on the hyperplane defined by h_plus<br>
-<b> Gamma_min_index_hat </b>- Points on the hyperplane defined by h_minus<br>
-<b> facet_pair_idx </b>- Points on the hyperplane defined by h_plus_hat<br>
-<b> hyper_plane_sign </b>- Points on the hyperplane defined by h_minus_hat<br><hr>
+<b> Gamma_minus </b>- Distance vector contributing to capacity margin using points <b>p_minus</b>  on the hyperplane defined by <b>h_minus</b> <br>
+<b> Gamma_plus </b>- Distance vector contributing to capacity margin using points <b>p_plus</b>  on the hyperplane defined by <b>h_plus</b> <br>
+<b> Gamma_total_hat </b>- Total distance vector contributing to estimated capacity margin   <br>
+<b> Gamma_min </b>- Classical capacity margin <br>
+<b> Gamma_min_softmax </b>- Estimated capacity margin (proposed performance measure)<br>
+<b> Gamma_min_index_hat </b>- Index of Gamma_total_hat with the minimum value <br>
+<b> facet_pair_idx </b>- Index of the (vertex,facet) pair to plot in rviz <br>
+<b> hyper_plane_sign </b>- To identify the hyperplane closer to the vertex to plot in rviz <br><hr>
 
 #### For computing analytical gradient of hyperplane parameters and estimated capacity margin for serial robot
 ```
