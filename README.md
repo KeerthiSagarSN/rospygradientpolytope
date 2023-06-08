@@ -167,28 +167,24 @@ rospygradientpolytope.visual_polytope.desired_polytope
 ```
 rospygradientpolytope.visual_polytope.velocity_polytope_with_estimation 
 
-[polytope_vertices, polytope_faces, facet_pair_idx, \
-capacity_margin_faces,capacity_proj_vertex, polytope_vertices_est, \
- polytope_faces_est, capacity_margin_faces_est, capacity_proj_vertex_est,\
- Gamma_min_softmax] = velocity_polytope_with_estimation(JE, qdot_max, qdot_min,cartesian_desired_vertices, sigmoid_slope)
 ```
 ###### Parameters: 
-<b> JE </b> - Jacobian\\
-<b> qdot_max </b> - maximum joint velocity vector- minimum joint velocity vector\\
-<b> qdot_min </b> - minimum joint velocity vector\\
-<b> cartesian_desired_vertices </b> - Desired velocities at the end-effector\\
-<b> sigmoid_slope </b> - Slope parameter for sigmoid activation\\
+<b> JE </b> - Jacobian<br>
+<b> qdot_max </b> - maximum joint velocity vector- minimum joint velocity vector<br>
+<b> qdot_min </b> - minimum joint velocity vector<br>
+<b> cartesian_desired_vertices </b> - Desired velocities at the end-effector<br>
+<b> sigmoid_slope </b> - Slope parameter for sigmoid activation<br>
 ###### Return: 
-<b> polytope_vertices </b>- Convex hull of the available cartesian velocities \\
-<b> polytope_faces </b>- Facets of the available cartesian velocities \\
-<b> facet_pair_idx </b>- Index of the closest (vertex,facet) pair\\
-<b> capacity_margin_faces </b>- Closest facet in the available cartesian velocities contributing to classical capacity margin\\
-<b> capacity_proj_vertex </b>- Closest vertex in the desired cartesian velocities contributing to classical capacity margin\\
-<b> polytope_vertices_est </b>- Convex hull of the available cartesian velocities with estimated hyperplane parameters\\
-<b> polytope_faces_est </b>- Facets of the available cartesian velocities with estimated hyperplane parameters\\
-<b> capacity_margin_faces_est </b>- Closest facet in the available cartesian velocities contributing to estimated capacity margin\\
-<b> capacity_proj_vertex_est </b>- Closest vertex in the desired cartesian velocities contributing to estimated capacity margin\\
-<b> Gamma_min_softmax </b>- Estimated capacity margin (Performance measure)\\
+<b> polytope_vertices </b>- Convex hull of the available cartesian velocities <br>
+<b> polytope_faces </b>- Facets of the available cartesian velocities <br>
+<b> facet_pair_idx </b>- Index of the closest (vertex,facet) pair<br>
+<b> capacity_margin_faces </b>- Closest facet in the available cartesian velocities contributing to classical capacity margin<br>
+<b> capacity_proj_vertex </b>- Closest vertex in the desired cartesian velocities contributing to classical capacity margin<br>
+<b> polytope_vertices_est </b>- Convex hull of the available cartesian velocities with estimated hyperplane parameters<br>
+<b> polytope_faces_est </b>- Facets of the available cartesian velocities with estimated hyperplane parameters<br>
+<b> capacity_margin_faces_est </b>- Closest facet in the available cartesian velocities contributing to estimated capacity margin<br>
+<b> capacity_proj_vertex_est </b>- Closest vertex in the desired cartesian velocities contributing to estimated capacity margin<br>
+<b> Gamma_min_softmax </b>- Estimated capacity margin (Performance measure)<br>
 #### For computing all hyperplane parameters and estimated capacity margin
 ```
 from rospygradientpolytope.polytope_functions import *
