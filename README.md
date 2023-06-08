@@ -155,13 +155,14 @@ from rospygradientpolytope.visual_polytope import *
 ##### Compute polytope facets and vertices of user-defined desired polytope
 ```
 rospygradientpolytope.visual_polytope.desired_polytope 
-
-```
-###### Input: 
+<b> Input </b>: 
 <b> cartesian_desired_vertices </b> - Desired velocity at the end-effector
-###### Return: 
+<b> Return </b>: 
 <b> polytope_vertices </b>- Convex hull of the desired cartesian vertices 
 <b> polytope_faces </b>- Simplices of the convex hull mapped to polytope facets
+
+```
+
 
 ##### Compute polytope facets and vertices of available/feasible polytope, with the closest (vertex,facet) pair
 ```
