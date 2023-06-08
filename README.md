@@ -159,7 +159,7 @@ rospygradientpolytope.visual_polytope.desired_polytope
 [polytope_vertices, polytope_faces] = desired_polytope(cartesian_desired_vertices)
 ```
 ###### Input: 
-cartesian_desired_vertices - Desired velocity at the end-effector
+<b> cartesian_desired_vertices </b> - Desired velocity at the end-effector
 ###### Output: 
 polytope_vertices - Convex hull of the desired cartesian vertices 
 polytope_faces - Simplices of the convex hull mapped to polytope facets
