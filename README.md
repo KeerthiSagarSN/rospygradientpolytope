@@ -160,7 +160,7 @@ from rospygradientpolytope.polytope_functions import *
 ```
 from rospygradientpolytope.polytope_gradient_functions import *
 ```
-### ROS Message to plot in Rviz
+### Custom ROS Message to plot polytope,vertices and facets in Rviz
 ```
 from rospygradientpolytope.polytope_ros_message import *
 ```
