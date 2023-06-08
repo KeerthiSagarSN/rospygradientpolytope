@@ -6,7 +6,7 @@ This repository includes nodes for generating and visualizing Cartesian Availabl
 ## Installation
 This repository was tested on Universal Robot [UR5](https://www.universal-robots.com/products/ur5-robot/). The robot is controllled through an external PC with [ROS Noetic](http://wiki.ros.org/noetic) and Ubuntu 20.04 LTS. 
 ### Hardware requirements
-* External PC. Our specifications were;
+* External PC. Our specifications are;
 ```
 Intel® Core™ i7-10700K CPU @ 3.80GHz × 16
 Intel® Core™ i9-10700K CPU @ 3.80GHz × 16 (Interactive Inverse Kinematics for the Serial Arm-  video for the paper)
