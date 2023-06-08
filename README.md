@@ -225,7 +225,7 @@ rospygradientpolytope.polytope_functions.get_capacity_margin
 [Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign] = get_capacity_margin(JE,n_k,h_plus,h_plus_hat,h_minus,h_minus_hat,active_joints,cartesian_dof_input,qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope)
 ```
 ###### Parameters: 
-<b> JE </b> - Jacobian<br>
+<b> JE </b>- Jacobian of the serial manipulator using PyKDL<br>
 <b> n_k </b>- Normal vector corresponding to the cross product between two joint twist<br>
 <b> h_plus </b>- Maximum distance vector contributing to defining available velocities hyperplane   <br>
 <b> h_plus_hat </b>- Maximum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
