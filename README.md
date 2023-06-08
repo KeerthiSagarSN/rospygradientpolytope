@@ -206,17 +206,17 @@ rospygradientpolytope.polytope_functions.get_polytope_hyperplane
 <b> cartesian_desired_vertices </b> - Desired velocities at the end-effector<br>
 <b> sigmoid_slope </b> - Slope parameter for sigmoid activation<br>
 ###### Return: 
-<b> h_plus </b>- Convex hull of the available cartesian velocities <br>
-<b> h_plus_hat </b>- Facets of the available cartesian velocities <br>
-<b> h_minus </b>- Index of the closest (vertex,facet) pair<br>
-<b> h_minus_hat </b>- Closest facet in the available cartesian velocities contributing to classical capacity margin<br>
-<b> p_plus </b>- Closest vertex in the desired cartesian velocities contributing to classical capacity margin<br>
-<b> p_minus </b>- Convex hull of the available cartesian velocities with estimated hyperplane parameters<br>
-<b> p_plus_hat </b>- Facets of the available cartesian velocities with estimated hyperplane parameters<br>
-<b> p_minus_hat </b>- Closest facet in the available cartesian velocities contributing to estimated capacity margin<br>
-<b> n_k </b>- Closest vertex in the desired cartesian velocities contributing to estimated capacity margin<br>
-<b> Nmatrix </b>- Estimated capacity margin (Performance measure)<br>
-<b> Nnot </b>- Estimated capacity margin (Performance measure)<br>
+<b> h_plus </b>- Maximum distance vector contributing to defining available velocities hyperplane   <br>
+<b> h_plus_hat </b>- Maximum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
+<b> h_minus </b>- Minimum distance vector contributing to defining available velocities hyperplane   <br>
+<b> h_minus_hat </b>- Minimum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
+<b> p_plus </b>- Points on the hyperplane defined by h_plus<br>
+<b> p_minus </b>- Points on the hyperplane defined by h_minus<br>
+<b> p_plus_hat </b>- Points on the hyperplane defined by h_plus_hat<br>
+<b> p_minus_hat </b>- Points on the hyperplane defined by h_minus_hat<br>
+<b> n_k </b>- Normal vector corresponding to the cross product between two joint twist<br>
+<b> Nmatrix </b>- Combinations of twists to define n_k<br>
+<b> Nnot </b>- Combinations of twists to define n_k using Nmatrix<br>
 #### For computing analytical gradient of hyperplane parameters and estimated capacity margin for serial robot
 ```
 from rospygradientpolytope.polytope_gradient_functions import *
