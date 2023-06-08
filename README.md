@@ -153,10 +153,13 @@ $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_r
 from rospygradientpolytope.visual_polytope import *
 ```
 ##### Compute polytope facets and vertices of user-defined desired polytope
-##### * rospygradientpolytope.visual_polytope.desired_polytope 
+```
+rospygradientpolytope.visual_polytope.desired_polytope 
+```
 ##### Compute polytope facets and vertices of available/feasible polytope, with the closest (vertex,facet) pair
-##### * rospygradientpolytope.visual_polytope.velocity_polytope_with_estimation 
-
+```
+rospygradientpolytope.visual_polytope.velocity_polytope_with_estimation 
+```
 ##### For computing all hyperplane parameters and estimated capacity margin
 ```
 from rospygradientpolytope.polytope_functions import *
