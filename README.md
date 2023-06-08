@@ -167,10 +167,19 @@ capacity_margin_faces,capacity_proj_vertex, polytope_vertices_est, \
  polytope_faces_est, capacity_margin_faces_est, capacity_proj_vertex_est,\
  Gamma_min_softmax] = velocity_polytope_with_estimation(JE, qdot_max, qdot_min,cartesian_desired_vertices, sigmoid_slope)
 ```
-##### For computing all hyperplane parameters and estimated capacity margin
+#### For computing all hyperplane parameters and estimated capacity margin
 ```
 from rospygradientpolytope.polytope_functions import *
 ```
+##### Compute hyperplane parameters for velocity polytope
+```
+rospygradientpolytope.polytope_functions.get_polytope_hyperplane
+
+[h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,\
+p_minus_hat,n_k, Nmatrix, Nnot] = get_polytope_hyperplane(JE,active_joints,\
+cartesian_dof_input,qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope)
+```
+
 #### For computing analytical gradient of hyperplane parameters and estimated capacity margin for serial robot
 ```
 from rospygradientpolytope.polytope_gradient_functions import *
