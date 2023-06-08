@@ -216,7 +216,7 @@ rospygradientpolytope.polytope_functions.get_polytope_hyperplane
 <b> p_minus_hat </b>- Points on the hyperplane defined by h_minus_hat<br>
 <b> n_k </b>- Normal vector corresponding to the cross product between two joint twist<br>
 <b> Nmatrix </b>- Combinations of twists to define n_k<br>
-<b> Nnot </b>- Combinations of twists to define n_k using Nmatrix<br>
+<b> Nnot </b>- Combinations of twists to define h_plus, h_minus using Nmatrix and n_k<br>
 #### For computing analytical gradient of hyperplane parameters and estimated capacity margin for serial robot
 ```
 from rospygradientpolytope.polytope_gradient_functions import *
