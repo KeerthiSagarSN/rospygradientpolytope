@@ -251,6 +251,35 @@ rospygradientpolytope.polytope_functions.get_capacity_margin
 ```
 from rospygradientpolytope.polytope_gradient_functions import *
 ```
+
+##### Compute hyperplane gradient using the proposed method
+```
+rospygradientpolytope.polytope_gradient_functions.hyperplane_gradient
+
+[d_h_plus_dq, d_h_minus_dq, dn_dq] = hyperplane_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,p_minus_hat,qdot_min,qdot_max,test_joint,sigmoid_slope)
+```
+###### Parameters: 
+<b> JE </b>- Jacobian of the serial manipulator using PyKDL<br>
+<b> H </b>- Hessian of the serial manipulator<br>
+<b> n_k </b>- Normal vector corresponding to the cross product between two joint twist<br>
+<b> Nmatrix </b>- Combinations of twists to define <b>n_k</b><br>
+<b> Nnot </b>- Combinations of twists to define <b>h_plus</b>, <b>h_minus</b> using <b>Nmatrix</b> and <b>n_k</b><br>
+<b> h_plus_hat </b>- Maximum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
+<b> h_minus_hat </b>- Minimum distance vector contributing to defining available velocities hyperplane (using proposed method) <br>
+<b> p_plus_hat </b>- Points on the hyperplane defined by <b>h_plus_hat</b><br>
+<b> p_minus_hat </b>- Points on the hyperplane defined by <b>h_minus_hat</b><br>
+<b> qdot_min </b> - minimum joint velocity vector<br>
+<b> qdot_max </b> - maximum joint velocity vector- minimum joint velocity vector<br>
+<b> test_joint </b> - Gradient with respect to the corresponding joint<br>
+<b> sigmoid_slope </b> - Slope parameter for sigmoid activation<br>
+###### Return: 
+<b> d_h_plus_dq </b>- Gradient of the h_plus_hat vector with respect to the corresponding joint <b> q </b> <br>
+<b> d_h_minus_dq </b>- Gradient of the h_minus_hat vector with respect to the corresponding joint <b> q </b> <br>
+<b> dn_dq </b>- Gradient of n_k vector with respect to the corresponding joint <b> q </b> <br>
+
+
+
+
 ### Custom ROS Message to plot polytope,vertices and facets in Rviz
 ```
 from rospygradientpolytope.polytope_ros_message import *
