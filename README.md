@@ -98,14 +98,13 @@ $ sudo apt-get install ros-$ROS_DISTRO-joint-state-publisher-gui
 ```
 $ roslaunch ur_description view_ur5.launch 
 ```
-![UR5 - 6 DOF](./Images_Readme/ur5_rviz_readme.png)
+
 
 ## To Visualize Sawyer Robot in Rviz
 ```
 $ roslaunch sawyer_description test_sawyer_description.launch
 ```
 
-![Sawyer Robot - 7 DOF](./Images_Readme/sawyer_rviz_readme.png)
 
 
 ## Steps to start Interactive Inverse Kinematics
@@ -123,12 +122,14 @@ $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_r
 $ roslaunch rospygradientpolytope launch_robot_sawyer.launch
 
 ```
+![UR5 - 6 DOF](./Images_Readme/ur5_rviz_readme.png)
 #### or
 #### UR Robot
 ```
 $ roslaunch rospygradientpolytope launch_robot_ur.launch
-
 ```
+![Sawyer Robot - 7 DOF](./Images_Readme/sawyer_rviz_readme.png)
+
 
 ## To test capacity margin gradient (Sawyer Robot)
 ### Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
