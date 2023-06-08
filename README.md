@@ -148,7 +148,7 @@ $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_r
 
 ## Module functions
 ### Python3 library functions independent of ROS
-#### For plotting desired or available/feasible velocity polytope
+#### For computing desired or available/feasible velocity polytope faces and vertices
 ```
 from rospygradientpolytope.visual_polytope import *
 ```
