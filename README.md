@@ -171,7 +171,7 @@ rospygradientpolytope.visual_polytope.velocity_polytope_with_estimation
 
 ```
 ###### Parameters: 
-<b> JE </b> - Jacobian<br>
+<b> JE </b> - Jacobian of the serial manipulator using PyKDL<br>
 <b> qdot_max </b> - maximum joint velocity vector- minimum joint velocity vector<br>
 <b> qdot_min </b> - minimum joint velocity vector<br>
 <b> cartesian_desired_vertices </b> - Desired velocities at the end-effector<br>
@@ -198,7 +198,7 @@ rospygradientpolytope.polytope_functions.get_polytope_hyperplane
 [h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot] = get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope)
 ```
 ###### Parameters: 
-<b> JE </b> - Jacobian<br>
+<b> JE </b> - Jacobian of the serial manipulator using PyKDL<br>
 <b> active_joints </b> - Number of joints in the serial manipulator (Eg, for Sawyer,active_joints = 7) <br>
 <b> cartesian_dof_input </b> - Cartesian DOF (Eg, Cartesian DOF = 3), if only translational velocities are considered<br>
 <b> qdot_min </b> - minimum joint velocity vector<br>
