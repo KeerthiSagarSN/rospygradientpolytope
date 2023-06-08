@@ -105,6 +105,22 @@ $ roslaunch ur_description view_ur5.launch
 $ roslaunch sawyer_description test_sawyer_description.launch
 ```
 
+### Launch the IK Controller
+#### Sawyer Robot
+```
+$ roslaunch rospygradientpolytope launch_robot_sawyer.launch
+
+```
+![UR5 - 6 DOF](./Images_Readme/ur5_rviz_readme.png)
+
+#### or
+#### UR Robot
+```
+$ roslaunch rospygradientpolytope launch_robot_ur.launch
+```
+![Sawyer Robot - 7 DOF](./Images_Readme/sawyer_rviz_readme.png)
+
+
 
 
 ## Steps to start Interactive Inverse Kinematics
@@ -116,21 +132,9 @@ $ catkin build
 $ source devel/setup.bash
 $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_rviz.launch
 ```
-### Launch the IK Controller
-#### Sawyer Robot
-```
-$ roslaunch rospygradientpolytope launch_robot_sawyer.launch
-
-```
-![UR5 - 6 DOF](./Images_Readme/ur5_rviz_readme.png)
-#### or
-#### UR Robot
-```
-$ roslaunch rospygradientpolytope launch_robot_ur.launch
-```
-![Sawyer Robot - 7 DOF](./Images_Readme/sawyer_rviz_readme.png)
-
-
+##### 1. Click and drag the interactive sphere with axes in the Rviz window 
+##### 2. Select Run IK button from the Interactive panel
+##### 3. Click on Polytope:ON for visualizing the estimated capacity margin during optimization
 ## To test capacity margin gradient (Sawyer Robot)
 ### Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
 ```
