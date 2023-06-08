@@ -313,12 +313,14 @@ from rospygradientpolytope.polytope_ros_message import *
 
 ## To test capacity margin gradient (Sawyer Robot)
 ### Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
+#### In launch_robot_sawyer.py --> uncomment self.test_gamma_gradient(sigmoid_slope_test=sigmoid_slope) in __init__
 ```
 $ roslaunch rospygradientpolytope launch_robot_sawyer.launch
 ```
 
 ## To test capacity margin gradient (UR5 Robot)
 ### Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
+#### In launch_robot_ur.py --> uncomment self.test_gamma_gradient(sigmoid_slope_test=sigmoid_slope) in __init__
 ```
 $ roslaunch rospygradientpolytope launch_robot_ur.launch
 ```
