@@ -195,11 +195,28 @@ from rospygradientpolytope.polytope_functions import *
 ```
 rospygradientpolytope.polytope_functions.get_polytope_hyperplane
 
-[h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,\
-p_minus_hat,n_k, Nmatrix, Nnot] = get_polytope_hyperplane(JE,active_joints,\
-cartesian_dof_input,qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope)
+[h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot] = get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope)
 ```
-
+###### Parameters: 
+<b> JE </b> - Jacobian<br>
+<b> active_joints </b> - Number of joints in the serial manipulator (Eg, for Sawyer,active_joints = 7) <br>
+<b> cartesian_dof_input </b> - Cartesian DOF (Eg, Cartesian DOF = 3), if only translational velocities are considered<br>
+<b> qdot_min </b> - minimum joint velocity vector<br>
+<b> qdot_max </b> - maximum joint velocity vector- minimum joint velocity vector<br>
+<b> cartesian_desired_vertices </b> - Desired velocities at the end-effector<br>
+<b> sigmoid_slope </b> - Slope parameter for sigmoid activation<br>
+###### Return: 
+<b> h_plus </b>- Convex hull of the available cartesian velocities <br>
+<b> h_plus_hat </b>- Facets of the available cartesian velocities <br>
+<b> h_minus </b>- Index of the closest (vertex,facet) pair<br>
+<b> h_minus_hat </b>- Closest facet in the available cartesian velocities contributing to classical capacity margin<br>
+<b> p_plus </b>- Closest vertex in the desired cartesian velocities contributing to classical capacity margin<br>
+<b> p_minus </b>- Convex hull of the available cartesian velocities with estimated hyperplane parameters<br>
+<b> p_plus_hat </b>- Facets of the available cartesian velocities with estimated hyperplane parameters<br>
+<b> p_minus_hat </b>- Closest facet in the available cartesian velocities contributing to estimated capacity margin<br>
+<b> n_k </b>- Closest vertex in the desired cartesian velocities contributing to estimated capacity margin<br>
+<b> Nmatrix </b>- Estimated capacity margin (Performance measure)<br>
+<b> Nnot </b>- Estimated capacity margin (Performance measure)<br>
 #### For computing analytical gradient of hyperplane parameters and estimated capacity margin for serial robot
 ```
 from rospygradientpolytope.polytope_gradient_functions import *
