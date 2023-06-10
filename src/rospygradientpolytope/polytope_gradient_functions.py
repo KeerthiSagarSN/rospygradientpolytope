@@ -348,15 +348,7 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
                         qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope):
     
     
-
-    
-    h_plus = h_plus_hat
-    h_minus = h_minus_hat
-    J_Hessian = JE
-    n = n_k
-    
-    
-    
+   
     
     deltaqq = qdot_max - qdot_min
     deltaqq = transpose(array([deltaqq]))
@@ -370,8 +362,7 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
     
     sigmoid_slope_joint = sigmoid_slope
     
-    #print('Jacobian inside Gamma_hat_gradient',JE)
-    #input('Jacobian inside Gamma_hat_gradient')
+
     
     for test_joint in range(0,shape(JE)[1]):
         
@@ -381,7 +372,7 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
                         p_minus_hat,qdot_min,qdot_max,cartesian_desired_vertices,test_joint,sigmoid_slope_joint)    
             
         
-        #print('d_Gamma_all',d_Gamma_all)
+
         #Gamma_gradient(test_joint,sigmoid_slope)
         
         ### Analytical gradient of gamma is here: 
@@ -390,8 +381,7 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
         
         d_gamma_max_dq = -1.0*d_Gamma_all[Gamma_min_index_hat]
         
-        #print('Gamma_hat--> check if positive',self.polytope_model.Gamma_total_hat)
-        #input('wait here 1')
+
         #Gamma_all_array = -1*Gamma_total_hat
 
         #print('d_gamma_max_dq',d_gamma_max_dq)
@@ -410,27 +400,16 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
 
         d_LSE_dq = d_LSE_dq_arr[Gamma_min_index_hat]
 
-
-
         #d_LSE_dq_min = d_LSE_dq_arr[Gamma_min_index_hat]
 
-        #print('d_LSE_dq',d_LSE_dq_arr)
-        #print('test_joint',test_joint)
-        #print('d_gamma_max_dq',d_gamma_max_dq)
-        #print('d_LSE_dq_min',d_LSE_dq_min)
+
 
         
         
 
         d_gamma_hat[test_joint] = 1.0*d_LSE_dq*d_gamma_max_dq
 
-        #d_gamma_hat[test_joint] = 1.0*d_gamma_max_dq
-
-        #print('d_gamma_hat[test_joint]',d_gamma_hat[test_joint] )
-        #print('d_LSE_dq',d_LSE_dq)
-
-        #print('d_gamma_max_dq',d_gamma_max_dq)
-        #input('stop here')
+     
         
         #d_softmax_dq[test_joint] = d_gamma_hat[test_joint]*(1-d_gamma_hat[test_joint])
         
@@ -459,16 +438,10 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
             
 
 def Gamma_hat_gradient_dq(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
-                        p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
+                        p_minus_hat, Gamma_total_hat, Gamma_min_index_hat,\
                         qdot_min,qdot_max,cartesian_desired_vertices,sigmoid_slope,test_joint,jac_output):
     
-    
-    
-    h_plus = h_plus_hat
-    h_minus = h_minus_hat
-    J_Hessian = JE
-    n = n_k
-    
+
     
     
     
@@ -483,32 +456,20 @@ def Gamma_hat_gradient_dq(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_h
     ## Get all hyperplane parameters
     
     sigmoid_slope_joint = sigmoid_slope
-    
-    #print('Jacobian inside Gamma_hat_gradient',JE)
-    #input('Jacobian inside Gamma_hat_gradient')
-    
-    #for test_joint in range(0,shape(JE)[1]):
         
 
-            
     d_Gamma_all = Gamma_hat_gradient_joint(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
                     p_minus_hat,qdot_min,qdot_max,cartesian_desired_vertices,test_joint,sigmoid_slope_joint)    
         
     
-    #print('d_Gamma_all',d_Gamma_all)
-    #Gamma_gradient(test_joint,sigmoid_slope)
+
     
     ### Analytical gradient of gamma is here: 
         
     
     
     d_gamma_max_dq = -1.0*d_Gamma_all[Gamma_min_index_hat]
-    
-    #print('Gamma_hat--> check if positive',self.polytope_model.Gamma_total_hat)
-    #input('wait here 1')
-    #Gamma_all_array = -1*Gamma_total_hat
 
-    #print('d_gamma_max_dq',d_gamma_max_dq)
     Gamma_all_array = -1.0*Gamma_total_hat
     
     ### This was the parameter for the smooth gradient for the robot
@@ -516,41 +477,11 @@ def Gamma_hat_gradient_dq(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_h
 
     ### This is the parameter for the UR5 tests- running it again for Sawyer to see the convergence
     #d_LSE_dq_arr = exp_normalize(10000000.0**Gamma_all_array)
-
-    #print('d_LSE_dq_arr',d_LSE_dq_arr)
-    #input('stop to test here')
-    #d_LSE_dq = max(d_LSE_dq_arr)
-    #d_LSE_dq = max(d_LSE_dq_arr)
-
     d_LSE_dq = d_LSE_dq_arr[Gamma_min_index_hat]
-
-
-
-    #d_LSE_dq_min = d_LSE_dq_arr[Gamma_min_index_hat]
-
-    #print('d_LSE_dq',d_LSE_dq_arr)
-    #print('test_joint',test_joint)
-    #print('d_gamma_max_dq',d_gamma_max_dq)
-    #print('d_LSE_dq_min',d_LSE_dq_min)
-
-    
     
 
     d_gamma_hat = 1.0*d_LSE_dq*d_gamma_max_dq
 
-    #d_gamma_hat[test_joint] = 1.0*d_gamma_max_dq
-
-    #print('d_gamma_hat[test_joint]',d_gamma_hat[test_joint] )
-    #print('d_LSE_dq',d_LSE_dq)
-
-    #print('d_gamma_max_dq',d_gamma_max_dq)
-    #input('stop here')
-    
-    #d_softmax_dq[test_joint] = d_gamma_hat[test_joint]*(1-d_gamma_hat[test_joint])
-    
-    #print('self.d_softmax_dq',self.d_softmax_dq)
-    
-    #input('stpo')
     if isnan(d_gamma_hat):
         print('self.d_gamma_hat[test_joint]',d_gamma_hat[test_joint])
         print('self.d_LSE_dq',d_LSE_dq)
@@ -576,15 +507,7 @@ def Gamma_hat_gradient_dq(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_h
 
 
     
-'''
-def h_plus_gradient(self):
-    self.d_h_plus_dq = 
 
-def h_minus_gradient(self):
-    self.d_h_minus_dq = 
-
-def Gamma_min_gradient(self):
-'''  
     
         
     
