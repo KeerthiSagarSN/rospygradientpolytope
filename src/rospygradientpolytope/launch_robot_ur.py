@@ -290,13 +290,36 @@ class LaunchRobot():
         #self.q_lower_limit = self.pykdl_util_kin.joint_limits_lower
 
         self.q_bounds = hstack((self.q_lower_limit, self.q_upper_limit))
+        sigmoid_slope_test = array([50, 100, 150, 200, 400])
 
-        print('self.q_lower_limit', self.q_lower_limit)
-        print('self.q_upper_limit', self.q_upper_limit)
-        print('self.q_bounds', self.q_bounds)
-        # print('self.q_upper_limit',self.q_upper_limit)
-        # print('self.q_lower_limit',self.q_lower_limit)
-        print('Velocity limits are', self.qdot_limit)
+        self.sigmoid_slope_array = array([50, 100, 150, 200, 400])
+
+        self.cm_est = None
+
+        self.time_counter = 0
+        self.fun_counter = 0
+
+        self.color_array_cm = ['g','r']
+        self.cm_est_arr = zeros(shape=(2))
+        self.cm_est_arr[:] = -10000
+        self.time_arr = zeros(shape=(2))
+
+
+
+
+        ########################################## Uncomment the below code to test numerical_vs_analytical gradient #####3
+        #self.test_gamma_gradient(sigmoid_slope_test=sigmoid_slope_test)
+        
+        ##################################################################################################################
+
+
+
+
+
+
+
+        ######################## Paper Results below- Do not uncomment for testing purposes #######################################################################
+
 
         '''
         ## First generate a list of random joints in numpy and save in numpy savez array - First generation
@@ -308,11 +331,12 @@ class LaunchRobot():
         # Save the file as npz 
         savez('q_in_UR', q_in_arr = self.q_in_array)
         '''
-
+        ## Test_results folder
+        '''
         BASE_PATH = "/home/imr/catkin_ws_build/src/rospygradientpolytope/test_results/"
         test_case = 1
         self.test_case = test_case
-
+        '''
         #file_name = 'ef_IK_UR_'+str(test_case)
         '''
         file_name = 'ef_IK_UR_'+str(test_case)
@@ -326,12 +350,14 @@ class LaunchRobot():
         
         savez(os.path.join(BASE_PATH, file_name),ef_IK_arr = self.ef_IK_array)
         '''
-
+        ## Test_results folder
+        '''
         BASE_PATH = "/home/imr/catkin_ws_build/src/rospygradientpolytope/test_results/"
         test_case = 1
 
         file_name = 'q_in_ur_test_'+str(test_case)
-
+        '''
+        ## Test_results folder above
         '''
         ## First generate a list of random joints in numpy and save in numpy savez array - First generation
         self.q_in_array = zeros(shape = (1000,6))
@@ -357,26 +383,19 @@ class LaunchRobot():
         '''
         # Testing gamma vs gamma_hat here
         #self.pos_desired = array([[0.49, 0.412, 0.625]])
-        sigmoid_slope_test = array([50, 100, 150, 200, 400])
 
-        self.sigmoid_slope_array = array([50, 100, 150, 200, 400])
+        
+        '''
+        self.test_gamma_gradient(sigmoid_slope_test=150)
 
-
-        self.cm_est = None
-
-        self.time_counter = 0
-        self.fun_counter = 0
-
-        self.color_array_cm = ['g','r']
-        self.cm_est_arr = zeros(shape=(2))
-        self.cm_est_arr[:] = -10000
-        self.time_arr = zeros(shape=(2))
+        input('Ctrl+C to exit')
         self.fig_cm, self.ax_cm = plt.subplots()
 
         self.ax_cm.set_xlabel('Iterations',fontsize=13)
         self.ax_cm.set_ylabel('Estimated Capacity Margin'+  r"($\hat{\gamma}$)",fontsize=13)
         self.plt_obj = None
-        plt.show()        
+        plt.show()  
+        '''      
         #### Shut it off temporarily
         '''self.polytope_display = False
         #self.Error_gamma_array = zeros(shape=(len(self.q_in_array),len(self.sigmoid_slope_arra)))
@@ -576,7 +595,7 @@ class LaunchRobot():
             mutex.release()
         '''
     
-
+        ######################## Paper Results above - DO not uncomment above for testing #######################################################################
     
 
     def ik_pose_callback(self,desired_ik_pose):
@@ -1407,7 +1426,7 @@ class LaunchRobot():
                     qdot_max=self.qdot_max, cartesian_desired_vertices=self.cartesian_desired_vertices, sigmoid_slope=sigmoid_slope_inp)
 
                 jac_output = Gamma_hat_gradient(J_Hess, Hess, n_k, Nmatrix, Nnot, h_plus_hat, h_minus_hat, p_plus_hat,
-                                                p_minus_hat, Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,
+                                                p_minus_hat, Gamma_total_hat, Gamma_min_index_hat,
                                                 self.qdot_min, self.qdot_max, self.cartesian_desired_vertices, sigmoid_slope=sigmoid_slope_inp)
 
                 #print('n_k is',n_k)
@@ -1584,7 +1603,7 @@ class LaunchRobot():
         q_in[4] = -0.15
         q_in[5] = -0.12
         #q_in[6] = -0.76
-        step_size = 0.0050
+        step_size = 0.00050
 
         num_iterations = 600
         #sigmoid_slope_inp = 150
@@ -1599,8 +1618,8 @@ class LaunchRobot():
         y0_plot = zeros(shape=(num_iterations, len(sigmoid_slope_arr)))
 
         color_arr = ['magenta', 'k', 'green', 'cyan', 'blue', 'r']
-        # for lm in range(0,1):
-        for lm in range(len(sigmoid_slope_arr)):
+        for lm in range(0,1):
+        #for lm in range(len(sigmoid_slope_arr)):
             sigmoid_slope_inp = sigmoid_slope_arr[lm]
 
             test_joint = 3
@@ -1617,14 +1636,15 @@ class LaunchRobot():
             step_size = 0.0010
 
             ax2 = plt.axes()
-            ax2.set_xlabel('Joint q' + str(test_joint))
-            ax2.set_ylabel('Capacity Margin Gradient' +
-                           str(' [N]'), fontsize=13)
-            #ax2.plot([],[],color='r',linestyle='solid',label='Numerical Gradient: ' + r"$\frac{\partial {\gamma}}{\partial{q_2}}$")
-            #ax2.plot([],[],color='k',linestyle='dashed',label='Analytical Gradient- Slope 100')
-            # plt.show()
+            ax2.set_xlabel('Joint q' + str(test_joint)+' (rad)')
+            ax2.set_ylabel('Capacity Margin Gradient' + str(' [N]'),fontsize=13)
+            ax2.plot([],[],color='r',linestyle='solid',label='Numerical Gradient: ' + r"$\frac{\partial {\gamma}}{\partial{q_3}}$")
+            ax2.plot([],[],color='g',linestyle='solid',label='Analytical Gradient- Slope 50')
             ax2.legend()
 
+            numerical_gradient_arr = zeros(shape=(num_iterations))
+            analytical_gradient_arr = zeros(shape=(num_iterations))
+            x_arr = zeros(shape=(num_iterations))
             for i in range(num_iterations):
 
                 i0_plot[i] = i
@@ -1632,6 +1652,7 @@ class LaunchRobot():
                 self.q_in = q_in
 
                 q_in[test_joint] += step_size
+                x_arr[i] = q_in[test_joint]
                 #q_in[2] += step_size
 
                 i0_plot[i] = q_in[test_joint]
@@ -1664,7 +1685,7 @@ class LaunchRobot():
                     qdot_max=self.qdot_max, cartesian_desired_vertices=self.cartesian_desired_vertices, sigmoid_slope=sigmoid_slope_inp)
 
                 jac_output = Gamma_hat_gradient(J_Hess, Hess, n_k, Nmatrix, Nnot, h_plus_hat, h_minus_hat, p_plus_hat,
-                                                p_minus_hat, Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,
+                                                p_minus_hat, Gamma_total_hat, Gamma_min_index_hat,
                                                 self.qdot_min, self.qdot_max, self.cartesian_desired_vertices, sigmoid_slope=sigmoid_slope_inp)
 
                 #print('n_k is',n_k)
@@ -1681,13 +1702,26 @@ class LaunchRobot():
                     numerical_gradient = (
                         Gamma_min_prev - Gamma_min) / (step_size*1.0)
                     error_plot_n[i, lm] = numerical_gradient
+                    numerical_gradient_arr[i] = numerical_gradient
 
                     print('numerical_gradient', numerical_gradient)
 
                     analytical_gradient = jac_output[test_joint]
+                    analytical_gradient_arr[i] = analytical_gradient
 
                     error_plot_a[i, lm] = analytical_gradient
                     print('analytical_gradient', analytical_gradient)
+
+                    if i > 1:
+                        #ax2.scatter(q_in[test_joint],numerical_gradient,color='r',s=2.5)
+                        #ax2.scatter(q_in[test_joint],analytical_gradient,color='k',s=2.5)
+                        x1 = [x_arr[i-1],x_arr[i]] 
+                        y1 = [numerical_gradient_arr[i-1],numerical_gradient_arr[i]]
+                        y2 = [analytical_gradient_arr[i-1],analytical_gradient_arr[i]]
+                        ax2.plot(x1,y1,color='r')
+                        ax2.plot(x1,y2,color='g')
+                        
+                        plt.pause(0.00001)
 
                     # ax2.scatter(q_in[test_joint],numerical_gradient,color='r',s=2.5)
                     # ax2.scatter(q_in[test_joint],analytical_gradient,color='k',s=2.5)
@@ -1710,7 +1744,7 @@ class LaunchRobot():
 
                 #pykdl_kin_jac = pykdl_util_kin.jacobian(self.q_in_numpy)
                 polytope_verts, polytope_faces, facet_vertex_idx, capacity_faces, capacity_margin_proj_vertex, \
-                    polytope_verts_est, polytope_faces_est, capacity_faces_est, capacity_margin_proj_vertex_est = \
+                    polytope_verts_est, polytope_faces_est, capacity_faces_est, capacity_margin_proj_vertex_est,cm_est = \
                     velocity_polytope_with_estimation(
                         J_Hess, self.qdot_max, self.qdot_min, self.cartesian_desired_vertices, sigmoid_slope_inp)
                 desired_polytope_verts, desired_polytope_faces = desired_polytope(
@@ -1980,7 +2014,7 @@ class LaunchRobot():
             #input('Jacobian outside Gamma_hat_gradient')
 
             jac_output = Gamma_hat_gradient(J_Hess, Hess, n_k, Nmatrix, Nnot, h_plus_hat, h_minus_hat, p_plus_hat,
-                                            p_minus_hat, Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,
+                                            p_minus_hat, Gamma_total_hat, Gamma_min_index_hat,
                                             self.qdot_min, self.qdot_max, self.cartesian_desired_vertices, sigmoid_slope=sigmoid_slope_inp)
 
             if Gamma_min_prev != None:
@@ -2187,7 +2221,7 @@ class LaunchRobot():
         '''
         #cons = ({'type': 'ineq', 'fun': self.constraint_function,'jac': self.jac_func})
 
-        cons = ({'type': 'ineq', 'fun': self.constraint_function, 'tol': 1e-5} )
+        cons = ({'type': 'eq', 'fun': self.constraint_function, 'tol': 1e-5} )
                
                  
 
@@ -2238,7 +2272,9 @@ class LaunchRobot():
         if q_joints_opt.success:
 
             self.msg_status_ik.data = 'Success'
-            
+        
+        elif q_joints_opt.status == int(8):
+            self.msg_status_ik.data = 'Directional search error'
         else:
             self.msg_status_ik.data = 'Time limit'            
             
@@ -2648,7 +2684,7 @@ class LaunchRobot():
         threads = []
         for i_thread in range(6):
             thread = mp.Process(target=Gamma_hat_gradient_dq,args=(J_Hess, Hess, n_k, Nmatrix, Nnot, h_plus_hat, h_minus_hat, p_plus_hat,\
-                                        p_minus_hat, Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
+                                        p_minus_hat, Gamma_total_hat, Gamma_min_index_hat,\
                                         self.qdot_min, self.qdot_max, self.desired_vertices,self.sigmoid_slope_input,i_thread,jac_output))
             thread.start()
             threads.append(thread)
