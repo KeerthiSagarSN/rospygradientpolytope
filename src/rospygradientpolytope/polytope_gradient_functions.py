@@ -48,8 +48,7 @@ def hyperplane_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat
     n = n_k
     
     deltaqq = qdot_max - qdot_min
-    #print('test_joint',test_joint)
-    #print('deltaqq without oops',deltaqq)
+
     # Cycling through all the noramls of the hyper plane here:
     #n = empty(shape=(len(self.polytope_model.h_plus),3))
     
@@ -143,13 +142,6 @@ def hyperplane_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat
     d_h_plus_dq = h_plus_gradient
     d_h_minus_dq = h_minus_gradient
     
-    #print('d_h_plus_dq',d_h_plus_dq)
-    
-    ##print('d_h_minus_dq',d_h_minus_dq)
-    #print('dn_dq',dn_dq)
-    #input('inside hyperplane gradient - no oops')
-    #self.dn_dq = dn_dq
-    
     return d_h_plus_dq, d_h_minus_dq, dn_dq
 
 #############################################################
@@ -209,18 +201,10 @@ def Gamma_hat_gradient_joint(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plu
     
     Gamma_minus_LHS = transpose(array([d_h_minus_dq])) + matmul(matmul(dn_dq,J_Hessian[0:3,:]),deltaqmin) + matmul(matmul(n,H[0:3,:,test_joint]),deltaqmin )
     
-    #print('v_k_d is',v_k_d)
-    
-    #input('wait inside gradient function')
+
     
     for vertex in range(len(v_k_d)):
-        #print 'vertex'
-        #print vertex
-        #print('v_k_d[vertex,:]',v_k_d[vertex,:])
-        #print('len(v_k_d[vertex,:])',len(v_k_d[vertex,:]))
-        
-        
-        #print('d_Gamma_plus',Gamma_plus_LHS - matmul(self.dn_dq,transpose(array([v_k_d[vertex,:]]))))
+
         
         
         d_Gamma_plus[:,vertex] =  transpose(Gamma_plus_LHS - matmul(dn_dq,transpose(array([v_k_d[vertex,:]]))))
@@ -238,13 +222,11 @@ def Gamma_hat_gradient_joint(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plu
     
     #Eq. 35 is here
     #d_Gamma_hat_d_Gamma = exp_normalize(-Gamma_total)
-    #print('d_Gamma_all',d_Gamma_all)
 
-    #print('d_Gamma_plus',unravel_index(d_Gamma_plus.argmin(), d_Gamma_plus.shape))
     
     #input('stop here')
     return d_Gamma_all
-    #return self.d_Gamma_plus_flat    
+
     
     
     ## All values here are with respect the estimated parameters in the polytope
@@ -384,7 +366,7 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
 
         #Gamma_all_array = -1*Gamma_total_hat
 
-        #print('d_gamma_max_dq',d_gamma_max_dq)
+
         Gamma_all_array = -1.0*Gamma_total_hat
         
         ### This was the parameter for the smooth gradient for the robot
@@ -393,8 +375,7 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
         ### This is the parameter for the UR5 tests- running it again for Sawyer to see the convergence
         #d_LSE_dq_arr = exp_normalize(10000000.0**Gamma_all_array)
 
-        #print('d_LSE_dq_arr',d_LSE_dq_arr)
-        #input('stop to test here')
+
         #d_LSE_dq = max(d_LSE_dq_arr)
         #d_LSE_dq = max(d_LSE_dq_arr)
 
@@ -413,9 +394,7 @@ def Gamma_hat_gradient(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,
         
         #d_softmax_dq[test_joint] = d_gamma_hat[test_joint]*(1-d_gamma_hat[test_joint])
         
-        #print('self.d_softmax_dq',self.d_softmax_dq)
-        
-        #input('stpo')
+
         if isnan(d_gamma_hat[test_joint]):
             print('self.d_gamma_hat[test_joint]',d_gamma_hat[test_joint])
             print('self.d_LSE_dq',d_LSE_dq)

@@ -630,7 +630,7 @@ class LaunchSawyerRobot():
             if self.polytope_display:
 
                 
-                print('polytope plotting')
+                #print('polytope plotting')
 
 
                 mutex.acquire()

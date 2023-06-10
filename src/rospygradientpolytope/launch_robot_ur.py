@@ -2304,43 +2304,7 @@ class LaunchRobot():
         self.pub_end_ik.publish(self.fun_iter)
         return float64(jac_output)
 
-    def jac_func_IK(self, q_in):
-
-        J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
-
-        pos_act = array(self.pykdl_util_kin.forward(q_in)[0:3, 3])
-        
-
-        grad_error = -self.pos_reference-pos_act.flatten()
-
-        norm_grad_error = norm(grad_error)
-
-        #qdot = hstack((qdot,array([0,0,0])))
-        print('norm_grad_error')
-        print('grad_error',grad_error)
-
-        J_pinv = getJ_pinv(J_Hess, 0.995)
-
-        #J_pinv = pinv(J_Hess)
-
-        #print('J_hess', J_pinv)
-        #J_Hess = jacobianE0(q_in)
-        #J_Hess = J_Hess[0:3,:]
-        # print('J_Hess',J_Hess)
-
-        # print('jac_output',jac_output)
-
-        #jac_output = sum(jac_output)
-        print('jac output ik',2.0*float64(matmul(J_Hess[:,0:3],grad_error)))
-        return float64(matmul((J_pinv)[:,0:3],grad_error*(norm_grad_error**(-1))))
-
-    def gradient_descent_opt(self, q_in):
-
-        grad_param = 0.001
-        q_opt = q_in - grad_param
-
-        return q_opt
-
+    
 
 
 
