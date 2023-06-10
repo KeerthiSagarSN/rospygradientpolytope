@@ -1552,18 +1552,6 @@ class LaunchSawyerRobot():
 
 
 
-    def jac_func_IK(self,q_in):
-        from numpy import sum
-
-        J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
-        
-        J_pinv = getJ_pinv(J_Hess,0.995)
-
-        print('J_hess',J_pinv)
-
-        return J_pinv[0:3,:]
-
-
 
 
 if __name__ == '__main__':

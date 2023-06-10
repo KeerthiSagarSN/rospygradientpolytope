@@ -277,6 +277,7 @@ q_infeasible  = ef_infeasible[ef_infeasible[:,:,0] >= 0]
 
 #global figure 7
 
+### Uncomment below for the surface plot
 fig_1 = plt.figure()
 
 ax = plt.axes(projection='3d')
@@ -358,8 +359,19 @@ error_plot_n = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
 z0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
 x0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
 y0_plot = zeros(shape=(num_iterations,len(sigmoid_slope_arr)))
+z_two_array = zeros(2)
+x_two_array = zeros(2)
 
+ax2.set_xlabel('Number of Iterations',fontsize=20)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
+#plt.draw()
+#plt.tight_layout()
+#ax2.set_xlabel('Number of Iterations',prop={'size': 20})
+ax2.set_ylabel(r"$\hat{\gamma}$" + str(' [N]'),fontsize=20)
 
+#ax2.legend(loc="lower right",fontsize=25)
+input('wait once')
 for lm in range(len(x0_start)):
 #for lm in range(1,2):
 
@@ -500,6 +512,7 @@ for lm in range(len(x0_start)):
         if not first_iteration:
             #ax2.scatter(i,z0,c='k',s=10)
             #ax.scatter(x0,y0,z0,c='k',s=20)
+            z_two_array[1] = Gamma_min_softmax
             d_G_dq_n = (Gamma_min_softmax-prev_Gamma_min_softmax)/(1.0*learning_rate)
 
             #error_plot[i,lm] = ((d_G_dq_n - d_G_dq_a)/(d_G_dq_n))*100.0
@@ -514,14 +527,18 @@ for lm in range(len(x0_start)):
             #print('NUmerical gradient of gamma',(Gamma_min_softmax-prev_Gamma_min_softmax)/(1.0*learning_rate))
             #print('ANalytical gradient',-d_gamma_hat)
             prev_Gamma_min_softmax = Gamma_min_softmax
+            '''
+            ax2.plot([i0_plot[i-1],i0_plot[i]],[z_two_array[0],z_two_array[1]],color=color_arr[1],linestyle='dashed',label='x0:0.5, y0:0.1 ')
             #input('test gradient')                    
-            #plt.pause(0.0001)
-            
+            plt.pause(0.0001)
+            '''
+            z_two_array[0] = z_two_array[1]
             #prev_n_k = n_k
             #prev_h_plus = h_plus_hat
             #prev_h_minus = h_minus_hat
         if first_iteration:
             prev_Gamma_min_softmax = Gamma_min_softmax
+            z_two_array[0] = Gamma_min_softmax
             #prev_n_k = n_k
             #prev_h_plus = h_plus_hat
             #prev_h_minus = h_minus_hat
@@ -535,21 +552,24 @@ for lm in range(len(x0_start)):
 ax.plot(x0_plot[:,0],y0_plot[:,0],z0_plot[:,0],color=color_arr[0],marker='+', linestyle='dashed',label='x0:0.005, y0:0.1 ')
 ax.plot(x0_plot[:,1],y0_plot[:,1],z0_plot[:,1],color=color_arr[1],marker='+', linestyle='dashed',label='x0:0.5, y0:0.1 ')
 ax.plot(x0_plot[:,2],y0_plot[:,2],z0_plot[:,2],color=color_arr[2],marker='+', linestyle='dashed',label='x0:0.9, y0:0.9 ')
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
 #ax.plot(x0_plot[:,3],y0_plot[:,3],z0_plot[:,3],color=color_arr[3],marker='+', linestyle='dashed')
-ax.legend(loc="upper right",fontsize=25)
-ax2.plot(i0_plot,z0_plot[:,0],color=color_arr[0],linestyle='dashed',label='x0:0.005, y0:0.1 ')
-ax2.plot(i0_plot,z0_plot[:,1],color=color_arr[1],linestyle='dashed',label='x0:0.5, y0:0.1 ')
-ax2.plot(i0_plot,z0_plot[:,2],color=color_arr[2],linestyle='dashed',label='x0:0.9, y0:0.9 ')
+ax.legend(loc="upper right",fontsize=30)
+
+ax2.plot(i0_plot,z0_plot[:,0],color=color_arr[0],linestyle='dashed',label='x0:0.005, y0:0.1 ',linewidth=3.0)
+ax2.plot(i0_plot,z0_plot[:,1],color=color_arr[1],linestyle='dashed',label='x0:0.5, y0:0.1 ',linewidth=3.0)
+ax2.plot(i0_plot,z0_plot[:,2],color=color_arr[2],linestyle='dashed',label='x0:0.9, y0:0.9 ',linewidth=3.0)
 
 
 #ax2.plot(i0_plot,z0_plot[:,3],color=color_arr[3],linestyle='dashed')
 ax2.set_xlabel('Number of Iterations',fontsize=25)
-plt.xticks(fontsize=15)
-plt.yticks(fontsize=15)
+plt.xticks(fontsize=20)
+plt.yticks(fontsize=20)
 plt.tight_layout()
 #ax2.set_xlabel('Number of Iterations',prop={'size': 20})
 ax2.set_ylabel(r"$\hat{\gamma}$" + str(' [N]'),fontsize=25)
-ax2.legend(loc="lower right",fontsize=25)
+ax2.legend(loc="center",fontsize=25)
 
 '''
 
@@ -565,7 +585,7 @@ ax2.set_ylabel('Error $(\%)$',fontsize=15)
 #plt.tight_layout()
 plt.show()
 
-
+input('stp dont go further')
 
 
 
