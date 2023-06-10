@@ -324,7 +324,7 @@ $ roslaunch rospygradientpolytope launch_robot_sawyer.launch
 ```
 $ roslaunch rospygradientpolytope launch_robot_ur.launch
 ```
-
+# Cable Driven Parallel Robots (CDPR)- Planar
 ## To generate workspace of the CDPR with different sigmoid slopes (4-cable, 2-DOF)
 ### Generate Wrench Feasible Workspace (WFW) by identifying where Capacity margin index = 0
 ```
@@ -334,10 +334,11 @@ $ python3 CDPR_workspace.py
 ## Simple First-order Gradient Descent Optimization (CDPR)
 ### Start from initial pose and use analytical gradient to reach pose with maximum capacity margin
 ```
-$ python3 test_CDPR_Optimization.py
+$ python3 CDPR_workspace.py
 ```
 ## Region-of-Interest Optimization (CDPR)
 ### Optimization to operate CDPR within a ROI with obstacle avoidance
+#### Plotting with matplotlib is slow in the current implementation, optimized code to plot is under development
 ```
 $ python3 test_CDPR_Optimization.py
 ```
