@@ -717,14 +717,8 @@ class LaunchRobot():
         self.q_in[5] = robot_joints.position[5]
         
         #self.q_in[3] = 0.5
-        #self.q_in[4] = 0.89
+        #self.q_in[4] = 0.89       
 
-        
-
-
-        #print('self.q_in', self.q_in)
-        ##print('tip_link', tip_link)
-        #print('base_link', base_link)
         #ef = self.pykdl_util_kin.forward(self.q_in, tip_link, base_link)
 
     # def check_gradient(self,q_in,step_size:int):
@@ -912,13 +906,7 @@ class LaunchRobot():
         #input('wait here in the objective function')
         #pos_act_mat = self.pykdl_util_kin.forward(q0,tip_link,base_link)
         #pos_act = pos_act_mat[0:3,3]
-        # print('self.pos_reference',self.pos_reference)
-        #print('Current position in optimization is',pos_act)
-        #print('pos_act is this in the objective function',pos_act)
-        #input('inside obj func')
-        # self.canvas_input_opt.generate_axis()
-        # self.opt_robot_model.urdf_transform(q_joints=q_des)
-        # canvas_input.generate_axis()
+
         BASE_PATH = "/home/imr/catkin_ws_build/src/rospygradientpolytope/test_results/"
         #test_case = 1
         #file_name = 'q_arr_sawyer_test_'+str(test_case)
@@ -1167,27 +1155,6 @@ class LaunchRobot():
         sigmoid_slope_plot = ['50', '100', '150',
                               '200', '400']
 
-        # Iterate through the five airlines
-        '''
-
-        for i in range(len(sigmoid_slope_plot)):
-            # Subset to the airline
-            subset = flights[flights['name'] == airline]
-            
-            # Draw the density plot
-            sns.distplot(subset['arr_delay'], hist = False, kde = True,
-                        kde_kws = {'linewidth': 3},
-                        label = sigmoid_slope_plot[i])
-        plt.legend(prop={'size': 16}, title = 'Sigmoid Slope')
-        #plt.title('Density Plot with Multiple Airlines')
-        plt.xlabel('Error (%)')
-        plt.ylabel('Capacity Margin')
-
-        sns.distplot(subset['arr_delay'], hist = False, kde = True,
-                 kde_kws = {'shade': True, 'linewidth': 3}, 
-                  label = Sigmoid Slope)
-            
-        '''
         # Plot formatting
 
         # Plot formatting
@@ -1413,9 +1380,7 @@ class LaunchRobot():
                 # q_in =
                 #J_Hess_pykdl = array(self.pykdl_util_kin.jacobian(q_in))
                 #J_Hess = J_Hess[0:3,:]
-                # print('J_Hess',J_Hess)
-                # print('J_Hess_pykdl',J_Hess_pykdl)
-                #input('wait here')
+
                 h_plus, h_plus_hat, h_minus, h_minus_hat, p_plus, p_minus, p_plus_hat, p_minus_hat, n_k, Nmatrix, Nnot = get_polytope_hyperplane(
                     J_Hess, active_joints=6, cartesian_dof_input=array([True, True, True, False, False, False]), qdot_min=self.qdot_min,
                     qdot_max=self.qdot_max, cartesian_desired_vertices=self.cartesian_desired_vertices, sigmoid_slope=sigmoid_slope_inp)
@@ -1429,12 +1394,7 @@ class LaunchRobot():
                                                 p_minus_hat, Gamma_total_hat, Gamma_min_index_hat,
                                                 self.qdot_min, self.qdot_max, self.cartesian_desired_vertices, sigmoid_slope=sigmoid_slope_inp)
 
-                #print('n_k is',n_k)
-                #print('len of n_k is',len(n_k))
-                #print('Nmatrix is',Nmatrix)
-                #print('Nnot is',Nnot)
-                #input('test size of n_k')
-                #print('Gamma_min is',Gamma_min)
+
                 print('Gamma_min softmax is', Gamma_min_softmax)
 
                 if Gamma_min_prev != None:
@@ -1669,12 +1629,9 @@ class LaunchRobot():
 
                 Hess = getHessian(J_Hess)
 
-                # q_in =
-                #J_Hess_pykdl = array(self.pykdl_util_kin.jacobian(q_in))
+
                 #J_Hess = J_Hess[0:3,:]
-                # print('J_Hess',J_Hess)
-                # print('J_Hess_pykdl',J_Hess_pykdl)
-                #input('wait here')
+
                 h_plus, h_plus_hat, h_minus, h_minus_hat, p_plus, p_minus, p_plus_hat, p_minus_hat, n_k, Nmatrix, Nnot = get_polytope_hyperplane(
                     J_Hess, active_joints=6, cartesian_dof_input=array([True, True, True, False, False, False]), qdot_min=self.qdot_min,
                     qdot_max=self.qdot_max, cartesian_desired_vertices=self.cartesian_desired_vertices, sigmoid_slope=sigmoid_slope_inp)
@@ -1688,13 +1645,7 @@ class LaunchRobot():
                                                 p_minus_hat, Gamma_total_hat, Gamma_min_index_hat,
                                                 self.qdot_min, self.qdot_max, self.cartesian_desired_vertices, sigmoid_slope=sigmoid_slope_inp)
 
-                #print('n_k is',n_k)
-                #print('len of n_k is',len(n_k))
-                #print('Nmatrix is',Nmatrix)
-                #print('Nnot is',Nnot)
-                #input('test size of n_k')
-                #print('Gamma_min is',Gamma_min)
-                #print('Gamma_min softmax is',Gamma_min_softmax)
+
 
                 if Gamma_min_prev != None:
 
@@ -1859,301 +1810,7 @@ class LaunchRobot():
         plt.show()
 
         print('Done computing')
-
-    def test_Gamma_vs_Gamma_hat_old(self, sigmoid_slope_test):
-
-        import time
-        from numpy.linalg import det
-        from numpy import sum, mean, average
-        #from numpy.random import randn
-        #from numpy.linalg import norm
-        #from linearalgebra import V_unit
-        #from copy import deepcopy
-        #from numpy import amax,max,exp,dot,matmul,ones
-        #from polytope_functions import get_hyperplane_parameters,get_gamma,get_gamma_hat
-        #from robot_functions import exp_sum,exp_normalize,smooth_max_gradient
-        #from numpy import unravel_index,argmax,min
-
-        #from numpy.linalg import det
-        #from numpy import sum
-
-        sigmoid_slope_inp = sigmoid_slope_test
-
-        #print('q_in is',q_in)
-        #input('wait here in the objective function')
-        #pos_act_mat = self.pykdl_util_kin.forward(q0,tip_link,base_link)
-        #pos_act = pos_act_mat[0:3,3]
-        # print('self.pos_reference',self.pos_reference)
-        #print('Current position in optimization is',pos_act)
-        #print('pos_act is this in the objective function',pos_act)
-        #input('inside obj func')
-        # self.canvas_input_opt.generate_axis()
-        # self.opt_robot_model.urdf_transform(q_joints=q_des)
-        # canvas_input.generate_axis()
-        BASE_PATH = "/home/imr/catkin_ws_build/src/rospygradientpolytope/test_results/"
-
-        #full_name = os.path.join(BASE_PATH, file_name)
-        print('completed one test case')
-
-        Gamma_min_array = zeros(shape=len(self.q_in_array))
-        Gamma_min_softmax_arr = zeros(shape=len(self.q_in_array))
-        Error_arr = zeros(shape=len(self.q_in_array))
-        ts_arr = zeros(shape=len(self.q_in_array))
-
-        Gamma_min_prev = None
-
-        # Awesome configuration
-        test_joint = 4
-        q_add = zeros(6)
-        #q_add[test_joint] = 1
-        step_size = 0.001
-
-        # 52,47, 33 test case works perfectly
-        # self.q_in_array[i,:]
-        #q_in = self.q_in_array[33,:]
-
-        '''
-        ### COnfiguration for the picture in the paper - Capacity Margin vs Estimate 
-        ## Sigmoid slope = 10
-        q_in = q_add
-        q_in[0] = 0.0
-        q_in[1] = -1.95
-        q_in[2] = 1.35
-        q_in[3] = -1.50
-        q_in[4] = -1.50
-        q_in[5] = 0.0
-        
-        ### COnfiguration for the picture in the paper- Capacity margin overview picture
-        q_in = q_add
-        q_in[0] = 0.0
-        q_in[1] = -1.95
-        q_in[2] = 1.25
-        q_in[3] = -1.25
-        q_in[4] = -1.60
-        q_in[5] = 0.0
-
-        
-        #Awesome configuration
-        test_joint = 3
-        q_add = zeros(6)
-        #q_add[test_joint] = 1
-        step_size = 0.001
-
-        ## 52,47, 33 test case works perfectly
-        # self.q_in_array[i,:]
-        #q_in = self.q_in_array[33,:]
-        q_in = q_add
-        q_in[0] = -0.95
-        q_in[1] = -0.95
-        q_in[2] = -0.66
-        q_in[3] = -0.15
-        q_in[4] = 0.12
-        q_in[5] = -0.05
-        
-
-        
-        #Awesome configuration
-        test_joint = 3
-        q_add = zeros(6)
-        #q_add[test_joint] = 1
-        step_size = 0.0001
-
-        ## 52,47, 33 test case works perfectly
-        # self.q_in_array[i,:]
-        #q_in = self.q_in_array[33,:]
-        q_in = q_add
-        q_in[0] = 1.95
-        q_in[1] = 0.95
-        q_in[2] = 0.66
-        q_in[3] = 0.15
-        q_in[4] = -0.12
-        q_in[5] = -0.05
-        '''
-        q_in[0] = 1.95
-        q_in[1] = 0.95
-        q_in[2] = 0.66
-        q_in[3] = 0.15
-        q_in[4] = -0.12
-        q_in[5] = -0.05
-        for i in range(len(self.q_in_array)):
-            start_time = time.time()
-            #J_Hess = jacobianE0(self.q_in_array[i,:])
-            # Offset set to <xyz> from <-0.01,0,0> to <-0.03,-0.03,0.05>
-            # <origin xyz="0.05 ${wrist_3_length} 0.05" rpy="0.0 0.0 ${pi/2.0}" />
-            # from <origin xyz="0 ${wrist_3_length} 0" rpy="0.0 0.0 ${pi/2.0}" />
-
-            mutex.acquire()
-            q_in[test_joint] += step_size
-
-            self.q_in = q_in
-
-            print('self.q_in', q_in)
-
-            self.joint_state_publisher_robot(self.q_in)
-
-            ef_pose = self.pykdl_util_kin.forward(self.q_in)[:3, 3]
-            J_Hess = array(self.pykdl_util_kin.jacobian(self.q_in))
-            Hess = getHessian(J_Hess)
-            # print('J_Hess',J_Hess)
-            #J_Hess = J_Hess[0:3,:]
-            # print('J_Hess',J_Hess)
-            # print('J_Hess_pykdl',J_Hess_pykdl)
-            #input('wait here')
-            h_plus, h_plus_hat, h_minus, h_minus_hat, p_plus, p_minus, p_plus_hat, p_minus_hat, n_k, Nmatrix, Nnot = get_polytope_hyperplane(
-                J_Hess, active_joints=6, cartesian_dof_input=array([True, True, True, False, False, False]), qdot_min=self.qdot_min,
-                qdot_max=self.qdot_max, cartesian_desired_vertices=self.cartesian_desired_vertices, sigmoid_slope=sigmoid_slope_inp)
-
-            Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat, facet_pair_idx, hyper_plane_sign = get_capacity_margin(
-                J_Hess, n_k, h_plus, h_plus_hat, h_minus, h_minus_hat,
-                active_joints=6, cartesian_dof_input=array([True, True, True, False, False, False]), qdot_min=self.qdot_min,
-                qdot_max=self.qdot_max, cartesian_desired_vertices=self.cartesian_desired_vertices, sigmoid_slope=sigmoid_slope_inp)
-
-            print('Gamma_min_softmax', Gamma_min_softmax)
-
-            print('Jacobian outside Gamma_hat_gradient', J_Hess)
-            #input('Jacobian outside Gamma_hat_gradient')
-
-            jac_output = Gamma_hat_gradient(J_Hess, Hess, n_k, Nmatrix, Nnot, h_plus_hat, h_minus_hat, p_plus_hat,
-                                            p_minus_hat, Gamma_total_hat, Gamma_min_index_hat,
-                                            self.qdot_min, self.qdot_max, self.cartesian_desired_vertices, sigmoid_slope=sigmoid_slope_inp)
-
-            if Gamma_min_prev != None:
-
-                # for i in range(0,limit,step_size):
-                numerical_gradient = (
-                    Gamma_min_prev - Gamma_min_softmax) / (step_size*1.0)
-
-                print('numerical_gradient', numerical_gradient)
-
-                analytical_gradient = jac_output[test_joint]
-                print('analytical_gradient', analytical_gradient)
-
-                error_grad = (
-                    (analytical_gradient - numerical_gradient)/(numerical_gradient*1.0))*100.0
-                print('self.q_in', q_in)
-                print('Gradient is', jac_output)
-                print('error is', error_grad)
-
-                print('facet_pair_idx', facet_pair_idx)
-                #input('stop to test here')
-            Gamma_min_prev = Gamma_min_softmax
-
-            '''    
-            ### Actual polytope plot
-            polytope_verts, polytope_faces, facet_vertex_idx, capacity_faces, capacity_margin_proj_vertex = \
-                                            velocity_polytope(pykdl_kin_jac,self.qdot_limit,-1*self.qdot_limit)
-            '''
-
-            scaling_factor = 10.0
-
-            mutex.acquire()
-
-            # Polytope plot with estimation
-
-            #pykdl_kin_jac = pykdl_util_kin.jacobian(self.q_in_numpy)
-            polytope_verts, polytope_faces, facet_vertex_idx, capacity_faces, capacity_margin_proj_vertex, \
-                polytope_verts_est, polytope_faces_est, capacity_faces_est, capacity_margin_proj_vertex_est = \
-                velocity_polytope_with_estimation(
-                    J_Hess, self.qdot_max, self.qdot_min, self.cartesian_desired_vertices, sigmoid_slope_inp)
-            desired_polytope_verts, desired_polytope_faces = desired_polytope(
-                self.cartesian_desired_vertices)
-
-            # print('facet_vertex_idx',facet_vertex_idx)
-            # print('capacity_margin_proj_vertex',capacity_margin_proj_vertex)
-            # print('capacity_margin_proj_vertex_est',capacity_margin_proj_vertex_est)
-
-            # Only for visualization - Polytope at end-effector - No physical significance
-            #ef_pose = pykdl_util_kin.forward(self.q_in_numpy)[:3,3]
-
-            # Get end-effector of the robot here for the polytope offset
-
-            #ef_pose = position_70(q_in)
-
-            ef_pose = self.pykdl_util_kin.forward(self.q_in)[:3, 3]
-
-            ########### Actual POlytope plot ###########################################################################
-            # Publish polytope faces
-            polyArray_message = self.publish_velocity_polytope.publish(create_polytopes_msg(polytope_verts, polytope_faces,
-                                                                                            ef_pose, "base_link", scaling_factor))
-
-            # Desired polytope set - Publish
-
-            DesiredpolyArray_message = self.publish_desired_polytope.publish(create_polytopes_msg(desired_polytope_verts, desired_polytope_faces,
-                                                                                                  ef_pose, "base_link", scaling_factor))
-
-            # Vertex for capacity margin on the Desired Polytope
-            # print('facet_vertex_idx',facet_vertex_idx)
-            closest_vertex = self.cartesian_desired_vertices[facet_vertex_idx[0, 1]]
-            # print('closest_vertex',closest_vertex)
-
-            CapacityvertexArray_message = self.publish_vertex_capacity.publish(create_capacity_vertex_msg(closest_vertex,
-                                                                                                          ef_pose, "base_link", scaling_factor))
-
-            # Vertex for capacity margin on the Available Polytope
-            CapacityprojvertexArray_message = self.publish_vertex_proj_capacity.publish(create_capacity_vertex_msg(capacity_margin_proj_vertex,
-                                                                                        ef_pose, "base_link", scaling_factor))
-            # Plane for capacity margin
-            # print('capacity_faces',capacity_faces)
-
-            # Vertex for capacity margin on the Available Polytope
-            CapacitymarginactualArray_message = self.publish_capacity_margin_actual.publish(create_segment_msg(closest_vertex,
-                                                                                                               capacity_margin_proj_vertex, ef_pose, "base_link", scaling_factor))
-
-            capacityArray_message = self.publish_capacity_margin_polytope.publish(create_polytopes_msg(polytope_verts, capacity_faces,
-                                                                                                       ef_pose, "base_link", scaling_factor))
-
-            ########### Estimated Polytope plot ###########################################################################
-
-            # Publish polytope faces
-            EstpolyArray_message = self.publish_velocity_polytope_est.publish(create_polytopes_msg(polytope_verts_est, polytope_faces_est,
-                                                                                                   ef_pose, "base_link", scaling_factor))
-
-            # Vertex for capacity margin on the Available Polytope
-            EstCapacityprojvertexArray_message = self.publish_vertex_proj_capacity_est.publish(create_capacity_vertex_msg(capacity_margin_proj_vertex_est,
-                                                                                                                          ef_pose, "base_link", scaling_factor))
-
-            # Vertex for capacity margin on the Available Polytope
-            EstCapacitymarginactualArray_message = self.publish_capacity_margin_actual_est.publish(create_segment_msg(closest_vertex,
-                                                                                                                      capacity_margin_proj_vertex_est, ef_pose, "base_link", scaling_factor))
-
-            EstcapacityArray_message = self.publish_capacity_margin_polytope_est.publish(create_polytopes_msg(polytope_verts_est, capacity_faces_est,
-                                                                                                              ef_pose, "base_link", scaling_factor))
-
-            # Vertex
-
-            ##############################################################################################################
-
-            print('facet_vertex_idx', facet_vertex_idx)
-
-            mutex.release()
-
-            Error_arr[i] = ((Gamma_min_softmax - Gamma_min) /
-                            (1.0*Gamma_min))*100
-            ts_arr[i] = (time.time() - start_time)
-
-            Gamma_min_array[i] = Gamma_min
-            Gamma_min_softmax_arr[i] = Gamma_min_softmax
-            #Error_arr[i] = ((Gamma_min_softmax - Gamma_min)/(1.0*Gamma_min))*100
-            #ts_arr[i] = (time.time() - start_time)
-
-            '''
-            file_name = 'UR_test_Gamma_vs_Gamma_hat_slope_'+str(sigmoid_slope_inp) + str('_') + str(i)
-        
-            savez(os.path.join(BASE_PATH, file_name),q_in = self.q_in_array,sigmoid_slope_inp = sigmoid_slope_inp, ts = ts_arr[i],\
-                h_plus = h_plus, h_plus_hat = h_plus_hat, h_minus = h_minus, h_minus_hat = h_minus_hat,\
-            Gamma_minus = Gamma_minus, Gamma_plus = Gamma_plus, Gamma_total_hat = Gamma_total_hat, Gamma_min = Gamma_min, Gamma_min_softmax = Gamma_min_softmax, \
-                Gamma_min_index_hat =  Gamma_min_index_hat, facet_pair_idx = facet_pair_idx, hyper_plane_sign = hyper_plane_sign)
-            '''
-        print('completed one test case')
-        print('Gamma_min_arr_Mean is:', mean(Gamma_min_array))
-        print('Gamma_min_arr_average is:', average(Gamma_min_array))
-        print('Gamma_min_softmax Mean is', mean(Gamma_min_softmax_arr))
-        print('Gamma_min_softmax Average is', average(Gamma_min_softmax_arr))
-
-        print('sigmoid_slope is', sigmoid_slope_inp)
-        print('Mean error is:', mean(Error_arr))
-        print('Average error is:', average(Error_arr))
-        print('Average time to execute', average(ts_arr))
+    
 
     def fmin_opt(self, x0_start, pose_desired, analytical_solver: bool):
         ### Function - func
@@ -2284,46 +1941,29 @@ class LaunchRobot():
 
 
         return q_joints_opt
-        #hess = self.hess_func,
-        # sco.check_grad(func = self.obj_function, grad =self.opt_polytope_gradient_model.d_gamma_hat \                                  , x0 = self.initial_x0, epsilon=1.4901161193847656e-08, direction='all', seed=None)
-        # def constraint2(self):
-    # Obj
+
+    
 
     def obj_function_gamma(self, q_in):
 
         from numpy.linalg import det
         from numpy import sum
 
-        #print('q_in is',q_in)
-
         #self.q_in = q_in
-
-        # print('self.q_in',q_in)
-
         # To publish the joint states to Robot
         self.joint_state_publisher_robot(q_in)
 
-        #input('wait here in the objective function')
+
         #pos_act_mat = self.pykdl_util_kin.forward(q0,tip_link,base_link)
         #pos_act = pos_act_mat[0:3,3]
-        # print('self.pos_reference',self.pos_reference)
-        #print('Current position in optimization is',pos_act)
-        #print('pos_act is this in the objective function',pos_act)
-        #input('inside obj func')
-        # self.canvas_input_opt.generate_axis()
-        # self.opt_robot_model.urdf_transform(q_joints=q_des)
-        # canvas_input.generate_axis()
-        #J_Hess = jacobianE0(q_in)
+
         #J_Hess_pykdl = array(self.pykdl_util_kin.jacobian(q_in))
 
         # print('self.opt_bounds',self.opt_bounds)
 
         J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
 
-        #J_Hess = J_Hess[0:3,:]
-        # print('J_Hess',J_Hess)
-        # print('J_Hess_pykdl',J_Hess_pykdl)
-        #input('wait here')
+
         h_plus, h_plus_hat, h_minus, h_minus_hat, p_plus, p_minus, p_plus_hat, p_minus_hat, n_k, Nmatrix, Nnot = get_polytope_hyperplane(
             J_Hess, active_joints=6, cartesian_dof_input=array([True, True, True, False, False, False]), qdot_min=self.qdot_min,
             qdot_max=self.qdot_max, cartesian_desired_vertices=self.desired_vertices, sigmoid_slope=self.sigmoid_slope_input)
@@ -2334,11 +1974,9 @@ class LaunchRobot():
             qdot_max=self.qdot_max, cartesian_desired_vertices=self.desired_vertices, sigmoid_slope=self.sigmoid_slope_input)
 
         self.Gamma_min_softmax = Gamma_min_softmax
-        #print('Current objective function in optimization is',-self.opt_polytope_model.Gamma_min_softmax)
-        #print('Current objective function in optimization is',1.0*Gamma_min_softmax)
+
 
         #err_pos = abs((norm(pos_act-self.pos_reference) - 1e-6))
-        # print('error',err_pos)
         # return err_pos
         #self.plot_capacity_margin_est(Gamma_min_softmax)
 
@@ -2348,27 +1986,21 @@ class LaunchRobot():
     def obj_function_IK(self, q_in):
 
         #from scipy.stats import norm as norm_scip
-        # print('q_in',q_in)
+
         self.joint_state_publisher_robot(q_in)
         pos_act = array(self.pykdl_util_kin.forward(q_in)[0:3, 3])
 
         #pos_act = array(self.pykdl_util_kin._do_kdl_fk(q_in,5)[0:3,3])
 
-        J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
+        
 
-        # print('pos_act_mat',pos_act_mat)
-
-        #pos_act = position_70(q_in)
-        # print('self.pos_reference',self.pos_reference)
         print('Current position in optimization is', pos_act)
-        #input('Wait here ')
-        # print('norm,',norm(pos_act-self.pos_reference))
-        # print('self.pos_reference',self.pos_reference)
+
         print('pos_act', pos_act)
 
-        #print('distance error norm',distance_error)
-        '''
 
+        '''
+        J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
         scaling_factor = 5.0
 
         mutex.acquire()
@@ -2479,31 +2111,18 @@ class LaunchRobot():
         
         mutex.release()
         '''
-        #return_dist_error = -(norm(pos_act-self.pos_reference) - 1e-3)
         return_dist_error = norm(pos_act.flatten()-self.pos_reference)
 
-        #print('distance error',return_dist_error)
+
 
         return float64(return_dist_error)
 
     def constraint_function(self, q_in):
 
         #st = time.time()
-        # print('q_in',q_in)
         # self.joint_state_publisher_robot(q_in)
         pos_act = array(self.pykdl_util_kin.forward(q_in)[0:3, 3])
 
-        J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
-
-        # print('pos_act_mat',pos_act_mat)
-
-        #pos_act = position_70(q_in)
-        # print('self.pos_reference',self.pos_reference)
-        #print('Current position in optimization is',pos_act)
-        #input('Wait here ')
-        # print('norm,',norm(pos_act-self.pos_reference))
-        # print('self.pos_reference',self.pos_reference)
-        # print('pos_act',pos_act)
         ef_pose = pos_act
         ef_pose = ef_pose[:, 0]
         # Vertex for capacity margin on the Available Polytope
@@ -2515,6 +2134,7 @@ class LaunchRobot():
                                                                                                             array([0, 0, 0]), "base_link", 1))
         #print('distance error norm',distance_error)
         '''
+        J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
         if self.polytope_display:
             scaling_factor = 10.0
             
@@ -2612,10 +2232,7 @@ class LaunchRobot():
         
         #ex_time = time.time() - st
         '''
-        #print('execution time is',ex_time)
-        #return norm(self.pos_reference-pos_act.flatten())
-        
-        #print('norm is',-float64(norm(self.pos_reference-pos_act.flatten())))
+
         return -float64(norm(self.pos_reference-pos_act.flatten()))
         # return  norm(pos_act.flatten()-self.pos_reference)
 
@@ -2625,16 +2242,9 @@ class LaunchRobot():
 
     def constraint_function_Gamma(self, q_in):
 
-        # self.opt_robot_model.urdf_transform(q_joints=q_des)
-        # canvas_input.generate_axis()
-
         J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
 
-        #J_Hess = jacobianE0(q_in)
-        #J_Hess = J_Hess[0:3,:]
 
-        # print('self.qdot_min',-1*self.qdot_max)
-        # print('self.qdot_max',self.qdot_max)
         h_plus, h_plus_hat, h_minus, h_minus_hat, p_plus, p_minus, p_plus_hat, p_minus_hat, n_k, Nmatrix, Nnot = get_polytope_hyperplane(
             J_Hess, active_joints=6, cartesian_dof_input=array([True, True, True, False, False, False]), qdot_min=self.qdot_min,
             qdot_max=self.qdot_max, cartesian_desired_vertices=self.desired_vertices, sigmoid_slope=self.sigmoid_slope_input)
@@ -2653,19 +2263,10 @@ class LaunchRobot():
         self.fun_iter.data = int(self.fun_counter)
         
         J_Hess = array(self.pykdl_util_kin.jacobian(q_in))
-        #J_Hess = jacobianE0(q_in)
-        #J_Hess = J_Hess[0:3,:]
-        # print('J_Hess',J_Hess)
         Hess = getHessian(J_Hess)
         jac_output = mp.Array('f',zeros(shape=(6)))
 
-        # print('Hessian',Hess)
-
-        #input('wait here for hessian')
-        #J_Hess = J_Hess[0:3,:]
-
-        # print('self.qdot_min',-1*self.qdot_max)
-        # print('self.qdot_max',self.qdot_max)
+ 
         h_plus, h_plus_hat, h_minus, h_minus_hat, p_plus, p_minus, p_plus_hat, p_minus_hat, n_k, Nmatrix, Nnot = get_polytope_hyperplane(
             J_Hess, active_joints=6, cartesian_dof_input=array([True, True, True, False, False, False]), qdot_min=self.qdot_min,
             qdot_max=self.qdot_max, cartesian_desired_vertices=self.desired_vertices, sigmoid_slope=self.sigmoid_slope_input)
@@ -2694,17 +2295,12 @@ class LaunchRobot():
             thread.join()
 
         '''
+        # Method without multi-processing thread
         jac_output[0] = Gamma_hat_gradient_dq(J_Hess, Hess, n_k, Nmatrix, Nnot, h_plus_hat, h_minus_hat, p_plus_hat,
                                         p_minus_hat, Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,
                                         self.qdot_min, self.qdot_max, self.desired_vertices, sigmoid_slope=self.sigmoid_slope_input,test_joint=0)
         '''
-        #print('execution time in jac is', time.time() - st)
-        #print('iterations',self.fun_iter)
-        # print('jac_output',jac_output)
 
-        #jac_output = sum(jac_output)
-        #print('jac_output',jac_output)
-        #input('stp[ ]')
         self.pub_end_ik.publish(self.fun_iter)
         return float64(jac_output)
 
@@ -2745,17 +2341,7 @@ class LaunchRobot():
 
         return q_opt
 
-    '''
-    def hess_func(self,q_des):
 
-        self.opt_robot_model.urdf_transform(q_joints=q_des)
-
-        #self.opt_polytope_gradient_model.compute_polytope_gradient_parameters(self.opt_robot_model,self.opt_polytope_model)
-        #self.opt_polytope_gradient_model.Gamma_hat_gradient(sigmoid_slope=1000)
-        hess_output = self.opt_polytope_gradient_model.d_softmax_dq
-
-        return hess_output
-    '''
 
 
 if __name__ == '__main__':
@@ -2763,6 +2349,5 @@ if __name__ == '__main__':
     rospy.init_node('launchURrobot', anonymous=True)
     print("Started and Launched File \n")
     controller = LaunchRobot()
-    # Create a new application
-    
+    # Create a new application    
     rospy.spin()
