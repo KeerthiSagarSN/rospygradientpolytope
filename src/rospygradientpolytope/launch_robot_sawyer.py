@@ -1497,9 +1497,8 @@ class LaunchSawyerRobot():
         # q_in
 
         ### Output #######
-        ## euclidean distance norm - between current and desired end-effector position
-        # norm(self.pos_reference-pos_act.flatten())
-
+        ## analytical gradient of the estimated capacity margin with respect to the input joint configuration
+        
 
         self.fun_counter += 0.5
         self.fun_iter.data = int(self.fun_counter)
