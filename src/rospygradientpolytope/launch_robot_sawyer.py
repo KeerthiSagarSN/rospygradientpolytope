@@ -809,7 +809,7 @@ class LaunchSawyerRobot():
         #q_add[test_joint] = 1
         step_size = 0.001
 
-        ## 52,47, 33 test case works perfectly
+
 
         #q_in = self.q_in_array[33,:]
         '''
@@ -832,25 +832,15 @@ class LaunchSawyerRobot():
                 q_in = self.q_in_array[i,:]
                 self.q_in = q_in
 
-                #print('self.q_in',q_in)
 
-                #self.joint_state_publisher_robot()
-                #time.sleep(0.5)
 
-                # Publish joint sates to Rviz for the robot
-                
+                # Publish joint sates to Rviz for the robot  
+                # #self.joint_state_publisher_robot()            
 
-                #J_Hess = jacobianE0(q_in) 
-                #ef_pose = self.pykdl_util_kin.forward(q_in)[:3,3]
+
                 J_Hess = array(self.pykdl_util_kin.jacobian(q_in,pos=None))
 
 
-                #q_in = 
-                #J_Hess_pykdl = array(self.pykdl_util_kin.jacobian(q_in))
-                #J_Hess = J_Hess[0:3,:]
-                ##print('J_Hess',J_Hess)
-                #print('J_Hess_pykdl',J_Hess_pykdl)
-                #input('wait here')
                 h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot = get_polytope_hyperplane(
                     J_Hess,active_joints=self.active_joints,cartesian_dof_input = array([True,True,True,False,False,False]),qdot_min=self.qdot_min,
                     qdot_max=self.qdot_max,cartesian_desired_vertices= self.cartesian_desired_vertices,sigmoid_slope=sigmoid_slope_inp )
