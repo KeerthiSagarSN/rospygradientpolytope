@@ -14,19 +14,27 @@ from shapely.geometry import Polygon,LineString
 from linearalgebra import isclose,V_unit
 import matplotlib.pyplot as plt
 from polytope_functions_2D import get_capacity_margin, get_polytope_hyperplane
-from polytope_gradient_functions_2D import Gamma_hat_gradient_2D,hyperplane_gradient_2D
+from polytope_gradient_functions_2D import Gamma_hat_gradient_2D,hyperplane_gradient_2D, Gamma_hat_gradient_2D_dq
 from gradient_functions_2D import normal_gradient,sigmoid_gradient
 from WrenchMatrix import get_wrench_matrix
 from robot_functions import sigmoid
+
+from numpy import float64, average,matmul,dot
 
 from visual_polytope import force_polytope_2D
 
 import time
 
+## Multiprocessing toolbox
+import multiprocessing as mp
+
 #from GenerateCanvas import GenerateCanvas
 #import cProfile
 #from linearalgebra import 
+jac_output = mp.Array("f",zeros(shape=(2)))
 
+
+plt.ion()
 class OptimizationModel:
 
     def __init__(self):
@@ -117,6 +125,12 @@ class OptimizationModel:
 
         self.tol_value = None
         self.lower_bound = None
+
+        self.cable_lines = {}
+
+        
+
+        
 
 
         
@@ -888,8 +902,7 @@ class OptimizationModel:
         #self.canvas_input_opt.set_params(view_ang1=30,view_ang2=45,x_limits=[-20,20],y_limits=[-20,20],z_limits=[-20,20],axis_off_on = True)
 
         # Plot the obstacle with cable and base_points
-        global figure2
-        figure2 = plt.figure()
+
         '''
         
         self.sigmoid_slope = sigmoid_slope_inp
@@ -937,6 +950,35 @@ class OptimizationModel:
         #self.func_deriv = polytope_gradient_model.d_gamma_hat
 
 
+        ###### Plot all the obstacles here #######################################################
+        #plt.show()
+        input('fmin_opt')
+        
+        obstacle_polytope_1 = self.obstacle_set[0]
+        obstacle_polytope_2 = self.obstacle_set[1]
+        x = [obstacle_polytope_1[0,0],obstacle_polytope_1[1,0],obstacle_polytope_1[2,0],obstacle_polytope_1[3,0],obstacle_polytope_1[0,0]]
+        y = [obstacle_polytope_1[0,1],obstacle_polytope_1[1,1],obstacle_polytope_1[2,1],obstacle_polytope_1[3,1],obstacle_polytope_1[0,1]]
+        plt.plot(x,y,color = 'r')
+    
+        x = [obstacle_polytope_2[0,0],obstacle_polytope_2[1,0],obstacle_polytope_2[2,0],obstacle_polytope_2[3,0],obstacle_polytope_2[0,0]]
+        y = [obstacle_polytope_2[0,1],obstacle_polytope_2[1,1],obstacle_polytope_2[2,1],obstacle_polytope_2[3,1],obstacle_polytope_2[0,1]]
+
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)
+        plt.plot(x,y,color = 'r')
+        
+        plt.xlabel('x [m]')
+        plt.ylabel('y [m]')
+        
+
+        ef = [0,0]
+        cable_color = 'g'
+        for c in range(len(self.base_points)):
+            x = [ef[0],self.base_points[c,0]]
+            y = [ef[1],self.base_points[c,1]]
+            self.cable_lines[c] = plt.plot(x,y,color = cable_color)
+        plt.draw()
+
+        
 
         #methods = trust-constr
 
@@ -980,10 +1022,10 @@ class OptimizationModel:
                 {'type': 'ineq', 'fun': self.constraint_func_obstacles_2_c2},\
                 {'type': 'ineq', 'fun': self.constraint_func_obstacles_2_c3},\
                 {'type': 'ineq', 'fun': self.constraint_func_obstacles_2_c4},\
-                {'type': 'ineq', 'fun': self.constr_function,'tol':1e-3})
+                {'type': 'ineq', 'fun': self.constr_function,'tol':1e-2})
         
         print('self.pos_bounds',self.pos_bounds[0,0])
-        input('wait here')
+        
         cons_cobyla = ({'type': 'ineq', 'fun': self.constraint_func_obstacles_1_c1},\
                 {'type': 'ineq', 'fun': self.constraint_func_obstacles_1_c2},\
                 {'type': 'ineq', 'fun': self.constraint_func_obstacles_1_c3},\
@@ -1012,12 +1054,12 @@ class OptimizationModel:
 
             self.q_joints_opt = sco.minimize(fun = self.obj_function,  x0 = self.initial_x0,bounds = self.pos_bounds,\
                                          jac =self.jac_func, constraints = cons,method='SLSQP', \
-                                             options={'disp': True,'maxiter':50000})
+                                             options={'disp': True,'maxiter':200})
         else:
 
             self.q_joints_opt = sco.minimize(fun = self.obj_function,  x0 = self.initial_x0,\
                                              jac = None, constraints = cons_cobyla,method='COBYLA', \
-                                                 options={'disp': True,'maxiter':10000})
+                                                 options={'disp': True,'maxiter':200})
 
 
 
@@ -1029,24 +1071,12 @@ class OptimizationModel:
             for c in range(len(self.base_points)):
                 x = [ef[0],self.base_points[c,0]]
                 y = [ef[1],self.base_points[c,1]]
-                plt.plot(x,y,color = 'g')
+                self.cable_lines[c] = plt.plot(x,y,color = 'g')
                 plt.scatter(self.base_points[c,0],self.base_points[c,1],color='k')
             
             #plt.scatter()
             plt.scatter(ef[0],ef[1],color='m')
-            obstacle_polytope_1 = self.obstacle_set[0]
-            obstacle_polytope_2 = self.obstacle_set[1]
-            x = [obstacle_polytope_1[0,0],obstacle_polytope_1[1,0],obstacle_polytope_1[2,0],obstacle_polytope_1[3,0],obstacle_polytope_1[0,0]]
-            y = [obstacle_polytope_1[0,1],obstacle_polytope_1[1,1],obstacle_polytope_1[2,1],obstacle_polytope_1[3,1],obstacle_polytope_1[0,1]]
-            plt.plot(x,y,color = 'r')
-        
-            x = [obstacle_polytope_2[0,0],obstacle_polytope_2[1,0],obstacle_polytope_2[2,0],obstacle_polytope_2[3,0],obstacle_polytope_2[0,0]]
-            y = [obstacle_polytope_2[0,1],obstacle_polytope_2[1,1],obstacle_polytope_2[2,1],obstacle_polytope_2[3,1],obstacle_polytope_2[0,1]]
-
-            roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)
-            plt.plot(x,y,color = 'r')
-            plt.xlabel('x [m]')
-            plt.ylabel('y [m]')
+            
             plt.savefig('CDPR_roi_optimization'+str('.png'),dpi=600)
 
         
@@ -1139,7 +1169,7 @@ class OptimizationModel:
         
         #print('Current constraint function distance in optimization is', norm(self.roi_center - q_des))
         
-        
+        '''
         
         obstacle_polytope_1 = self.obstacle_set[0]
         obstacle_polytope_2 = self.obstacle_set[1]
@@ -1150,9 +1180,7 @@ class OptimizationModel:
         x = [obstacle_polytope_2[0,0],obstacle_polytope_2[1,0],obstacle_polytope_2[2,0],obstacle_polytope_2[3,0],obstacle_polytope_2[0,0]]
         y = [obstacle_polytope_2[0,1],obstacle_polytope_2[1,1],obstacle_polytope_2[2,1],obstacle_polytope_2[3,1],obstacle_polytope_2[0,1]]
         plt.plot(x,y,color = 'k')
-        
-        ef = q_des
-        
+
         cable_color = 'g'
         plt.xlabel('x[m]')
         plt.ylabel('y[m]')
@@ -1169,9 +1197,26 @@ class OptimizationModel:
         plt.cla()
         roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
         plt.gca().add_patch(roi_circle) 
+        '''
+        
+        ef = q_des
+                      
+        cable_color = 'g'
+        for c in range(len(self.base_points)):
+            line = self.cable_lines[c].pop(0)
+            line.remove()
+        
+        
+        for c in range(len(self.base_points)):
+            x = [ef[0],self.base_points[c,0]]
+            y = [ef[1],self.base_points[c,1]]
+            self.cable_lines[c] = plt.plot(x,y,color = cable_color)
+            
+        plt.draw() 
+        plt.pause(0.0001)
         
 
-        return norm(self.roi_center - q_des) 
+        return float64(norm(q_des-self.roi_center))
         
 
             #plt.cla()
@@ -1215,6 +1260,8 @@ class OptimizationModel:
             
             min_dist_obstacles = 0
             #return min_dist_obstacles 
+        
+        '''
         plt.xlabel('x[m]')
         plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
@@ -1241,7 +1288,7 @@ class OptimizationModel:
         roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
         plt.gca().add_patch(roi_circle) 
         #input('wait here')
-            
+        '''
         
 
         
@@ -1283,6 +1330,7 @@ class OptimizationModel:
             
             min_dist_obstacles = 0
             #return min_dist_obstacles
+        '''
         plt.xlabel('x[m]')
         plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
@@ -1311,7 +1359,7 @@ class OptimizationModel:
         plt.gca().add_patch(roi_circle) 
         #input('wait here')
             
-        
+        '''
 
         
         return min_dist_obstacles - 0.005
@@ -1355,6 +1403,7 @@ class OptimizationModel:
             
             min_dist_obstacles = 0
             #return min_dist_obstacles 
+        '''
         plt.xlabel('x[m]')
         plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
@@ -1382,7 +1431,7 @@ class OptimizationModel:
         roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
         plt.gca().add_patch(roi_circle) 
         #input('wait here')
-            
+        '''
         
 
         
@@ -1426,6 +1475,7 @@ class OptimizationModel:
             
             min_dist_obstacles = 0
             #return min_dist_obstacles 
+        '''
         plt.xlabel('x[m]')
         plt.ylabel('y[m]') 
         obstacle_polytope_1 = self.obstacle_set[0]
@@ -1452,7 +1502,7 @@ class OptimizationModel:
         roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
         plt.gca().add_patch(roi_circle) 
         #input('wait here')
-            
+        '''
         
 
         
@@ -1494,6 +1544,8 @@ class OptimizationModel:
             
             min_dist_obstacles = 0
             #return min_dist_obstacles
+        
+        '''
         plt.xlabel('x[m]')
         plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
@@ -1522,7 +1574,7 @@ class OptimizationModel:
         plt.gca().add_patch(roi_circle) 
         #input('wait here')
             
-        
+        '''
 
         
         return min_dist_obstacles -0.005
@@ -1564,6 +1616,8 @@ class OptimizationModel:
             
             min_dist_obstacles = 0
             #return min_dist_obstacles 
+        
+        '''
         plt.xlabel('x[m]')
         plt.ylabel('y[m]')  
         obstacle_polytope_1 = self.obstacle_set[0]
@@ -1594,7 +1648,7 @@ class OptimizationModel:
             
         
 
-        
+        '''
         return min_dist_obstacles - 0.005
     
     
@@ -1635,7 +1689,7 @@ class OptimizationModel:
         if isclose(dist_cable_obs,0.0,1e-4):
             
             min_dist_obstacles = 0
-        
+        '''
         plt.xlabel('x[m]')
         plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
@@ -1664,7 +1718,7 @@ class OptimizationModel:
         plt.gca().add_patch(roi_circle) 
         #input('wait here')
             
-        
+        '''
 
         
         return min_dist_obstacles  - 0.005
@@ -1704,7 +1758,7 @@ class OptimizationModel:
         if isclose(dist_cable_obs,0.0,1e-4):
             
             min_dist_obstacles = 0  
-
+        '''
         plt.xlabel('x[m]')
         plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
@@ -1732,7 +1786,7 @@ class OptimizationModel:
         roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
         plt.gca().add_patch(roi_circle) 
         #input('wait here')
-            
+        '''
         
 
         
@@ -1775,7 +1829,7 @@ class OptimizationModel:
                 #print('min_dist_obstacles',dist_cable_obs)
                 min_dist_obstacles = dist_cable_obs
             
-        
+        '''
         plt.xlabel('x[m]')
         plt.ylabel('y[m]')
         obstacle_polytope_1 = self.obstacle_set[0]
@@ -1804,7 +1858,7 @@ class OptimizationModel:
         plt.gca().add_patch(roi_circle) 
         #input('wait here')
             
-        
+        '''
 
         
         return min_dist_obstacles - 0.005
@@ -1836,8 +1890,6 @@ class OptimizationModel:
         y_in = y0
         #y_in += learning_rate
 
-        test_joint = 1
-
         #x0_plot[i,lm] = x_in
         #y0_plot[i,lm] = y_in
         #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
@@ -1848,9 +1900,6 @@ class OptimizationModel:
             Wm[0,k] = self.base_points[k,0] - x_in
             Wm[1,k] = self.base_points[k,1] - y_in
 
-            #print('self.base_points',self.base_points[k,:])
-
-            #input('stop and check')
 
             #Wm[0,k] = W[0,k]*((norm(W[:,k]))**(-1))
             #Wm[1,k] = W[1,k]*((norm(W[:,k]))**(-1))
@@ -1858,28 +1907,20 @@ class OptimizationModel:
             Wm[:,k] = V_unit(Wm[:,k])
             #plt.plot(cable_plt[0,:],cable_plt[1,:],color = color_arr[k])
             #plt.pause(0.01)
-            #print('cable number is:',k)
-        #print('Wrench matrix is is',W)
-        
-        #W = W
-        
-        #print('Wrench matrix is here', W)
-        #input('wait here')
+
 
         
-        #input('stop here')
+        #W = W
+
         #W,W_n, H = get_wrench_matrix(q,self.length_params,self.height_params)
         #Wm = array([[-0.7071,-0.7071,-0.7071,-0.7071],[0.7071,0.7071,0.7071,0.7071]])
-        
-        #print('Wrench matrix is is',Wm)
+
         W = Wm
         
         
         #W = W_n
         #JE = W
-        #print('JE is',JE)
-        #print('H is',H)
-        #print('Wrench matrix is', J)
+ 
 
 
 
@@ -1898,20 +1939,25 @@ class OptimizationModel:
         #z0_plot[i,lm] = z0
         
 
-        dn_dq = normal_gradient(Hess)            
+               
         #ax.scatter(x0,y0,z0,c=color_arr[k],s=4)   
         #plt.pause(0.001)
         #plt.show()
-        '''
-        d_h_plus_dq, d_h_minus_dq = hyperplane_gradient_2D(Wn,Hess,n_k,dn_dq,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
-                    p_minus_hat,self.qdot_min,self.qdot_max,\
-                        test_joint,self.sigmoid_slope)
-        '''
-        
-        d_gamma_hat,d_LSE_dq ,d_LSE_dq_arr,d_gamma_max_dq,dn_dq = Gamma_hat_gradient_2D(Wn,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
-                p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
-                self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope)
-        print('jac_output',d_gamma_hat)
 
-        #jac_output = sum(jac_output)
-        return d_gamma_hat
+        threads = []
+        for i_thread in range(2):
+            thread = mp.Process(target=Gamma_hat_gradient_2D_dq,args=(Wn,Hess,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_hat,\
+                p_minus_hat,Gamma_minus, Gamma_plus, Gamma_total_hat, Gamma_min, Gamma_min_softmax, Gamma_min_index_hat,\
+                self.qdot_min,self.qdot_max,self.cartesian_desired_vertices,self.sigmoid_slope,i_thread,jac_output))
+            thread.start()
+            threads.append(thread)
+        
+        # now wait for them all to finish
+        for thread in threads:
+            thread.join()
+        
+        
+        
+
+
+        return jac_output
