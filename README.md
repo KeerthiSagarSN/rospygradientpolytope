@@ -29,39 +29,39 @@ If you are new to ROS, go [here](http://wiki.ros.org/catkin/Tutorials/create_a_w
 
 
 
-## Toolbox in the Catkin workspace - ROS1
+### Toolbox in the Catkin workspace - ROS1
 In a Terminal
 ```
 $ cd ~/catkin_ws/src/
 $ git clone https://gitlab.com/KeerthiSagarSN/rospygradientpolytope
 ```
 
-## Library Installation - Only if not preinstalled
+### Library Installation - Only if not preinstalled
 
 In a terminal
 ```
 $ pip install sympy
 $ pip install polytope
 ```
-## Clone Sawyer Robot- Different from the Original Repo due to the offset in the tool center point to avoid Null in Jacobian
+### Clone Sawyer Robot- Different from the Original Repo due to the offset in the tool center point to avoid Null in Jacobian
 ```
 $ git clone https://github.com/KeerthiSagarSN/sawyer_robot
 ```
 
-## Clone UR5 Robot Repository - Different from the Original Repo due to the offset in the tool center point to avoid Null in Jacobian
+### Clone UR5 Robot Repository - Different from the Original Repo due to the offset in the tool center point to avoid Null in Jacobian
 
 ```
 $ git clone https://github.com/KeerthiSagarSN/universal_robot
 ```
 
 
-## Clone PyKDL - From OROCOS-KDL Repository - Latest Branch
+### Clone PyKDL - From OROCOS-KDL Repository - Latest Branch
 
 ```
 $ git clone https://github.com/orocos/orocos_kinematics_dynamics.git
 ```
 
-## Clone Pykdl - Kinematics Wrapper Repository - Edited for Python 3 and ROS Noetic Compatible
+### Clone Pykdl - Kinematics Wrapper Repository - Edited for Python 3 and ROS Noetic Compatible
 ```
 $ git clone https://github.com/KeerthiSagarSN/hrl-kdl.git
 $ git checkout Noetic-devel
@@ -69,38 +69,38 @@ $ sudo apt-get install ros-noetic-urdf-parser-plugin
 $ sudo apt-get install ros-noetic-urdfdom-py
 
 ```
-## Clone Visualization Package Library - Rviz
+### Clone Visualization Package Library - Rviz
 ```
 $ git clone https://github.com/jsk-ros-pkg/jsk_visualization.git
 ```
 
-## Catkin Build/ Catkin Make - Build & Source all repositories in Catkin Workspace
+### Catkin Build/ Catkin Make - Build & Source all repositories in Catkin Workspace
 ```
 $ cd ..
 $ catkin build
 $ source devel/setup.bash
 ```
 
-## IF you encounter CMAKE Error : Install all ROS- Dependencies - May take some time to install !! (Only when CMAKE Error !!)
+#### IF you encounter CMAKE Error : Install all ROS- Dependencies - May take some time to install !! (Only when CMAKE Error !!)
 ```
 $ sudo apt install ros-noetic-MISSING-PACKAGE
 
 ```
 
-## ROS - Preliminary Dependencies - Install Only if required
+#### ROS - Preliminary Dependencies - Install Only if required
 
 ```
 $ sudo apt-get install ros-$ROS_DISTRO-robot-state-publisher ros-$ROS_DISTRO-joint-state-publisher
 $ sudo apt-get install ros-$ROS_DISTRO-joint-state-publisher-gui
 ```
 
-## To Visualize UR5 robot in Rviz
+### To Visualize UR5 robot in Rviz
 ```
 $ roslaunch ur_description view_ur5.launch 
 ```
 
 
-## To Visualize Sawyer Robot in Rviz
+### To Visualize Sawyer Robot in Rviz
 ```
 $ roslaunch sawyer_description test_sawyer_description.launch
 ```
@@ -123,8 +123,8 @@ $ roslaunch rospygradientpolytope launch_robot_sawyer.launch
 
 
 
-## Steps to start Interactive Inverse Kinematics
-### Clone the interactive PyQT GUI repository and launch the QT panel
+### Steps to start Interactive Inverse Kinematics
+#### Clone the interactive PyQT GUI repository and launch the QT panel
 ```
 $ git clone https://gitlab.com/KeerthiSagarSN/inverse_kinematics_interactive_rviz.git
 $ cd ..
@@ -147,8 +147,8 @@ $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_r
 ![Sawyer- 7 DOF](./Images_Readme/Sawyer_IK.gif)
 
 ## Module functions
-### Python3 library functions independent of ROS
-#### For computing desired or available/feasible velocity polytope faces and vertices
+#### Python3 library functions independent of ROS
+##### For computing desired or available/feasible velocity polytope faces and vertices
 ```
 from rospygradientpolytope.visual_polytope import *
 ```
@@ -306,39 +306,39 @@ rospygradientpolytope.polytope_gradient_functions.Gamma_hat_gradient_dq
 ###### Return: 
 <b> jac_output</b>- Analytical gradient of the estimated capacity margin with respect to the corresponding test joint <b> test_joint </b> <br><hr>
 
-### Custom ROS Message to plot polytope,vertices and facets in Rviz
+#### Custom ROS Message to plot polytope,vertices and facets in Rviz
 ```
 from rospygradientpolytope.polytope_ros_message import *
 ```
 
-## To test capacity margin gradient (Sawyer Robot)
-### Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
+### To test capacity margin gradient (Sawyer Robot)
+#### Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
 #### In launch_robot_sawyer.py --> uncomment self.test_gamma_gradient(sigmoid_slope_test=sigmoid_slope) in __init__
 ```
 $ roslaunch rospygradientpolytope launch_robot_sawyer.launch
 ```
 
-## To test capacity margin gradient (UR5 Robot)
-### Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
+### To test capacity margin gradient (UR5 Robot)
+#### Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
 #### In launch_robot_ur.py --> uncomment self.test_gamma_gradient(sigmoid_slope_test=sigmoid_slope) in __init__
 ```
 $ roslaunch rospygradientpolytope launch_robot_ur.launch
 ```
-# Cable Driven Parallel Robots (CDPR)- Planar
-## To generate workspace of the CDPR with different sigmoid slopes (4-cable, 2-DOF)
+## Cable Driven Parallel Robots (CDPR)- Planar
+### To generate workspace of the CDPR with different sigmoid slopes (4-cable, 2-DOF)
 ### Generate Wrench Feasible Workspace (WFW) by identifying where Capacity margin index = 0
 ```
 $ python3 CDPR_workspace.py
 ```
 
-## Simple First-order Gradient Descent Optimization (CDPR)
-### Start from initial pose and use analytical gradient to reach pose with maximum capacity margin
+### Simple First-order Gradient Descent Optimization (CDPR)
+#### Start from initial pose and use analytical gradient to reach pose with maximum capacity margin
 ```
 $ python3 CDPR_workspace.py
 ```
-## Region-of-Interest Optimization (CDPR)
-### Optimization to operate CDPR within a ROI with obstacle avoidance
-#### Plotting with matplotlib is slow in the current implementation, optimized code to plot is under development
+### Region-of-Interest Optimization (CDPR)
+#### Optimization to operate CDPR within a ROI with obstacle avoidance
+##### Plotting with matplotlib is slow in the current implementation, optimized code to plot is under development
 ```
 $ python3 test_CDPR_Optimization.py
 ```
