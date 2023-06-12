@@ -968,6 +968,9 @@ class OptimizationModel:
         
         plt.xlabel('x [m]')
         plt.ylabel('y [m]')
+
+        roi_circle = plt.Circle((self.roi_center[0], self.roi_center[1]), 0.2, color='y', alpha=0.5)    
+        plt.gca().add_patch(roi_circle) 
         
 
         ef = [0,0]
@@ -1216,8 +1219,10 @@ class OptimizationModel:
         plt.pause(0.0001)
         
 
-        return float64(norm(q_des-self.roi_center))
+        #return float64(norm(q_des-self.roi_center))
         
+
+        return float64(norm(self.roi_center-q_des))
 
             #plt.cla()
 
