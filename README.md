@@ -81,7 +81,8 @@ $ catkin build
 $ source devel/setup.bash
 ```
 
-#### IF you encounter CMAKE Error : Install all ROS- Dependencies - May take some time to install !! (Only when CMAKE Error !!)
+#### IF you encounter CMAKE Error : Install all ROS- Dependencies - (Only when CMAKE Error !)
+##### Remove any underscores in the package name while typing in the MISSING-PACKAGE below
 ```
 $ sudo apt install ros-noetic-MISSING-PACKAGE
 
