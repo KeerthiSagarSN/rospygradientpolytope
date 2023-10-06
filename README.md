@@ -343,3 +343,26 @@ $ python3 CDPR_workspace.py
 ```
 $ python3 test_CDPR_Optimization.py
 ```
+
+
+# References
+
+If you found this code useful, we would be grateful if you cite the following reference:
+
+[1] K. Sagar, S. Caro, T. Padır and P. Long, "Polytope-Based Continuous Scalar Performance Measure With Analytical Gradient for Effective Robot Manipulation," in IEEE Robotics and Automation Letters, vol. 8, no. 11, pp. 7289-7296, Nov. 2023, doi: 10.1109/LRA.2023.3313926.
+
+Bibtex:
+
+```
+@ARTICLE{10246372,
+  author={Sagar, Keerthi and Caro, Stéphane and Padır, Taşkın and Long, Philip},
+  journal={IEEE Robotics and Automation Letters}, 
+  title={Polytope-Based Continuous Scalar Performance Measure With Analytical Gradient for Effective Robot Manipulation}, 
+  year={2023},
+  volume={8},
+  number={11},
+  pages={7289-7296},
+  doi={10.1109/LRA.2023.3313926}}
+```
+
+You can find the video accompanying for the article [here](https://ieeexplore.ieee.org/abstract/document/10246372/media#media)
