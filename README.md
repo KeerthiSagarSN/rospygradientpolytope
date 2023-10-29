@@ -367,4 +367,4 @@ Bibtex:
 
 You can find the video accompanying for the article [here](https://ieeexplore.ieee.org/abstract/document/10246372/media#media)
 
-Youtube link for the video can be found [here](https://www.youtube.com/watch?v=5SaUE9lQ1Pc&t=93s)
+Youtube link for the video can be found [here](https://www.youtube.com/watch?v=5SaUE9lQ1Pc&t=1s)
