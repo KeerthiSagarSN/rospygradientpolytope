@@ -17,6 +17,7 @@ from rospygradientpolytope.linearalgebra import V_unit,check_ndarray
 from numpy import unravel_index,argmax,min,hstack,vstack,argwhere
 
 
+
 def get_Cartesian_polytope(jacobian, joint_space_vrep):
     Pv = zeros([shape(joint_space_vrep)[0], shape(jacobian)[0]])
 
@@ -233,6 +234,130 @@ def get_polytope_hyperplane(JE,active_joints,cartesian_dof_input,qdot_min,qdot_m
     #input('wait here')
 
     return h_plus,h_plus_hat,h_minus,h_minus_hat,p_plus,p_minus,p_plus_hat,p_minus_hat,n_k, Nmatrix, Nnot
+
+
+
+def get_cartesian_polytope_hyperplane(JE,active_joints,qdot_min,qdot_max):
+
+    from numpy import unravel_index,argmax,min,zeros,count_nonzero
+    ### Declarations here 
+
+    ## Import robot
+    
+
+    deltaqq = qdot_max - qdot_min
+
+    
+
+    ### Cartesian degrees of freedom - Mostly 3 - Velocity
+    ## Input a 6x1^T vector - [vx=True,vy=True,vz=True,wx=False,wy=False,wz = False]
+    ## This is amasked array
+    # Saving some computaiton time
+    #cartesian_dof_mask = cartesian_dof_input
+    #cartesian_dof = count_nonzero(cartesian_dof_mask)
+    cartesian_dof = 3
+    ## Listing out joints like Philip's joint
+    #active_joints = arange(cartesian_dof)
+    #active_joints = shape(JE)[1]
+
+
+    ### Import from Philip s function- robot_functions
+
+    Nmatrix, Nnot = robot_functions.getDofCombinations(arange(active_joints), cartesian_dof)
+
+
+
+
+    #print('Nmatrix is',Nmatrix)
+
+    #print('self.Nnot is',Nnot)
+    number_of_combinations = shape(Nmatrix)[0]
+    print('number of combination',number_of_combinations)
+
+    # Generalized cross-product need to be implemented in the future
+    # Here for Vector only of size - 3 is implemented in this code
+    #print('self.cartesian_dof',self.cartesian_dof)
+    ### Screw is represented as : $ = [v w] from the jacobian
+
+
+    #v_k = zeros(shape = (cartesian_dof,active_joints))
+
+
+    v_k = JE[0:3,:]
+    #print('v_k',self.v_k)
+
+    # Eq,14
+    ## Initialize all normals here - of size:
+    ## Generalized normal should be impleemented in the future
+    ## n_k = number_of_rows(Nmatrix)x3
+
+    n_k = zeros(shape = (shape(Nmatrix)[0],3))
+
+    
+    # n- (m-1) twists ; n- no.of dof, m = 2 (1 - (2-1)) - 1
+    # Compute all the normals n_k - Eq 15
+    ## Compute all normals here
+    for i in range(len(n_k)):
+
+
+        n_k[i] = (V_unit(cross(check_ndarray(v_k[:,Nmatrix[i,0]]), check_ndarray(v_k[:,Nmatrix[i,1]]))))
+        
+
+
+    l_k = zeros(shape = (len(n_k),shape(Nnot)[1]))
+
+
+
+    for i in range(len(n_k)):
+        for j in range(shape(Nnot)[1]):
+
+
+         ### Should i be taking the unit vector here ??????
+
+         #self.l_k[i,j] = transpose(dot(self.n_k[i,:],V_unit(self.v_k[:,self.Nnot[i,j]])))
+         l_k[i,j] = transpose(dot(n_k[i,:],v_k[:,Nnot[i,j]]))
+
+     #print('l_k is',self.l_k)
+
+     ### Instantiate h+ parameter
+
+    h_plus = zeros(shape=(len(n_k)))
+    h_minus = zeros(shape=(len(n_k)))
+
+    ########### Actual hyperplane parameters
+
+    for i in range(len(n_k)):
+        for j in range(shape(Nnot)[1]):
+
+            h_plus[i] = h_plus[i] + max(0,(deltaqq[Nnot[i,j]]*(l_k[i,j])))
+
+
+            h_minus[i] = h_minus[i] + min(array([0,(deltaqq[Nnot[i,j]]*(l_k[i,j]))]))
+
+   
+    ## ALl vertices on the hyper-plane are defined below - p_plus points on the
+
+    #### ACtual parameters here
+    p_plus = zeros(shape = (len(n_k),3))
+
+    p_minus = zeros(shape = (len(n_k),3))
+
+
+
+    ##### Actual parameters are here
+
+    for i in range(len(l_k)):
+
+        ## I have transposed here for qdot_min which s only becos of the input format- need to generalize it
+        p_plus[i,:] = h_plus[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],transpose(array([qdot_min]))))
+
+        p_minus[i,:] = h_minus[i]*n_k[i,:]  + transpose(matmul(JE[0:3,:],transpose(array([qdot_min]))))
+
+
+
+
+
+    return p_plus,p_minus,n_k
 
 
 

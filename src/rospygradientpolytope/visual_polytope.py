@@ -15,12 +15,18 @@ except ImportError:
 from logging import raiseExceptions
 from socket import close
 from scipy.spatial import ConvexHull
+from pypoman import compute_polytope_vertices
+
+
+
 
 #from pycapacity import velocity_polytope_withfaces
-from numpy import hstack, vstack, array, dot, transpose, append, shape, zeros, ones,cross, allclose
+from numpy import hstack, vstack, array, dot, transpose, append, shape, zeros, ones,cross, allclose, empty
 from numpy.linalg import norm
-from rospygradientpolytope.polytope_functions import get_polytope_hyperplane, get_capacity_margin
+from rospygradientpolytope.polytope_functions import get_polytope_hyperplane, get_cartesian_polytope_hyperplane,get_capacity_margin
 # Plot polytope here with polytope library
+import time
+
 
 # Equation 22
 # A,B Matrix
@@ -367,6 +373,83 @@ def velocity_polytope(JE, qdot_max, qdot_min,cartesian_desired_vertices):
     
     return polytope_vertices, polytope_faces, facet_pair_idx, capacity_margin_faces, capacity_proj_vertex
 
+def cartesian_velocity_polytope(JE, qdot_max, qdot_min):
+
+    #qdot_max = array(qdot_max)
+    #qdot_min = -1*array(qdot_max)
+    active_joints = shape(JE)[1]
+    #cartesian_dof_input = array([True, True, True, False, False, False])
+
+    p_plus,p_minus,n_k = get_cartesian_polytope_hyperplane(
+        JE, active_joints, qdot_min, qdot_max)
+
+
+
+    #print('Gamma_min_softmax',Gamma_min_softmax)
+    
+    ################## Actual - Polytope #########################################################################
+    
+    #A = None
+
+    #B_matrix = None
+    A = vstack((n_k, -n_k))
+
+    #B_matrix = array([[-10000]])
+
+    B_matrix = empty((shape(A)[0]),dtype=float)
+
+    p_matrix = vstack((p_plus,p_minus))
+
+    
+    for i in range(2*len(n_k)):
+        #B = dot(transpose(A[i, :]), p_plus[i, :])
+        #B_matrix = vstack((B_matrix, B))
+        B_matrix[i] = dot(transpose(A[i, :]), p_matrix[i, :])
+
+    # for i in range(len(n_k),2*len(n_k)):
+    #     #B = dot(-transpose(A[i, :]), p_minus[i, :])
+    #     #B_matrix = vstack((B_matrix, B))
+    #     B_matrix[i] = dot(transpose(A[i, :]), p_matrix[i, :])
+    #B_matrix = B_matrix[1:, :]
+
+    # Getting all polytope vertices here with
+    # Polytope library from pypi
+    # https://pypi.org/project/polytope/
+
+    # Plot using polytope function polytope from pypi
+    time_begin = time.time_ns() 
+    #p = pc.Polytope(A, B_matrix)
+
+    #polytope_vertices = pc.extreme(p)
+
+    polytope_vertices_arr = compute_polytope_vertices(A, B_matrix)
+    polytope_vertices = array(polytope_vertices_arr)
+    #print('polytope_vertices',polytope_vertices)
+    time_end = time.time_ns()
+    #print('time_end',time_end)
+    duration3 = time_end - time_begin
+    print('duration3',duration3)
+    # Available cartesian wrench/velocity polytope
+
+    hull = ConvexHull(polytope_vertices)
+
+    polytope_faces = hull.simplices
+
+
+    hull.close()
+
+
+
+    ################## Estimated - Polytope #########################################################################
+
+
+
+
+    
+    return polytope_vertices, polytope_faces
+   
+
+
 def velocity_polytope_with_estimation(JE, qdot_max, qdot_min,cartesian_desired_vertices, sigmoid_slope):
 
     qdot_max = array(qdot_max)
@@ -449,7 +532,8 @@ def velocity_polytope_with_estimation(JE, qdot_max, qdot_min,cartesian_desired_v
         if norm_normal_plane != 0:
             normal_plane = normal_plane/norm_normal_plane
         else:
-            raiseExceptions('Division by zero not possible')
+            #raiseExceptions('Division by zero not possible')
+            print('Division by zero not possible')
             normal_plane = normal_plane
         if allclose(normal_capacity,normal_plane):
             point_plane_dist = (dot((polytope_vertices[polytope_faces[i,0]] - closest_vertex),normal_plane))
@@ -527,7 +611,8 @@ def velocity_polytope_with_estimation(JE, qdot_max, qdot_min,cartesian_desired_v
         if norm_normal_plane != 0:
             normal_plane_est = normal_plane_est/norm_normal_plane_est
         else:
-            raiseExceptions('Division by zero not possible')
+            #raiseExceptions('Division by zero not possible')
+            print('Division by zero not possible')
             
             normal_plane_est = normal_plane_est
         if allclose(normal_capacity,normal_plane_est):
@@ -555,7 +640,7 @@ def velocity_polytope_with_estimation(JE, qdot_max, qdot_min,cartesian_desired_v
 
     
     return polytope_vertices, polytope_faces, facet_pair_idx, capacity_margin_faces, \
-            capacity_proj_vertex, polytope_vertices_est, polytope_faces_est, capacity_margin_faces_est, capacity_proj_vertex_est,Gamma_min_softmax
+            capacity_proj_vertex, polytope_vertices_est, polytope_faces_est, capacity_margin_faces_est, capacity_proj_vertex_est,p,p_est,Gamma_min_softmax
             
 def pycapacity_polytope(JE, qdot_max, qdot_min):
     '''

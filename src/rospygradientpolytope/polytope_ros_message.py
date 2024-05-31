@@ -50,6 +50,39 @@ def create_capacity_vertex_msg(capacity_vertex, pose, frame, scaling_factor):
     pointstamped_message.header.stamp = rospy.Time.now()
     return pointstamped_message
 
+
+def create_polytopes_with_vertex_msg(polytope_verts, pose, frame, scaling_factor):
+    polygonarray_message = PolygonArray()
+    polygonarray_message.header = Header()
+    polygonarray_message.header.frame_id = frame
+    polygonarray_message.header.stamp = rospy.Time.now()
+    ## Need to initialize all points at once instead of append
+    ## Lots of overhead for int conversion too !!! TODO
+    ## Append may be causing latency - TODO
+    vert_counter = 0
+    for kk in range(int(np.shape(polytope_verts)[0]/3.0)):
+        polygon_message = Polygon()        
+        for i in range(3):
+            point = Point32()            
+
+            point.x = (polytope_verts[vert_counter,0]/(scaling_factor*1.0)) + pose[0]            
+            point.y = (polytope_verts[vert_counter,1]/(scaling_factor*1.0)) + pose[1]
+            point.z = (polytope_verts[vert_counter,2]/(scaling_factor*1.0)) + pose[2]
+            
+            polygon_message.points.append(point)
+            vert_counter+=1
+        
+        # polytope stamped message
+        polygon_stamped = PolygonStamped()
+        polygon_stamped.polygon = polygon_message
+        polygon_stamped.header = Header()
+        polygon_stamped.header.frame_id = frame
+        polygon_stamped.header.stamp = rospy.Time.now()
+        polygonarray_message.polygons.append(polygon_stamped)
+        polygonarray_message.likelihood.append(1.0)
+        
+    return polygonarray_message
+
 def create_polytopes_msg(polytope_verts,polytope_faces, pose, frame, scaling_factor):
     polygonarray_message = PolygonArray()
     polygonarray_message.header = Header()
@@ -77,6 +110,39 @@ def create_polytopes_msg(polytope_verts,polytope_faces, pose, frame, scaling_fac
         polygon_stamped.header.stamp = rospy.Time.now()
         polygonarray_message.polygons.append(polygon_stamped)
         polygonarray_message.likelihood.append(1.0)
+    return polygonarray_message
+def create_fast_polytopes_msg(polytope_verts,polytope_faces, pose, frame, scaling_factor):
+    polygonarray_message = PolygonArray()
+    polygonarray_message.header = Header()
+    polygonarray_message.header.frame_id = frame
+    polygonarray_message.header.stamp = rospy.Time.now()
+    ## Need to initialize all points at once instead of append
+    ## Lots of overhead for int conversion too !!! TODO
+    ## Append may be causing latency - TODO
+    time_start = rospy.Time.now()
+    for face_polygon in polytope_faces:
+        polygon_message = Polygon()        
+        for i in range(len(face_polygon)):
+            point = Point32()            
+            face_polygon_number = int(face_polygon[i]) ## It is an int
+            point.x = (polytope_verts[face_polygon_number,0]/(scaling_factor*1.0)) + pose[0]            
+            point.y = (polytope_verts[face_polygon_number,1]/(scaling_factor*1.0)) + pose[1]
+            point.z = (polytope_verts[face_polygon_number,2]/(scaling_factor*1.0)) + pose[2]
+            
+            polygon_message.points.append(point)
+        
+        # polytope stamped message
+        polygon_stamped = PolygonStamped()
+        polygon_stamped.polygon = polygon_message
+        polygon_stamped.header = Header()
+        polygon_stamped.header.frame_id = frame
+        polygon_stamped.header.stamp = rospy.Time.now()
+        polygonarray_message.polygons.append(polygon_stamped)
+        polygonarray_message.likelihood.append(1.0)
+    time_end = rospy.Time.now()
+    polytope_message_duration = time_end - time_start
+
+    print('polytope_message_duration',polytope_message_duration)
     return polygonarray_message
 
 ## Only one face of the polygon is here
