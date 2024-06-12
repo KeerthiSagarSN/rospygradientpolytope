@@ -15,7 +15,8 @@ except ImportError:
 from logging import raiseExceptions
 from socket import close
 from scipy.spatial import ConvexHull
-from pypoman import compute_polytope_vertices
+from pypoman import compute_polytope_vertices, compute_chebyshev_center
+import rospy
 
 
 
@@ -24,6 +25,8 @@ from pypoman import compute_polytope_vertices
 from numpy import hstack, vstack, array, dot, transpose, append, shape, zeros, ones,cross, allclose, empty
 from numpy.linalg import norm
 from rospygradientpolytope.polytope_functions import get_polytope_hyperplane, get_cartesian_polytope_hyperplane,get_capacity_margin
+from rospygradientpolytope.polytope_functions import get_constraint_joint_limit_polytope, get_constraint_obstacle_joint_polytope
+from rospygradientpolytope.polytope_functions import get_constraint_polytope
 # Plot polytope here with polytope library
 import time
 
@@ -35,6 +38,7 @@ import time
 # Plot KUKA - Velocity polytope here
 def __init__():
     print('Start Visual library')
+    
 
 def desired_polytope(cartesian_desired_vertices):
 
@@ -449,6 +453,227 @@ def cartesian_velocity_polytope(JE, qdot_max, qdot_min):
     return polytope_vertices, polytope_faces
    
 
+def cartesian_velocity_with_joint_limit_polytope(JE,q,qdot_min,qdot_max,q_min,q_max,q_mean,psi_max, psi_min):
+    from numpy import matmul,size,shape
+
+    #qdot_max = array(qdot_max)
+    #qdot_min = -1*array(qdot_max)
+    active_joints = shape(JE)[1]
+    #cartesian_dof_input = array([True, True, True, False, False, False])
+
+    A_jpl, B_jpl = get_constraint_joint_limit_polytope(
+        JE,q,active_joints,qdot_min,qdot_max,q_min,q_max,q_mean,psi_max, psi_min)
+
+
+
+    #print('Gamma_min_softmax',Gamma_min_softmax)
+    
+    ################## Actual - Polytope #########################################################################
+    
+    #A = None
+    #print('A_jpl',A_jpl)
+    #print('B_jpl',B_jpl)
+    
+    polytope_vertices_arr = compute_polytope_vertices(A_jpl, B_jpl)
+    polytope_vertices = array(polytope_vertices_arr)
+    #print('polytope_vertices',polytope_vertices)
+    #print('shape of polytope vertices are',shape(polytope_vertices))
+    J_Hess = JE[0:3,:]
+
+    print('polytope_vertices',shape(polytope_vertices))
+    
+    #print('transpose(J_Hess)',transpose(J_Hess))
+    polytope_vertices_cartesian = matmul(polytope_vertices,transpose(J_Hess))
+    
+    #polytope_vertices = matmul(JE, transpose(polytope_vertices_arr))
+    # Available cartesian wrench/velocity polytope
+    
+
+    hull = ConvexHull(polytope_vertices_cartesian)
+
+    polytope_faces = hull.simplices
+
+
+    hull.close()
+
+    
+    return polytope_vertices_cartesian, polytope_faces
+
+
+
+def cartesian_cmp_polytope(JE,q,qdot_min,qdot_max,q_min,q_max,q_mean,psi_max, psi_min,obstacle_link_vector,danger_vector,danger_parameter ):
+    from numpy import matmul,size,shape,hstack, zeros, mean
+
+    from copy import deepcopy
+    
+
+    #qdot_max = array(qdot_max)
+    #qdot_min = -1*array(qdot_max)
+    active_joints = shape(JE)[1]
+    polytope_center = zeros(3)
+    polytope_center_max = zeros(3)
+    #cartesian_dof_input = array([True, True, True, False, False, False])
+
+    A_cmp, B_cmp = get_constraint_polytope(
+        JE,q,active_joints,qdot_min,qdot_max,q_min,q_max,q_mean,psi_max, psi_min, obstacle_link_vector,danger_vector,danger_parameter)
+
+    #print('Gamma_min_softmax',Gamma_min_softmax)    
+    ################## Actual - Polytope #########################################################################
+    #A = None
+    #print('A_jpl',A_jpl)
+    #print('B_jpl',B_jpl)
+
+    
+    # print('A_cmp',A_cmp)
+    # print('B_cmp',B_cmp)
+    # Create a pycddlib matrix from the inequalities
+    #M = hstack((B_cmp,-A_cmp))
+    #polytope_matrix = cdd.Matrix(M, number_type="fraction")
+
+    #Make it into a polytype object that pycddlib needs.
+    #poly = cdd.Polyhedron(polytope_matrix)
+
+    # Compute the vertices of the polyhedron
+    #polytope_vertices = matrix.get_inequalities()
+    try:
+        polytope_vertices = array(compute_polytope_vertices(100.0*(A_cmp), 100.0*(B_cmp)))
+        polytope_vertices = polytope_vertices*(100**(-1))
+        
+    except:
+        polytope_vertices = array([])
+    
+    
+    
+    #polytope_vertices = array([])
+    
+    #polytope_tulip = pc.Polytope(A_cmp,B_cmp)
+
+    #polytope_vertices = pc.extreme(polytope_tulip)
+
+    #print('polytope_vertices',polytope_vertices)
+    #print('shape of polytope vertices are',shape(polytope_vertices))
+    J_Hess = JE[0:3,:]
+    
+    print('polytope_vertices',shape(polytope_vertices))
+    # rows_verts = shape(polytope_vertices)
+    # rows_verts_half = int(0.5*rows_verts[0])
+    # print('row_vers',rows_verts)
+
+    if polytope_vertices.any():
+        polytope_vertices_cartesian = matmul(polytope_vertices,transpose(J_Hess))
+        try:
+            hull = ConvexHull(polytope_vertices_cartesian)
+            polytope_faces = hull.simplices
+            #Get centoid
+            polytope_center[0] = mean(hull.points[hull.vertices,0])
+            polytope_center_max[0] = max(hull.points[hull.vertices,0])
+            polytope_center[1] = mean(hull.points[hull.vertices,1])
+            polytope_center_max[1] = max(hull.points[hull.vertices,1])
+            polytope_center[2] = mean(hull.points[hull.vertices,2])
+            polytope_center_max[2] = max(hull.points[hull.vertices,2])
+            #input('stop now 2')
+            hull.close()
+        except:
+            polytope_vertices_cartesian = array([])
+            
+            polytope_faces = array([])
+
+        
+
+
+    else:
+        
+        
+        polytope_vertices_cartesian = array([])
+            
+        polytope_faces = array([])
+
+    
+    #ellipsoid_center = compute_chebyshev_center(100.0*A_cmp, 100.0*B_cmp)
+    # #ellipsoid_radius = compute_chebyshev_radius(A_cmp, B_cmp)
+
+    # polytope_vertices_lower_cartesian = matmul(polytope_vertices[rows_verts_half:,:],transpose(J_Hess))
+    # hull2 = ConvexHull(polytope_vertices_lower_cartesian)
+
+    # polytope_lower_faces = hull2.simplices
+
+    # ellipsoid_center = polytope_tulip.chebXc
+    # ellipsoid_ball = polytope_tulip.chebR
+
+
+
+    # , polytope_vertices_lower_cartesian, polytope_lower_faces#, ellipsoid_center, ellipsoid_ball
+    return polytope_vertices_cartesian, polytope_faces, polytope_center, polytope_center_max
+
+
+
+def cartesian_velocity_with_obstacle_polytope(JE,obstacle_link_vector,danger_distance):
+    from numpy import matmul,size,shape,identity, vstack
+    from copy import deepcopy
+    from numpy.linalg import pinv
+
+    #qdot_max = array(qdot_max)
+    #qdot_min = -1*array(qdot_max)
+    active_joints = shape(JE)[1]
+    #cartesian_dof_input = array([True, True, True, False, False, False])
+
+    A_obs, B_obs = get_constraint_obstacle_joint_polytope(JE, obstacle_link_vector, danger_distance)
+
+
+
+    #print('Gamma_min_softmax',Gamma_min_softmax)
+    
+    ################## Actual - Polytope #########################################################################
+    
+    #A = None
+    #print('A_jpl',A_jpl)
+    #print('B_jpl',B_jpl)
+    
+    # I_obs = identity(12)
+
+
+    # A_obs = vstack((A_obs,I_obs))
+    # B_obs_zero = deepcopy(B_obs)
+    # B_obs_zero[:] = 100
+    # B_obs = hstack((array([B_obs]),array([B_obs_zero])))
+    A_obs = transpose(A_obs)
+    B_obs = transpose(array([B_obs]))
+    print('A_obs', A_obs)
+    print('B_obs',B_obs)
+    print('shape of B_obs',shape(B_obs))
+    #input('stop inside pypoman')
+    #A_obs = identity(active_joints)
+    
+    polytope_vertices_arr = compute_polytope_vertices(A_obs, B_obs)
+    print('polytope_vertices',polytope_vertices)
+    #polytope_vertices_arr = pc.Polytope(transpose(A_obs), B_obs)
+    polytope_vertices = array(polytope_vertices_arr)
+    #print('polytope_vertices',polytope_vertices)
+    #print('shape of polytope vertices are',shape(polytope_vertices))
+    J_Hess = JE[0:3,:]
+
+    print('polytope_vertices',shape(polytope_vertices))
+    print('polytope_vertices',polytope_vertices)
+    
+    #print('transpose(J_Hess)',transpose(J_Hess))
+    polytope_vertices_cartesian = matmul(J_Hess,transpose(polytope_vertices))
+
+
+    print('polytope__cartesian',polytope_vertices_cartesian)
+    #input('stop now')
+    #polytope_vertices = matmul(JE, transpose(polytope_vertices_arr))
+    # Available cartesian wrench/velocity polytope
+    
+
+    hull = ConvexHull(polytope_vertices_cartesian)
+
+    polytope_faces = hull.simplices
+
+
+    hull.close()
+
+    
+    return polytope_vertices_cartesian, polytope_faces
 
 def velocity_polytope_with_estimation(JE, qdot_max, qdot_min,cartesian_desired_vertices, sigmoid_slope):
 
