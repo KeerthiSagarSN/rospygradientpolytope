@@ -133,11 +133,11 @@ $ catkin build
 $ source devel/setup.bash
 $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_rviz.launch
 ```
-##### 1. Click and drag the interactive sphere with axes in the Rviz window 
-##### 2. Select Run IK button from the Interactive panel
-##### 3. Click on Polytope:ON for visualizing the estimated capacity margin during optimization
-##### 4. Polytope:Off To stop updating the polytope (Faster execution option)
-##### 5. Click on Reset Button : After optimization termination for consecutive IK optimization
+1. Click and drag the interactive sphere with axes in the Rviz window 
+2. Select Run IK button from the Interactive panel
+3. Click on Polytope:ON for visualizing the estimated capacity margin during optimization
+4. Polytope:Off To stop updating the polytope (Faster execution option)
+5. Click on Reset Button : After optimization termination for consecutive IK optimization
 
 ##### Interactive panel is in experimental phase and may lead to occasional crash. Please restart the node, when GUI crashes.
 
@@ -148,12 +148,12 @@ $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_r
 ![Sawyer- 7 DOF](./Images_Readme/Sawyer_IK.gif)
 
 ## Module functions
-#### Python3 library functions independent of ROS
-##### For computing desired or available/feasible velocity polytope faces and vertices
+##### Python3 library functions independent of ROS
+###### For computing desired or available/feasible velocity polytope faces and vertices
 ```
 from rospygradientpolytope.visual_polytope import *
 ```
-##### Compute polytope facets and vertices of user-defined desired polytope
+###### Compute polytope facets and vertices of user-defined desired polytope
 ```
 rospygradientpolytope.visual_polytope.desired_polytope 
 ```
@@ -164,7 +164,7 @@ rospygradientpolytope.visual_polytope.desired_polytope
 <b> polytope_faces </b>- Simplices of the convex hull mapped to polytope facets<br> <hr>
 
 
-##### Compute polytope facets and vertices of available/feasible polytope, with the closest (vertex,facet) pair
+###### Compute polytope facets and vertices of available/feasible polytope, with the closest (vertex,facet) pair
 ```
 rospygradientpolytope.visual_polytope.velocity_polytope_with_estimation 
 
@@ -188,11 +188,12 @@ rospygradientpolytope.visual_polytope.velocity_polytope_with_estimation
 <b> capacity_margin_faces_est </b>- Closest facet in the available cartesian velocities contributing to estimated capacity margin<br>
 <b> capacity_proj_vertex_est </b>- Closest vertex in the desired cartesian velocities contributing to estimated capacity margin<br>
 <b> Gamma_min_softmax </b>- Estimated capacity margin (Performance measure)<br><hr>
-#### For computing all hyperplane parameters and estimated capacity margin
+
+###### For computing all hyperplane parameters and estimated capacity margin
 ```
 from rospygradientpolytope.polytope_functions import *
 ```
-##### Compute hyperplane parameters for velocity polytope
+###### Compute hyperplane parameters for velocity polytope
 ```
 rospygradientpolytope.polytope_functions.get_polytope_hyperplane
 
@@ -219,7 +220,7 @@ rospygradientpolytope.polytope_functions.get_polytope_hyperplane
 <b> Nmatrix </b>- Combinations of twists to define <b>n_k</b><br>
 <b> Nnot </b>- Combinations of twists to define <b>h_plus</b>, <b>h_minus</b> using <b>Nmatrix</b> and <b>n_k</b><br><hr>
 
-##### Compute classical and estimated capacity margin (performance measure)
+###### Compute classical and estimated capacity margin (performance measure)
 ```
 rospygradientpolytope.polytope_functions.get_capacity_margin
 
@@ -248,12 +249,12 @@ rospygradientpolytope.polytope_functions.get_capacity_margin
 <b> facet_pair_idx </b>- Index of the (vertex,facet) pair to plot in rviz <br>
 <b> hyper_plane_sign </b>- To identify the hyperplane closer to the vertex to plot in rviz <br><hr>
 
-#### For computing analytical gradient of hyperplane parameters and estimated capacity margin for serial robot
+###### For computing analytical gradient of hyperplane parameters and estimated capacity margin for serial robot
 ```
 from rospygradientpolytope.polytope_gradient_functions import *
 ```
 
-##### Compute hyperplane gradient using the proposed method
+###### Compute hyperplane gradient using the proposed method
 ```
 rospygradientpolytope.polytope_gradient_functions.hyperplane_gradient
 
@@ -307,39 +308,39 @@ rospygradientpolytope.polytope_gradient_functions.Gamma_hat_gradient_dq
 ###### Return: 
 <b> jac_output</b>- Analytical gradient of the estimated capacity margin with respect to the corresponding test joint <b> test_joint </b> <br><hr>
 
-#### Custom ROS Message to plot polytope,vertices and facets in Rviz
+###### Custom ROS Message to plot polytope,vertices and facets in Rviz
 ```
 from rospygradientpolytope.polytope_ros_message import *
 ```
 
 ### To test capacity margin gradient (Sawyer Robot)
-#### Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
-#### In launch_robot_sawyer.py --> uncomment self.test_gamma_gradient(sigmoid_slope_test=sigmoid_slope) in __init__
+Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
+In launch_robot_sawyer.py --> uncomment self.test_gamma_gradient(sigmoid_slope_test=sigmoid_slope) in __init__
 ```
 $ roslaunch rospygradientpolytope launch_robot_sawyer.launch
 ```
 
-### To test capacity margin gradient (UR5 Robot)
-#### Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
-#### In launch_robot_ur.py --> uncomment self.test_gamma_gradient(sigmoid_slope_test=sigmoid_slope) in __init__
+###### To test capacity margin gradient (UR5 Robot)
+Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
+In launch_robot_ur.py --> uncomment self.test_gamma_gradient(sigmoid_slope_test=sigmoid_slope) in __init__
 ```
 $ roslaunch rospygradientpolytope launch_robot_ur.launch
 ```
-## Cable Driven Parallel Robots (CDPR)- Planar
-### To generate workspace of the CDPR with different sigmoid slopes (4-cable, 2-DOF)
-### Generate Wrench Feasible Workspace (WFW) by identifying where Capacity margin index = 0
+#### Cable Driven Parallel Robots (CDPR)- Planar
+##### To generate workspace of the CDPR with different sigmoid slopes (4-cable, 2-DOF)
+Generate Wrench Feasible Workspace (WFW) by identifying where Capacity margin index = 0
 ```
 $ python3 CDPR_workspace.py
 ```
 
-### Simple First-order Gradient Descent Optimization (CDPR)
-#### Start from initial pose and use analytical gradient to reach pose with maximum capacity margin
+###### Simple First-order Gradient Descent Optimization (CDPR)
+###### Start from initial pose and use analytical gradient to reach pose with maximum capacity margin
 ```
 $ python3 CDPR_workspace.py
 ```
 ### Region-of-Interest Optimization (CDPR)
-#### Optimization to operate CDPR within a ROI with obstacle avoidance
-##### Plotting with matplotlib is slow in the current implementation, optimized code to plot is under development
+###### Optimization to operate CDPR within a ROI with obstacle avoidance
+Plotting with matplotlib is slow in the current implementation, optimized code to plot is under development
 ```
 $ python3 test_CDPR_Optimization.py
 ```
