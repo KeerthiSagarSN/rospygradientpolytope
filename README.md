@@ -3,9 +3,9 @@
 This repository includes nodes for generating and visualizing Cartesian Available : (1) Velocity Polytope (2) Force Polytope (3) Desired Polytope
 (4) Performance Index - Capacity Margin in [Rviz](http://wiki.ros.org/rviz).
 
-## Installation
+#### Installation
 This repository was tested on Universal Robot [UR5](https://www.universal-robots.com/products/ur5-robot/). The robot is controllled through an external PC with [ROS Noetic](http://wiki.ros.org/noetic) and Ubuntu 20.04 LTS. 
-### Hardware requirements
+#### Hardware requirements
 * External PC. Our specifications are;
 ```
 Intel® Core™ i7-10700K CPU @ 3.80GHz × 16
@@ -15,7 +15,7 @@ Graphics: NVIDIA Corporation GP106GL [Quadro P2200]
 ```
 
 
-### Software and Library Requirements 
+#### Software and Library Requirements 
 
 * Ubuntu 20.04 LTS
 * ROS Noetic
@@ -29,39 +29,39 @@ If you are new to ROS, go [here](http://wiki.ros.org/catkin/Tutorials/create_a_w
 
 
 
-### Toolbox in the Catkin workspace - ROS1
+#### Toolbox in the Catkin workspace - ROS1
 In a Terminal
 ```
 $ cd ~/catkin_ws/src/
 $ git clone https://gitlab.com/KeerthiSagarSN/rospygradientpolytope
 ```
 
-### Library Installation - Only if not preinstalled
+#### Library Installation - Only if not preinstalled
 
 In a terminal
 ```
 $ pip install sympy
 $ pip install polytope
 ```
-### Clone Sawyer Robot- Different from the Original Repo due to the offset in the tool center point to avoid Null in Jacobian
+##### Clone Sawyer Robot- Different from the Original Repo due to the offset in the tool center point to avoid Null in Jacobian
 ```
 $ git clone https://github.com/KeerthiSagarSN/sawyer_robot
 ```
 
-### Clone UR5 Robot Repository - Different from the Original Repo due to the offset in the tool center point to avoid Null in Jacobian
+##### Clone UR5 Robot Repository - Different from the Original Repo due to the offset in the tool center point to avoid Null in Jacobian
 
 ```
 $ git clone https://github.com/KeerthiSagarSN/universal_robot
 ```
 
 
-### Clone PyKDL - From OROCOS-KDL Repository - Latest Branch
+##### Clone PyKDL - From OROCOS-KDL Repository - Latest Branch
 
 ```
 $ git clone https://github.com/orocos/orocos_kinematics_dynamics.git
 ```
 
-### Clone Pykdl - Kinematics Wrapper Repository - Edited for Python 3 and ROS Noetic Compatible
+##### Clone Pykdl - Kinematics Wrapper Repository - Edited for Python 3 and ROS Noetic Compatible
 ```
 $ git clone https://github.com/KeerthiSagarSN/hrl-kdl.git
 $ git checkout Noetic-devel
@@ -69,53 +69,53 @@ $ sudo apt-get install ros-noetic-urdf-parser-plugin
 $ sudo apt-get install ros-noetic-urdfdom-py
 
 ```
-### Clone Visualization Package Library - Rviz
+##### Clone Visualization Package Library - Rviz
 ```
 $ git clone https://github.com/jsk-ros-pkg/jsk_visualization.git
 ```
 
-### Catkin Build/ Catkin Make - Build & Source all repositories in Catkin Workspace
+##### Catkin Build/ Catkin Make - Build & Source all repositories in Catkin Workspace
 ```
 $ cd ..
 $ catkin build
 $ source devel/setup.bash
 ```
 
-#### IF you encounter CMAKE Error : Install all ROS- Dependencies - (Only when CMAKE Error !)
-##### Replace underscores "_" with "-" in the package name while typing in the MISSING-PACKAGE below
+IF you encounter CMAKE Error : Install all ROS- Dependencies - (Only when CMAKE Error !)
+Replace underscores "_" with "-" in the package name while typing in the MISSING-PACKAGE below
 ```
 $ sudo apt install ros-noetic-MISSING-PACKAGE
 
 ```
 
-#### ROS - Preliminary Dependencies - Install Only if required
+##### ROS - Preliminary Dependencies - Install Only if required
 
 ```
 $ sudo apt-get install ros-$ROS_DISTRO-robot-state-publisher ros-$ROS_DISTRO-joint-state-publisher
 $ sudo apt-get install ros-$ROS_DISTRO-joint-state-publisher-gui
 ```
 
-### To Visualize UR5 robot in Rviz
+##### To Visualize UR5 robot in Rviz
 ```
 $ roslaunch ur_description view_ur5.launch 
 ```
 
 
-### To Visualize Sawyer Robot in Rviz
+##### To Visualize Sawyer Robot in Rviz
 ```
 $ roslaunch sawyer_description test_sawyer_description.launch
 ```
 
-### Launch the IK Controller
-#### UR Robot
+##### Launch the IK Controller
+###### UR Robot
 ```
 $ roslaunch rospygradientpolytope launch_robot_ur.launch
 
 ```
 ![UR5 - 6 DOF](./Images_Readme/ur5_rviz_readme.png)
 
-#### or
-#### Sawyer Robot
+##### or
+###### Sawyer Robot
 ```
 $ roslaunch rospygradientpolytope launch_robot_sawyer.launch
 ```
@@ -124,8 +124,8 @@ $ roslaunch rospygradientpolytope launch_robot_sawyer.launch
 
 
 
-### Steps to start Interactive Inverse Kinematics
-#### Clone the interactive PyQT GUI repository and launch the QT panel
+##### Steps to start Interactive Inverse Kinematics
+###### Clone the interactive PyQT GUI repository and launch the QT panel
 ```
 $ git clone https://gitlab.com/KeerthiSagarSN/inverse_kinematics_interactive_rviz.git
 $ cd ..
@@ -139,7 +139,7 @@ $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_r
 4. Polytope:Off To stop updating the polytope (Faster execution option)
 5. Click on Reset Button : After optimization termination for consecutive IK optimization
 
-##### Interactive panel is in experimental phase and may lead to occasional crash. Please restart the node, when GUI crashes.
+###### Interactive panel is in experimental phase and may lead to occasional crash. Please restart the node, when GUI crashes.
 
 #### UR Robot
 ![UR5 - 6 DOF](./Images_Readme/UR5_IK.gif)
@@ -147,8 +147,8 @@ $ roslaunch inverse_kinematics_interactive_rviz inverse_kinematics_interactive_r
 #### Sawyer Robot
 ![Sawyer- 7 DOF](./Images_Readme/Sawyer_IK.gif)
 
-## Module functions
-##### Python3 library functions independent of ROS
+#### Module functions
+###### Python3 library functions independent of ROS
 ###### For computing desired or available/feasible velocity polytope faces and vertices
 ```
 from rospygradientpolytope.visual_polytope import *
@@ -313,7 +313,7 @@ rospygradientpolytope.polytope_gradient_functions.Gamma_hat_gradient_dq
 from rospygradientpolytope.polytope_ros_message import *
 ```
 
-### To test capacity margin gradient (Sawyer Robot)
+##### To test capacity margin gradient (Sawyer Robot)
 Fix all joints and move only one-joint "test_joint" and visualize simultaneously numerical gradient and analytical gradient 
 In launch_robot_sawyer.py --> uncomment self.test_gamma_gradient(sigmoid_slope_test=sigmoid_slope) in __init__
 ```
@@ -346,7 +346,7 @@ $ python3 test_CDPR_Optimization.py
 ```
 
 
-# References
+## References
 
 If you found this code useful, we would be grateful if you cite the following reference:
 
