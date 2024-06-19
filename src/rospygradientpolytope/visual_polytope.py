@@ -26,7 +26,7 @@ from numpy import hstack, vstack, array, dot, transpose, append, shape, zeros, o
 from numpy.linalg import norm
 from rospygradientpolytope.polytope_functions import get_polytope_hyperplane, get_cartesian_polytope_hyperplane,get_capacity_margin
 from rospygradientpolytope.polytope_functions import get_constraint_joint_limit_polytope, get_constraint_obstacle_joint_polytope
-from rospygradientpolytope.polytope_functions import get_constraint_polytope
+from rospygradientpolytope.polytope_functions import get_constraint_polytope, get_constraint_hsm_polytope
 # Plot polytope here with polytope library
 import time
 
@@ -453,7 +453,7 @@ def cartesian_velocity_polytope(JE, qdot_max, qdot_min):
     return polytope_vertices, polytope_faces
    
 
-def cartesian_velocity_with_joint_limit_polytope(JE,q,qdot_min,qdot_max,q_min,q_max,q_mean,psi_max, psi_min):
+def cartesian_velocity_with_joint_limit_polytope(JE,q,qdot_min,qdot_max,q_min,q_max,q_mean):
     from numpy import matmul,size,shape
 
     #qdot_max = array(qdot_max)
@@ -462,7 +462,7 @@ def cartesian_velocity_with_joint_limit_polytope(JE,q,qdot_min,qdot_max,q_min,q_
     #cartesian_dof_input = array([True, True, True, False, False, False])
 
     A_jpl, B_jpl = get_constraint_joint_limit_polytope(
-        JE,q,active_joints,qdot_min,qdot_max,q_min,q_max,q_mean,psi_max, psi_min)
+        JE,q,active_joints,qdot_min,qdot_max,q_min,q_max,q_mean)
 
 
 
@@ -536,8 +536,8 @@ def cartesian_cmp_polytope(JE,q,qdot_min,qdot_max,q_min,q_max,q_mean,psi_max, ps
     # Compute the vertices of the polyhedron
     #polytope_vertices = matrix.get_inequalities()
     try:
-        polytope_vertices = array(compute_polytope_vertices(100.0*(A_cmp), 100.0*(B_cmp)))
-        polytope_vertices = polytope_vertices*(100**(-1))
+        polytope_vertices = array(compute_polytope_vertices(1.0*(A_cmp), 1.0*(B_cmp)))
+        polytope_vertices = polytope_vertices
         
     except:
         polytope_vertices = array([])
@@ -606,6 +606,110 @@ def cartesian_cmp_polytope(JE,q,qdot_min,qdot_max,q_min,q_max,q_mean,psi_max, ps
     return polytope_vertices_cartesian, polytope_faces, polytope_center, polytope_center_max
 
 
+
+def cartesian_cmp_hsm_polytope(JE,q,qdot_min,qdot_max,q_min,q_max,q_mean,psi_max, psi_min,obstacle_link_vector,danger_vector,danger_parameter ):
+    from numpy import matmul,size,shape,hstack, zeros, mean
+
+    from copy import deepcopy
+    
+
+    #qdot_max = array(qdot_max)
+    #qdot_min = -1*array(qdot_max)
+    active_joints = shape(JE)[1]
+    polytope_center = zeros(3)
+    polytope_center_max = zeros(3)
+    #cartesian_dof_input = array([True, True, True, False, False, False])
+
+    A_cmp, B_cmp = get_constraint_hsm_polytope(
+        JE,q,active_joints,qdot_min,qdot_max,q_min,q_max,q_mean,psi_max, psi_min, obstacle_link_vector,danger_vector,danger_parameter)
+
+    #print('Gamma_min_softmax',Gamma_min_softmax)    
+    ################## Actual - Polytope #########################################################################
+    #A = None
+    #print('A_jpl',A_jpl)
+    #print('B_jpl',B_jpl)
+
+    
+    # print('A_cmp',A_cmp)
+    # print('B_cmp',B_cmp)
+    # Create a pycddlib matrix from the inequalities
+    #M = hstack((B_cmp,-A_cmp))
+    #polytope_matrix = cdd.Matrix(M, number_type="fraction")
+
+    #Make it into a polytype object that pycddlib needs.
+    #poly = cdd.Polyhedron(polytope_matrix)
+
+    # Compute the vertices of the polyhedron
+    #polytope_vertices = matrix.get_inequalities()
+    try:
+        polytope_vertices = array(compute_polytope_vertices(1.0*(A_cmp), 1.0*(B_cmp)))
+        polytope_vertices = polytope_vertices*(1.0**(-1))
+        
+    except:
+        polytope_vertices = array([])
+    
+    
+    
+    #polytope_vertices = array([])
+    
+    #polytope_tulip = pc.Polytope(A_cmp,B_cmp)
+
+    #polytope_vertices = pc.extreme(polytope_tulip)
+
+    #print('polytope_vertices',polytope_vertices)
+    #print('shape of polytope vertices are',shape(polytope_vertices))
+    J_Hess = JE[0:3,:]
+    
+    print('polytope_vertices',shape(polytope_vertices))
+    # rows_verts = shape(polytope_vertices)
+    # rows_verts_half = int(0.5*rows_verts[0])
+    # print('row_vers',rows_verts)
+
+    if polytope_vertices.any():
+        polytope_vertices_cartesian = matmul(polytope_vertices,transpose(J_Hess))
+        try:
+            hull = ConvexHull(polytope_vertices_cartesian)
+            polytope_faces = hull.simplices
+            #Get centoid
+            polytope_center[0] = mean(hull.points[hull.vertices,0])
+            polytope_center_max[0] = max(hull.points[hull.vertices,0])
+            polytope_center[1] = mean(hull.points[hull.vertices,1])
+            polytope_center_max[1] = max(hull.points[hull.vertices,1])
+            polytope_center[2] = mean(hull.points[hull.vertices,2])
+            polytope_center_max[2] = max(hull.points[hull.vertices,2])
+            #input('stop now 2')
+            hull.close()
+        except:
+            polytope_vertices_cartesian = array([])
+            
+            polytope_faces = array([])
+
+        
+
+
+    else:
+        
+        
+        polytope_vertices_cartesian = array([])
+            
+        polytope_faces = array([])
+
+    
+    #ellipsoid_center = compute_chebyshev_center(100.0*A_cmp, 100.0*B_cmp)
+    # #ellipsoid_radius = compute_chebyshev_radius(A_cmp, B_cmp)
+
+    # polytope_vertices_lower_cartesian = matmul(polytope_vertices[rows_verts_half:,:],transpose(J_Hess))
+    # hull2 = ConvexHull(polytope_vertices_lower_cartesian)
+
+    # polytope_lower_faces = hull2.simplices
+
+    # ellipsoid_center = polytope_tulip.chebXc
+    # ellipsoid_ball = polytope_tulip.chebR
+
+
+
+    # , polytope_vertices_lower_cartesian, polytope_lower_faces#, ellipsoid_center, ellipsoid_ball
+    return polytope_vertices_cartesian, polytope_faces, polytope_center, polytope_center_max
 
 def cartesian_velocity_with_obstacle_polytope(JE,obstacle_link_vector,danger_distance):
     from numpy import matmul,size,shape,identity, vstack
