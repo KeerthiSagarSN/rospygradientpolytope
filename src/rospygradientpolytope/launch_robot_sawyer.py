@@ -1331,6 +1331,7 @@ class LaunchSawyerRobot():
         # Bounds created from the robot angles - Joint angle limits from URDF file
         ## So optimizer tries to give only feasible joint positions
         self.opt_bounds = float64(self.q_bounds)
+        print('self.opt_bounds',self.opt_bounds)
 
         '''
         Paper value here

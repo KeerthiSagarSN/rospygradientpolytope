@@ -303,97 +303,80 @@ def get_constraint_obstacle_joint_polytope(JE,obstacle_link_vector,danger_parame
     return -A_obs, B_obs
 
 
-def get_constraint_obstacle_jacobian(JE,active_joints,obstacle_link_vector,obstacle_dist_vector,danger_parameter):
+def get_constraint_obstacle_jacobian(JE,obstacle_link_vector,danger_parameter):
 
-
-    # print('shape(A_obs)',shape(A_obs))
-    # print('shape(B_obs)',transpose([B_obs]))
-
-    from numpy import zeros,matmul, ndarray
+    from numpy import matmul,size,ndarray
     from numpy.linalg import norm
+
+    # n- active links on the Control points
+    # Obstacle_link_matrix - n x 3 
+    # JE - Jacobian matrix - 3 x n - Only considering translational velocity 
     
+    # Active qdot - is n x 1
+    # AX <= B -> Jok*qdot <= b0
+    # v_obs*JE*qdot <= danger_distance*norm(v_obs) -> (12 x 3 ) * (3x12) * (12 x 1) <= (12 x 1)
+
+    active_joints = shape(JE)[1]
 
     #active_joints = 6
-    # qdot_min = qdot_min[0:active_joints]
-    # qdot_max = qdot_max[0:active_joints]
-    # q_min = q_min[0:active_joints]
-    # q_max = q_max[0:active_joints]
-    # psi_min = psi_min[0:active_joints]
-    # psi_max = psi_max[0:active_joints]
     v_obs = obstacle_link_vector
-    v_obs.dtype = float
+    print('shape(v_obs)',shape(v_obs))
 
-    
-
-    #print('shape(v_obs)',shape(v_obs))
+    # Collision jacobian is
+    #J_coll = zeros(shape=(1,active_joints))
     #A_obs = matmul(v_obs,JE[0:3,:])
-
-    #time_begin = rospy.Time.now()
-    A_obs = zeros(shape=(active_joints,active_joints),dtype="float64")
+    A_obs = zeros(shape=(1,active_joints))
     
-
-    
-    B_obs = zeros(active_joints,dtype="float64")
-    #danger_parameter = 1.0
+    B_obs = zeros(active_joints)
 
     for i in range(active_joints):
         # Meaning KUKA joints are 
         if i < 6:
-            #norm_dist = norm(v_obs[i,:])
+            # norm_dist = norm(v_obs[i,:])
             JE_temp = zeros(shape=(3,active_joints))
             #A_obs[i,i] = matmul(v_obs[i,:]*(norm_dist**(-1)),JE[0:3,i])
             #A_obs[i,i] = matmul(v_obs[i,:]*(norm_dist**(-1)),JE[0:3,i])
-            #print('JE is',JE)
+            print('JE is',JE)
             if i == 0:
                 JE_temp[:,0] = JE[0:3,0] 
             else:
                 JE_temp[:,0:i+1] = JE[0:3,0:i+1] 
 
-            #A_obs = vstack((A_obs,matmul(array([V_unit(v_obs[i,:])]),JE_temp)))
-            A_obs[i,:] = matmul(v_obs[i,:]/obstacle_dist_vector[i],JE_temp)
-
-            #norm_dist = norm(v_obs[i,:])
-            #print('norm_dist',norm_dist)
-            
-            B_obs[i] = danger_parameter*(obstacle_dist_vector[i]**(2)) - obstacle_dist_vector[i]
+            A_obs = vstack((A_obs,matmul(array([V_unit(v_obs[i,:])]),JE_temp)))
+            # norm_dist = norm(v_obs[i,:])
+            # print('norm_dist',norm_dist)
+            # B_obs[i] = danger_parameter*(norm_dist**(2)) - norm_dist
         else:
             JE_temp = zeros(shape=(3,active_joints))
             JE_temp[:,6:i+1] = JE[0:3,6:i+1] 
-            #norm_dist = norm(v_obs[i,:])
-            # A_obs = vstack((A_obs,matmul(array([V_unit(v_obs[i,:])]),JE_temp)))
-            A_obs[i,:] = matmul(v_obs[i,:]/obstacle_dist_vector[i],JE_temp)
-
-            #norm_dist = norm(v_obs[i,:])
-            #print('norm_dist',norm_dist)
-            B_obs[i] = danger_parameter*(obstacle_dist_vector[i]**(2)) - obstacle_dist_vector[i]
-        #print('joint i',i)
-        #print('JE_temp',JE_temp)  
+            # norm_dist = norm(v_obs[i,:])
+            A_obs = vstack((A_obs,matmul(array([V_unit(v_obs[i,:])]),JE_temp)))
+            # norm_dist = norm(v_obs[i,:])
+            # print('norm_dist',norm_dist)
+            # B_obs[i] = danger_parameter*(norm_dist**(2)) - norm_dist
+        print('joint i',i)
+        print('JE_temp',JE_temp)  
         #input('stop now')
-    #A_obs = A_obs[1:,:]
+    A_obs = A_obs[1:,:]
     # print('A_obs', A_obs)
-    #print('B_obs', B_obs)
-    B_obs = ndarray.flatten(B_obs)
-
-    B_obs = transpose(array([B_obs]))
-
+    # print('B_obs', B_obs)
+    # B_obs = ndarray.flatten(B_obs)
     J_coll = A_obs
-
-
-
-
+    # print('shape(A_obs)',shape(A_obs))
+    # print('shape(B_obs)',transpose([B_obs]))
     return J_coll 
 
 
 
 # Include joint limits constraints
-def get_constraint_joint_limit_polytope(JE,q,active_joints,qdot_min,qdot_max,q_min,q_max,q_mean):
+def get_constraint_joint_limit_polytope(JE,q,active_joints,qdot_min,qdot_max,q_min,q_max,q_mean,psi_max, psi_min):
     from numpy import unravel_index,argmax,min,zeros,count_nonzero,max,matmul,identity,size, ndarray
     from numpy.linalg import norm
     from pypoman import compute_polytope_vertices
 
     
-    psi_max_qdot_max = zeros(active_joints)
-    psi_min_qdot_min = zeros(active_joints)
+    psi_max_qdot_max = psi_max
+    psi_min_qdot_min = psi_min
     for i in range(active_joints):
 
        
@@ -411,16 +394,12 @@ def get_constraint_joint_limit_polytope(JE,q,active_joints,qdot_min,qdot_max,q_m
 
         
         #print('d_min',d_min)
-        psi_max = (1.0 - ((d_max - q_mean[i])/(q_max[i] - q_mean[i]))**2)
-        psi_min =  (1.0 - ((d_min - q_mean[i])/(q_min[i] - q_mean[i]))**2)
+
         psi_max_qdot_max[i] = (1.0 - ((d_max - q_mean[i])/(q_max[i] - q_mean[i]))**2)*qdot_max[i]
         
         psi_min_qdot_min[i] = (1.0 - ((d_min - q_mean[i])/(q_min[i] - q_mean[i]))**2)*qdot_min[i]
-
-        if i == 4:
-            print('psi_max', psi_max)
-            print('psi_min',psi_min)
-            input('stop and check')
+    #print('psi_max', psi_max)
+    #print('qdot_max',qdot_max)
     #print('qdot_min',qdot_min)
     B_jpl = hstack((psi_max_qdot_max,-1.0*psi_min_qdot_min))
     A_jpl = hstack((identity(active_joints),-1.0*identity(active_joints)))
@@ -429,7 +408,7 @@ def get_constraint_joint_limit_polytope(JE,q,active_joints,qdot_min,qdot_max,q_m
     return transpose(A_jpl), transpose(B_jpl)
 
 
-# Include joint limits and collision avoidance constraints
+
 def get_constraint_hsm_polytope(JE,q,active_joints,qdot_min,qdot_max,q_min,q_max,q_mean,psi_max, psi_min,\
                             obstacle_link_vector,obstacle_dist_vector,danger_parameter):
     from numpy import unravel_index,argmax,min,zeros,count_nonzero,max,matmul,identity,size, ndarray, around
@@ -495,12 +474,55 @@ def get_constraint_hsm_polytope(JE,q,active_joints,qdot_min,qdot_max,q_min,q_max
     #A_obs = A_obs[1:,:]
     # print('A_obs', A_obs)
     #print('B_obs', B_obs)
-
     B_obs = ndarray.flatten(B_obs)
 
     B_obs = transpose(array([B_obs]))
+    # psi_max_qdot_max = psi_max
+    # psi_min_qdot_min = psi_min
+    # for i in range(active_joints):
+
+       
+    #     #print('q_mean[i]',q_mean[i])
+    #     #print('q[i]',q[i])
+    #     if q_mean[i] > q[i]:
+    #         d_max = q_mean[i]
+    #     else:
+    #         d_max = q[i]
+    #     #print('d_max',d_max)
+    #     if q_mean[i] < q[i]:
+    #         d_min = q_mean[i]
+    #     else:
+    #         d_min = q[i]
+
+        
+    #     #print('d_min',d_min)
+
+    #     psi_max_qdot_max[i] = (1.0 - ((d_max - q_mean[i])/(q_max[i] - q_mean[i]))**2)*qdot_max[i]
+        
+    #     psi_min_qdot_min[i] = (1.0 - ((d_min - q_mean[i])/(q_min[i] - q_mean[i]))**2)*qdot_min[i]
+    # #print('psi_max', psi_max)
+    # #print('qdot_max',qdot_max)
+    # #print('qdot_min',qdot_min)
+    # B_jpl = hstack((psi_max_qdot_max,-psi_min_qdot_min))
+    # A_jpl = hstack((identity(active_joints),-identity(active_joints)))
+    # #print('A_jpl',A_jpl)
+    # #print('B_jpl',B_jpl)
+
+    # #print('A_obs',A_obs)
+    # #print('B_obs',B_obs)
+
+
+   
+    #A_cmp_hsm = vstack((transpose(A_jpl),-A_obs))
+    #B_cmp_hsm = vstack((transpose(array([B_jpl])),B_obs))
+
+
     A_cmp_hsm = -A_obs
     B_cmp_hsm = B_obs
+    #print('B_jpl',size(B_jpl))
+
+    A_cmp_hsm.dtype = 'float64'
+    B_cmp_hsm.dtype = 'float64'
     #print('shape(A_jpl)',shape(A_jpl))
     #print('shape(B_jpl)',shape(B_jpl))
     #print('duration is', rospy.Time.now()- time_begin)
@@ -628,13 +650,14 @@ def get_constraint_polytope(JE,q,active_joints,qdot_min,qdot_max,q_min,q_max,q_m
 
 
 
+
+
 def get_cartesian_polytope_hyperplane(JE,active_joints,qdot_min,qdot_max):
 
     from numpy import unravel_index,argmax,min,zeros,count_nonzero
     ### Declarations here 
 
     ## Import robot
-    
     qdot_max = qdot_max[0:active_joints]
     qdot_min = qdot_min[0:active_joints]
 

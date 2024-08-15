@@ -2258,7 +2258,7 @@ class LaunchRobot():
         return float64(1.0*Gamma_min_softmax)
 
     def jac_func(self, q_in):
-
+        print('inside jac_func')
         self.fun_counter += 0.5
         self.fun_iter.data = int(self.fun_counter)
         

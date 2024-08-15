@@ -462,7 +462,7 @@ def Gamma_hat_gradient_dq(JE,H,n_k,Nmatrix, Nnot,h_plus_hat,h_minus_hat,p_plus_h
     d_gamma_hat = 1.0*d_LSE_dq*d_gamma_max_dq
 
     if isnan(d_gamma_hat):
-        print('self.d_gamma_hat[test_joint]',d_gamma_hat[test_joint])
+        print('self.d_gamma_hat[test_joint]',d_gamma_hat)
         print('self.d_LSE_dq',d_LSE_dq)
         print('self.d_gamma_max_dq',d_gamma_max_dq)
         print('self.d_Gamma_all',d_Gamma_all)
