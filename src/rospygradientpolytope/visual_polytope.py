@@ -425,6 +425,9 @@ def cartesian_velocity_polytope(JE, qdot_max, qdot_min):
     #polytope_vertices = pc.extreme(p)
 
     polytope_vertices_arr = compute_polytope_vertices(A, B_matrix)
+    print('polytope_vertices_arr',polytope_vertices_arr)
+
+
     polytope_vertices = array(polytope_vertices_arr)
     #print('polytope_vertices',polytope_vertices)
     time_end = time.time_ns()

@@ -129,7 +129,7 @@ from copy import copy
 import tf_conversions as tf_c
 from tf2_ros import TransformBroadcaster
 
-from kuka_rsi_hw_interface.srv import *
+# from kuka_rsi_hw_interface.srv import *
 
 
 
@@ -165,7 +165,7 @@ import PyKDL
 from urdf_parser_py.urdf import URDF
 
 # from kdl_parser_py import KDL
-from kdl_parser_py import urdf
+# from kdl_parser_py import urdf
 
 #import open3d as o3d
 ### For service - Fixture line detection
@@ -173,8 +173,8 @@ from std_srvs.srv import Trigger, TriggerRequest
 
 from std_msgs.msg import Float64MultiArray,Int32
 
-from pykdl_utils.kdl_kinematics import KDLKinematics
-from pykdl_utils.joint_kinematics import JointKinematics
+# from pykdl_utils.kdl_kinematics import KDLKinematics
+# from pykdl_utils.joint_kinematics import JointKinematics
 
 from example_robot_data import load
 
@@ -186,6 +186,7 @@ import pinocchio as pin
 import time
 
 from os.path import dirname, join, abspath
+import rospkg
 
 
 
@@ -215,11 +216,15 @@ damp   = 1e-12
 urdf_model_filename = '/home/imr/.local/lib/python3.8/site-packages/cmeel.prefix/share/example-robot-data/robots/dual_robot_description/urdf/kuka_meca.urdf'
 
 
-
+rospack = rospkg.RosPack()
 
 
 
 robot_suffix = "_dualarm"
+
+
+
+rospy.loginfo("URDF loaded into /robot_description parameter")
 
 
 
@@ -316,6 +321,17 @@ viz.display(q0)
 class Geomagic2KUKA():
     def __init__(self):
         rospy.init_node('Geo2KUKA', anonymous=True)
+
+        # Read the URDF file
+        with open(urdf_model_filename, 'r') as file:
+            urdf_content = file.read()
+
+        # Set the robot_description parameter
+        rospy.set_param('/robot_description', urdf_content)
+
+        # Optionally, publish the URDF content to a topic
+        pub = rospy.Publisher('/robot_description', String, queue_size=10, latch=True)
+        pub.publish(urdf_content)
 
         self.rmodel = robot.model
         self.rdata = data

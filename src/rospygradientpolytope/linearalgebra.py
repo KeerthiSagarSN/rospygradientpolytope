@@ -656,8 +656,29 @@ def skew_2D(u):
 
 
 
-#def normal_gradient(v1)
+def normalize_angle(angle):
+    """
+    Normalize an angle to be within the range [-π, π).
+    
+    :param angle: Angle in radians
+    :return: Normalized angle in radians
+    """
+    return (angle + np.pi) % (2 * np.pi) - np.pi
     
     
+
+
+def normalize_angle_arr(angle_arr):
+    """
+    Normalize an angle to be within the range [-π, π).
     
+    :param angle: Angle in radians
+    :return: Normalized angle in radians
+    """
+    
+    for i in range(len(angle_arr)):
+        angle_arr[i] = normalize_angle(angle_arr[i])
+
+
+    return angle_arr
     
