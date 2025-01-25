@@ -33,7 +33,7 @@ If you are new to ROS, go [here](http://wiki.ros.org/catkin/Tutorials/create_a_w
 In a Terminal
 ```
 $ cd ~/catkin_ws/src/
-$ git clone https://gitlab.com/KeerthiSagarSN/rospygradientpolytope
+$ git clone https://github.com/KeerthiSagarSN/rospygradientpolytope
 ```
 
 #### Library Installation - Only if not preinstalled
