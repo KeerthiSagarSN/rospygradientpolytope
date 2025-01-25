@@ -127,7 +127,7 @@ $ roslaunch rospygradientpolytope launch_robot_sawyer.launch
 ##### Steps to start Interactive Inverse Kinematics
 ###### Clone the interactive PyQT GUI repository and launch the QT panel
 ```
-$ git clone https://gitlab.com/KeerthiSagarSN/inverse_kinematics_interactive_rviz.git
+$ git clone https://github.com/KeerthiSagarSN/inverse_kinematics_interactive_rviz.git
 $ cd ..
 $ catkin build
 $ source devel/setup.bash
